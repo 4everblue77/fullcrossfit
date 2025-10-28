@@ -1,56 +1,49 @@
-import psycopg2
-import random
+from supabase import create_client
 from dotenv import load_dotenv
 import os
+import random
 
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv()
 
-# Database configuration from environment
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST'),
-    'dbname': os.getenv('DB_NAME'),
-    'user': os.getenv('DB_USER'),
-    'password': os.getenv('DB_PASSWORD'),
-    'port': os.getenv('DB_PORT', '5432')  # default to 5432
-}
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-
-def get_connection():
-    return psycopg2.connect(**DB_CONFIG)
+# Create Supabase client
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # --- Fetch Exercises by Muscle Group and Category ---
 def fetch_exercises(muscle_group, category):
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT e.name
-                FROM md_exercises e
-                JOIN md_map_exercise_muscle_groups mg ON e.id = mg.exercise_id
-                JOIN md_muscle_groups m ON mg.musclegroup_id = m.id
-                JOIN md_map_exercise_categories ec ON e.id = ec.exercise_id
-                JOIN md_categories c ON ec.category_id = c.id
-                WHERE m.name = %s AND c.name ILIKE %s
-            """, (muscle_group, category))
-            return [row[0] for row in cur.fetchall()]
+    response = supabase.table("md_exercises") \
+        .select("name") \
+        .in_("id", supabase.table("md_map_exercise_muscle_groups")
+             .select("exercise_id")
+             .eq("musclegroup_id", get_muscle_group_id(muscle_group))
+             .execute().data) \
+        .execute()
+    return [row["name"] for row in response.data]
+
+# Helper: Get muscle group ID
+def get_muscle_group_id(name):
+    response = supabase.table("md_muscle_groups").select("id").eq("name", name).execute()
+    return response.data[0]["id"] if response.data else None
 
 # --- Fetch Skill Plan for a Given Week ---
 def fetch_skill_plan(skill_name, week):
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT sp.focus, sp.session_plan
-                FROM skill_plans sp
-                JOIN skills s ON sp.skill_id = s.skill_id
-                WHERE s.skill_name = %s AND sp.week = %s
-            """, (skill_name, week))
-            result = cur.fetchone()
-            if result:
-                return {
-                    "focus": result[0],
-                    "session_plan": result[1]
-                }
-            return None
+    response = supabase.table("skill_plans") \
+        .select("focus, session_plan") \
+        .eq("week", week) \
+        .in_("skill_id", supabase.table("skills")
+             .select("skill_id")
+             .eq("skill_name", skill_name)
+             .execute().data) \
+        .execute()
+    if response.data:
+        return {
+            "focus": response.data[0]["focus"],
+            "session_plan": response.data[0]["session_plan"]
+        }
+    return None
 
 # --- Generate Warmup Session ---
 def generate_warmup(muscles):
