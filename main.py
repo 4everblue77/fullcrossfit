@@ -13,14 +13,24 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # --- Fetch Exercises by Muscle Group and Category ---
-def fetch_exercises(muscle_group, category):
-    response = supabase.table("md_exercises") \
-        .select("name") \
-        .in_("id", supabase.table("md_map_exercise_muscle_groups")
-             .select("exercise_id")
-             .eq("musclegroup_id", get_muscle_group_id(muscle_group))
-             .execute().data) \
+def fetch_exercises(muscle_group, category=None):
+    # Step 1: Get exercise IDs for the muscle group
+    muscle_group_id = get_muscle_group_id(muscle_group)
+    mapping_response = supabase.table("md_map_exercise_muscle_groups") \
+        .select("exercise_id") \
+        .eq("musclegroup_id", muscle_group_id) \
         .execute()
+
+    exercise_ids = [row["exercise_id"] for row in mapping_response.data]
+
+    # Step 2: Fetch exercise names using those IDs
+    query = supabase.table("md_exercises").select("name").in_("id", exercise_ids)
+
+    # Optional: Filter by category if provided
+    if category:
+        query = query.eq("category", category)
+
+    response = query.execute()
     return [row["name"] for row in response.data]
 
 # Helper: Get muscle group ID
