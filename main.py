@@ -1,14 +1,20 @@
 import psycopg2
 import random
+from dotenv import load_dotenv
+import os
 
-# --- Database Configuration ---
+# Load environment variables from .env file
+load_dotenv()
+
+# Database configuration from environment
 DB_CONFIG = {
-    'host': 'your-db-host.supabase.co',
-    'dbname': 'your-db-name',
-    'user': 'your-db-user',
-    'password': 'your-db-password',
-    'port': '5432'
+    'host': os.getenv('DB_HOST'),
+    'dbname': os.getenv('DB_NAME'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'port': os.getenv('DB_PORT', '5432')  # default to 5432
 }
+
 
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
