@@ -1,19 +1,24 @@
+from supabase import create_client
 from dotenv import load_dotenv
 import os
-import psycopg2
 
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv()
 
-try:
-    conn = psycopg2.connect(
-        host=os.getenv('SUPABASE_HOST'),
-        database=os.getenv('SUPABASE_DB'),
-        user=os.getenv('SUPABASE_USER'),
-        password=os.getenv('SUPABASE_PASSWORD'),
-        port=os.getenv('SUPABASE_PORT', 5432)
-    )
-    print("✅ Connection to Supabase PostgreSQL was successful.")
-    conn.close()
-except Exception as e:
-    print(f"❌ Connection failed: {e}")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    print("❌ Missing Supabase credentials. Check your .env file.")
+else:
+    try:
+        # Create Supabase client
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+        # Test query: fetch rows from 'skills' table
+        response = supabase.table("skills").select("*").limit(5).execute()
+
+        print("✅ Connection successful! Sample data:")
+        print(response.data)
+    except Exception as e:
+        print(f"❌ Connection failed: {e}")
