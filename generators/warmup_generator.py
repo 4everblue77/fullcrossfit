@@ -27,3 +27,4 @@ class WarmupGenerator:
             "details": "10-minute warmup split into general and specific components",
             "general": [{"exercise": ex, "duration": 30, "transition": 5} for ex in general_selected],
             "specific": [{"exercise": ex, "duration": 30, "transition": 5} for ex in specific_selected]
+        }
