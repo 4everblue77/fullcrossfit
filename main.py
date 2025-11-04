@@ -66,3 +66,4 @@ if st.button("Generate Warmup"):
         warmup = generate_warmup(selected_muscles)
         st.json(warmup)
     else:
+        st.warning("Please select at least one muscle group.")
