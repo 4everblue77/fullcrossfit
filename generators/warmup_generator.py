@@ -5,6 +5,7 @@ class WarmupGenerator:
         self.exercises = data["exercises"]
         self.muscle_groups = data["muscle_groups"]
         self.mappings = data["mappings"]
+        print(self)
 
     def generate(self, muscles):
         # Use self.exercises and self.mappings instead of Supabase calls
