@@ -11,7 +11,7 @@ class WarmupGenerator:
         # Use self.exercises and self.mappings instead of Supabase calls
         general_pool = [e["name"] for e in self.exercises]
         general_selected = random.sample(general_pool, min(8, len(general_pool)))
-
+        print(general_pool)
         specific_pool = []
         for muscle in muscles:
             mg_id = next((mg["id"] for mg in self.muscle_groups if mg["name"] == muscle), None)
