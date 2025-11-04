@@ -1,15 +1,28 @@
 from generators.warmup_generator import WarmupGenerator
+#from generators.heavy_generator import HeavyGenerator
+# ... other imports
 
 class PlanGenerator:
     def __init__(self, supabase):
         self.supabase = supabase
-        self.warmup_gen = WarmupGenerator(supabase)
-        # Future: add heavy_gen, light_gen, wod_gen, cooldown_gen
+        self.data = self._load_data()
+        self.warmup_gen = WarmupGenerator(self.data)
+        #self.heavy_gen = HeavyGenerator(self.data)
+        # ... other generators
+
+    def _load_data(self):
+        exercises = self.supabase.table("md_exercises").select("*").execute().data
+        muscle_groups = self.supabase.table("md_muscle_groups").select("*").execute().data
+        mappings = self.supabase.table("md_map_exercise_muscle_groups").select("*").execute().data
+        return {
+            "exercises": exercises,
+            "muscle_groups": muscle_groups,
+            "mappings": mappings
+        }
 
     def generate_daily_plan(self, muscles):
         return {
             "Warmup": self.warmup_gen.generate(muscles),
-            # "Heavy": self.heavy_gen.generate(...),
-            # "WOD": self.wod_gen.generate(...),
-            # "Cooldown": self.cooldown_gen.generate(...)
+            #"Heavy": self.heavy_gen.generate(muscles),
+            # Add WOD, Light, Cooldown
         }
