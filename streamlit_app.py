@@ -2,6 +2,11 @@ import streamlit as st
 from supabase import create_client
 from plan_generator import PlanGenerator
 
+
+import os
+st.write("Current working directory:", os.getcwd())
+
+
 # Connect to Supabase
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
