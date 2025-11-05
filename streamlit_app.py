@@ -22,7 +22,12 @@ selected_muscles = st.multiselect("Select muscle groups:", muscle_groups)
 if st.button("Generate Plan"):
     if selected_muscles:
         plan = plan_gen.generate_daily_plan(selected_muscles)
-        st.json(plan)
+        st.subheader("Generated Plan")
+        st.json(plan["session"])
+
+        st.subheader("Debug Info")
+        st.json(plan["debug"])
     else:
         st.warning("Please select at least one muscle group.")
+
 
