@@ -49,7 +49,7 @@ class WODGenerator:
     
         # If no match, fallback to all exercises in exercise_pool
         if not pool:
-            pool = [ex["exercise_name"] for ex in self.data["exercise_pool"]]
+            pool = [ex["exercise"] for ex in self.data["exercise_pool"]]
     
         return random.sample(pool, min(count, len(pool)))
 
