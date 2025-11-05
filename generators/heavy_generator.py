@@ -1,14 +1,14 @@
 import random
 import streamlit as st
 
-def debug_info(label, data):
-    st.text(f"{label}: {data}")
+
 
 
 EXERCISE_DURATION = 30  # seconds per rep estimate for time calculation
 TRANSITION_TIME = 5     # seconds between exercises
 
 class HeavyGenerator:
+        
     def __init__(self, data):
         """
         data: dict containing preloaded Supabase tables:
@@ -23,6 +23,9 @@ class HeavyGenerator:
         self.mappings = data["mappings"]
         self.categories = data["categories"]
         self.category_mappings = data["category_mappings"]
+
+    def debug_info(label, data):
+        st.text(f"{label}: {data}")
 
     def normalize_name(self, value):
         """Normalize name field to lowercase string."""
