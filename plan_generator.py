@@ -75,7 +75,11 @@ class PlanGenerator:
         run_session = self.run_gen.generate()
         wod_session = self.wod_gen.generate(target_muscle=muscles[0] if muscles else None, stimulus=stimulus)
         benchmark_session = self.benchmark_gen.generate()
-        light_session = self.light_gen.generate(target=muscles[0] if muscles else "Core")
+        
+        # If Olympic is in muscles, Light should target Core instead
+        light_target = "Core" if "Olympic" in muscles else (muscles[0] if muscles else "Core")
+        light_session = self.light_gen.generate(target=light_target)
+
         cooldown_session = self.cooldown_gen.generate(muscles)
 
         return {
