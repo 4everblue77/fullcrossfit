@@ -44,7 +44,14 @@ class SkillSessionGenerator:
             }
 
         raw_plan = session.get("session_plan", [])
+        
+        # If it's a string, split by comma and strip spaces
+        if isinstance(raw_plan, str):
+            raw_plan = [name.strip() for name in raw_plan.split(",")]
+        
+        # Convert to dict format
         raw_plan = [item if isinstance(item, dict) else {"name": item} for item in raw_plan]
+
 
         exercises = []
         for i, item in enumerate(raw_plan, start=1):
