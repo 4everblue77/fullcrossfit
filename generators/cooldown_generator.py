@@ -35,25 +35,40 @@ class CooldownGenerator:
         muscle_specific_pool = self.get_muscle_specific_cooldowns(muscles)
         general_pool = self.get_general_cooldowns()
 
-        num_muscle_ex = min(len(muscle_specific_pool), MAX_EXERCISES // 2)
-        num_general_ex = MAX_EXERCISES - num_muscle_ex
+        # Remove duplicates across pools
+        general_pool = [ex for ex in general_pool if ex["id"] not in {e["id"] for e in muscle_specific_pool}]
 
-        selected_muscle = random.sample(muscle_specific_pool, num_muscle_ex) if muscle_specific_pool else []
-        selected_general = random.sample(general_pool, num_general_ex) if general_pool else []
+        # Shuffle pools to randomize selection
+        random.shuffle(muscle_specific_pool)
+        random.shuffle(general_pool)
 
-        selected = selected_muscle + selected_general
-        random.shuffle(selected)
+        selected = []
+        used_ids = set()
 
-        # Annotate each exercise with whether it's muscle-focused
-        focused_ids = {ex["id"] for ex in selected_muscle}
+        # Select up to half from muscle-specific pool
+        for ex in muscle_specific_pool:
+            if len(selected) >= MAX_EXERCISES // 2:
+                break
+            if ex["id"] not in used_ids:
+                selected.append((ex, "Targeted"))
+                used_ids.add(ex["id"])
+
+        # Fill remaining slots from general pool
+        for ex in general_pool:
+            if len(selected) >= MAX_EXERCISES:
+                break
+            if ex["id"] not in used_ids:
+                selected.append((ex, "General"))
+                used_ids.add(ex["id"])
+
         cooldown_plan = [
             {
                 "exercise": ex["name"],
                 "duration": COOLDOWN_DURATION,
                 "transition": TRANSITION_TIME,
-                "focus": "Targeted" if ex["id"] in focused_ids else "General"
+                "focus": focus
             }
-            for ex in selected
+            for ex, focus in selected
         ]
 
         return {
