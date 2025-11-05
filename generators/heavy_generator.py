@@ -46,6 +46,14 @@ class HeavyGenerator:
     def get_exercises_by_muscle_and_type(self, muscle, category_name):
         """Return exercises matching both muscle group and category."""
         
+        print("DEBUG muscle:", muscle)
+        print("DEBUG mg names:", [self.normalize_name(mg["name"]) for mg in self.muscle_groups])
+        print("DEBUG category names:", [self.normalize_name(c["name"]) for c in self.categories])
+        print("DEBUG muscle_ex_ids:", muscle_ex_ids)
+        print("DEBUG category_ex_ids:", category_ex_ids)
+        print("DEBUG intersection:", exercise_ids)
+
+        
         
         mg_id = next(
             (
