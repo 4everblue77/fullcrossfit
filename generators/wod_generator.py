@@ -6,11 +6,11 @@ class WODGenerator:
         self.debug = debug
 
         self.rep_ranges = {
-            "Treadmill Run": (200, 400),
-            "Pull-ups": (4, 6), "Deadlifts (100/70kg)": (4, 6), "Ring Rows": (6, 8),
-            "Push-ups": (8, 12), "Bench Press (60/40kg)": (4, 6), "Burpees": (6, 8),
-            "Handstand Push-ups": (3, 5), "Push Press (50/35kg)": (6, 8), "Wall Balls (9/6kg)": (8, 10),
-            "Kettlebell Swings (24/16kg)": (8, 10), "Hip Thrusts (40/30kg)": (8, 10), "Box Step Overs (24/20\")": (6, 8),
+            "Treadmill Run": (200, 400), "Pull-ups": (4, 6), "Deadlifts (100/70kg)": (4, 6),
+            "Ring Rows": (6, 8), "Push-ups": (8, 12), "Bench Press (60/40kg)": (4, 6),
+            "Burpees": (6, 8), "Handstand Push-ups": (3, 5), "Push Press (50/35kg)": (6, 8),
+            "Wall Balls (9/6kg)": (8, 10), "Kettlebell Swings (24/16kg)": (8, 10),
+            "Hip Thrusts (40/30kg)": (8, 10), "Box Step Overs (24/20\")": (6, 8),
             "Front Squats (60/40kg)": (4, 6), "Air Squats": (12, 15), "Lunges": (8, 10),
             "Double Unders": (15, 25), "Sit-ups": (10, 15), "Single Unders": (20, 30),
             "V-Ups": (10, 15), "Hollow Rocks": (10, 15), "Superman Holds": (20, 30),
@@ -52,6 +52,9 @@ class WODGenerator:
         valid_ids = set(mapped_ex_ids + general_ex_ids)
         pool = [ex["name"] for ex in self.data["exercises"] if ex["id"] in valid_ids]
 
+        if not pool:
+            pool = [ex["name"] for ex in self.data["exercises"]]  # fallback to all exercises
+
         return random.sample(pool, min(count, len(pool)))
 
     def format_exercise(self, ex, reps):
@@ -85,6 +88,20 @@ class WODGenerator:
         name = self.generate_wod_name()
         duration = random.choice([12, 15, 20])
         exercises = self.select_exercises(target_muscle or "general", 2 if wod_type in ["EMOM", "Alternating EMOM"] else 3)
+
+        if not exercises:
+            return {
+                "WOD Name": "No WOD Generated",
+                "Type": "N/A",
+                "Estimated Time": "0 min",
+                "Description": "No exercises available for the selected muscle group.",
+                "Performance Targets": {},
+                "debug": {
+                    "muscle": target_muscle,
+                    "stimulus": stimulus,
+                    "selected_exercises": []
+                } if self.debug else {}
+            }
 
         description = f"{wod_type} for {duration} minutes\n"
         if wod_type == "AMRAP":
