@@ -1,9 +1,12 @@
 class SkillSessionGenerator:
-    def __init__(self, supabase):
+    def __init__(self, supabase,debug=False):
         """
         supabase: Supabase client instance
         """
+        self.data = data  # ✅ Store exercise dataset
         self.supabase = supabase
+        self.debug = debug
+
 
     def get_skill_id(self, skill_name):
         response = self.supabase.table("skills").select("skill_id").eq("skill_name", skill_name).execute()
