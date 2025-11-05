@@ -67,23 +67,35 @@ class LightGenerator:
                 "Reps": LIGHT_REPS
             })
     
-            # Add both exercises to the structured list
-            exercises.append({
-                "name": ex1,
-                "set": i,
-                "reps": LIGHT_REPS,
-                "intensity": "<60% 1RM",
-                "rest": 30,
-                "notes": f"Superset {i} - Primary ({target})"
-            })
-            exercises.append({
-                "name": ex2,
-                "set": i,
-                "reps": LIGHT_REPS,
-                "intensity": "<60% 1RM",
-                "rest": 30,
-                "notes": f"Superset {i} - Opposing ({opposing_group})"
-            })
+        ex_id1 = next((e["id"] for e in self.exercises if e["name"] == ex1), None)
+        ex_id2 = next((e["id"] for e in self.exercises if e["name"] == ex2), None)
+        
+        exercises.append({
+            "name": ex1,
+            "exercise_id": ex_id1,
+            "set": i,
+            "reps": LIGHT_REPS,
+            "intensity": "<60% 1RM",
+            "rest": 30,
+            "notes": f"Superset {i} - Primary ({target})",
+            "exercise_order": len(exercises) + 1,
+            "tempo": "2010",
+            "expected_weight": "",
+            "equipment": ""
+        })
+        exercises.append({
+            "name": ex2,
+            "exercise_id": ex_id2,
+            "set": i,
+            "reps": LIGHT_REPS,
+            "intensity": "<60% 1RM",
+            "rest": 30,
+            "notes": f"Superset {i} - Opposing ({opposing_group})",
+            "exercise_order": len(exercises) + 1,
+            "tempo": "2010",
+            "expected_weight": "",
+            "equipment": ""
+        })
     
         return {
             "type": "Light",
