@@ -190,12 +190,21 @@ class PlanGenerator:
                     # Insert exercises if present
                     if "exercises" in session_data and isinstance(session_data["exercises"], list):
                         for ex in session_data["exercises"]:
+                            exercise_id = next((e["id"] for e in self.data["exercises"] if e["name"] == ex["name"]), None)
                             self.supabase.table("plan_session_exercises").insert({
                                 "session_id": session_id,
-                                "exercise_name": ex.get("name", ""),
+                                "exercise_name": ex["name"],
+                                "exercise_id": exercise_id,
                                 "set_number": ex.get("set", 1),
                                 "reps": ex.get("reps", ""),
                                 "intensity": ex.get("intensity", ""),
                                 "rest": ex.get("rest", 0),
-                                "notes": ex.get("notes", "")
+                                "notes": ex.get("notes", ""),
+                                "exercise_order": i + 1,
+                                "completed": False,
+                                "actual_reps": "",
+                                "actual_weight": "",
+                                "tempo": ex.get("tempo", ""),
+                                "expected_weight": ex.get("expected_weight", ""),
+                                "equipment": ex.get("equipment", "")
                             }).execute()
