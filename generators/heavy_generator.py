@@ -62,71 +62,58 @@ class HeavyGenerator:
 
         return pool, debug_info
 
-    def generate(self, target, week=1):
+     def generate(self, target, week=1):
         if isinstance(target, list):
             target = target[0]
-
+    
         pool, debug_info = self.get_exercises_by_muscle_and_type(target, "Heavy")
-        exercise = random.choice(pool) if pool else "No exercise available"
-
+        exercise_name = random.choice(pool) if pool else "No exercise available"
+        exercise_id = next((e["id"] for e in self.exercises if e["name"] == exercise_name), None)
+    
         intensity_schedule = {
             1: [60, 65, 70],
             2: [65, 70, 75],
             3: [70, 75, 80],
             4: [75, 80, 85],
             5: [80, 85, 90],
-            6: [60, 65, 70]  # deload
+            6: [60, 65, 70]
         }
-
+    
         working_intensities = intensity_schedule.get(week, [65, 70, 75])
-        warmup_intensities = [
-            (0.5 * working_intensities[0], 8),
-            (0.7 * working_intensities[0], 6),
-            (0.85 * working_intensities[0], 3)
-        ]
-
         warmup_sets = [
-            {"set": i + 1, "type": "Warmup", "intensity": round(intensity, 1), "reps": reps, "rest": 60}
-            for i, (intensity, reps) in enumerate(warmup_intensities)
+            {"set": 1, "reps": 8, "intensity": round(0.5 * working_intensities[0], 1), "rest": 60, "notes": "Warmup"},
+            {"set": 2, "reps": 6, "intensity": round(0.7 * working_intensities[0], 1), "rest": 60, "notes": "Warmup"},
+            {"set": 3, "reps": 3, "intensity": round(0.85 * working_intensities[0], 1), "rest": 60, "notes": "Warmup"}
         ]
-
         working_sets = [
-            {"set": i + 1, "type": "Working", "intensity": intensity, "reps": 5, "rest": 180}
+            {"set": i + 1, "reps": 5, "intensity": intensity, "rest": 180, "notes": "Working"}
             for i, intensity in enumerate(working_intensities)
         ]
-
-        def estimate_set_time(reps, rest):
-            return (reps * 5 + rest) / 60  # convert to minutes
-
-        total_time = sum(estimate_set_time(s["reps"], s["rest"]) for s in warmup_sets + working_sets)
-        total_time = max(20, round(total_time))
-
-        
-        # Convert sets into unified exercise format
+    
         exercises = []
-        for s in warmup_sets + working_sets:
+        for i, s in enumerate(warmup_sets + working_sets):
             exercises.append({
-                "name": exercise,
+                "name": exercise_name,
+                "exercise_id": exercise_id,
                 "set": s["set"],
                 "reps": str(s["reps"]),
                 "intensity": f"{s['intensity']}%",
                 "rest": s["rest"],
-                "notes": s["type"]
+                "notes": s["notes"],
+                "tempo": "20X0",
+                "expected_weight": "",
+                "equipment": "Barbell",
+                "exercise_order": i + 1
             })
-
-
-        result = {
+    
+        return {
             "type": "Heavy",
             "target": target,
             "week": week,
-            "exercise": exercise,
-            "time": total_time,
-            "details": f"Progressive strength session for {target} using {exercise}",
+            "exercise": exercise_name,
+            "time": 20,
+            "details": f"Progressive strength session for {target} using {exercise_name}",
+            "exercises": exercises,
             "sets": warmup_sets + working_sets,
-            "exercises": exercises
+            "debug": debug_info if self.debug else {}
         }
-
-        if self.debug:
-            result["debug"] = debug_info
-
-        return result
