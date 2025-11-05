@@ -21,7 +21,7 @@ class PlanGenerator:
         self.olympic_gen = OlympicGenerator(self.data, debug=debug)
         self.run_gen = RunGenerator(user_5k_time=24, debug=debug)
         self.wod_gen = WODGenerator(self.data, debug=debug)
-        self.benchmark_gen = BenchmarkGenerator()
+        self.benchmark_gen = BenchmarkGenerator(supabase)
         # self.cooldown_gen = CooldownGenerator(self.data)
         # self.light_gen = LightGenerator(self.data)
 
@@ -33,8 +33,7 @@ class PlanGenerator:
             "mappings": self.supabase.table("md_map_exercise_muscle_groups").select("*").execute().data,
             "categories": self.supabase.table("md_categories").select("*").execute().data,
             "category_mappings": self.supabase.table("md_map_exercise_categories").select("*").execute().data,
-            "exercise_pool": self.supabase.table("exercise_pool").select("*").execute().data,
-            "benchmark_wods": self.supabase.table("benchmark_wods").select("*").execute()
+            "exercise_pool": self.supabase.table("exercise_pool").select("*").execute().data
         }
 
     def generate_daily_plan(self, muscles, stimulus="anaerobic"):
@@ -43,7 +42,7 @@ class PlanGenerator:
         olympic_session = self.olympic_gen.generate()
         run_session = self.run_gen.generate()
         wod_session = self.wod_gen.generate(target_muscle=muscles[0] if muscles else None,  stimulus=stimulus)
-        benchmark_wod = self._get_random_benchmark_wod()
+        benchmark_session = self.benchmark_gen.generate()
         
 
 
@@ -54,7 +53,7 @@ class PlanGenerator:
             "Olympic": olympic_session,
             "Run": run_session,  
             "WOD": wod_session,
-            "Benchmark": benchmark_wod,
+            "Benchmark": benchmark_session,
             "Debug": {
                 
 
