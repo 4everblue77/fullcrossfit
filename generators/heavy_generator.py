@@ -34,11 +34,29 @@ class HeavyGenerator:
         return str(value).lower()
 
 
+    def safe_normalize_compare(self, value, target):
+        try:
+            normalized = self.normalize_name(value)
+            return normalized == target.lower()
+        except Exception as e:
+            print(f"Normalization error for value: {value} — {e}")
+            return False
+
 
     def get_exercises_by_muscle_and_type(self, muscle, category_name):
         """Return exercises matching both muscle group and category."""
         print("DEBUG mg['name']:", mg["name"], "normalized:", self.normalize_name(mg["name"]))
-        mg_id = next((mg["id"] for mg in self.muscle_groups if self.normalize_name(mg["name"]) == muscle.lower()), None)
+        
+        mg_id = next(
+            (
+                mg["id"]
+                for mg in self.muscle_groups
+                if self.safe_normalize_compare(mg["name"], muscle)
+            ),
+            None
+        )
+
+        #mg_id = next((mg["id"] for mg in self.muscle_groups if self.normalize_name(mg["name"]) == muscle.lower()), None)
         if not mg_id:
             return []
 
