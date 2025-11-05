@@ -6,6 +6,7 @@ from generators.wod_generator import WODGenerator
 from generators.benchmark_generator import BenchmarkGenerator
 from generators.light_generator import LightGenerator
 from generators.cooldown_generator import CooldownGenerator
+from generators.skill_session_generator import SkillSessionGenerator
 
 
 
@@ -24,6 +25,7 @@ class PlanGenerator:
         self.benchmark_gen = BenchmarkGenerator(supabase)
         self.light_gen = LightGenerator(self.data)
         self.cooldown_gen = CooldownGenerator(self.data)
+        self.skill_gen = SkillSessionGenerator(supabase)
 
 
     def _load_data(self):
@@ -45,6 +47,7 @@ class PlanGenerator:
         wod_session = self.wod_gen.generate(target_muscle=muscles[0] if muscles else None,  stimulus=stimulus)
         benchmark_session = self.benchmark_gen.generate()
         light_session = self.light_gen.generate(target=muscles[0] if muscles else "Core")
+        skill_session = self.skill_gen.generate(skill_name="Handstand Push-Up", week=3)
         cooldown_session = self.cooldown_gen.generate(muscles)
 
 
