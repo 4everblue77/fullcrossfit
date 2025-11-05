@@ -2,7 +2,8 @@ import random
 
 class WODGenerator:
     def __init__(self, data, debug=False):
-        self.exercise_pool = data["exercise_pool"]  # Supabase table
+        self.exercise_pool = exercise_pool
+        self.muscle_groups = muscle_group
         self.debug = debug
 
     def get_combined_exercise_pool(self):
