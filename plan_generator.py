@@ -1,3 +1,4 @@
+import random
 
 from generators.warmup_generator import WarmupGenerator
 from generators.heavy_generator import HeavyGenerator
@@ -43,22 +44,20 @@ class PlanGenerator:
                 total += block["time"]
         return total
 
+
     def build_framework(self):
         framework = {}
-        for week in range(1, 13):
-            if week <= 6:
-                glutes_or_quads = "Glutes/Hamstrings" if week % 2 != 0 else "Quads"
-                chest_or_back = "Chest" if week % 2 != 0 else "Back"
-            else:
-                glutes_or_quads = "Quads" if week % 2 != 0 else "Glutes/Hamstrings"
-                chest_or_back = "Back" if week % 2 != 0 else "Chest"
-
-            mon_stim = "VO2 Max"
-            tue_stim = "Lactate Threshold"
-            wed_stim = "VO2 Max"
-            fri_stim = "VO2 Max"
+        for week in range(1, 7):  # Only 6 weeks now
+            glutes_or_quads = "Glutes/Hamstrings" if week % 2 != 0 else "Quads"
+            chest_or_back = "Chest" if week % 2 != 0 else "Back"
+    
+            # Randomly assign VO2 Max or Lactate Threshold
+            mon_stim = random.choice(["VO2 Max", "Lactate Threshold"])
+            tue_stim = random.choice(["VO2 Max", "Lactate Threshold"])
+            wed_stim = random.choice(["VO2 Max", "Lactate Threshold"])
+            fri_stim = random.choice(["VO2 Max", "Lactate Threshold"])
             sat_stim = "Girl/Hero" if week % 2 != 0 else "Anaerobic"
-
+    
             framework[week] = [
                 {"day": "Mon", "heavy": [glutes_or_quads], "wod": [chest_or_back], "stimulus": mon_stim, "light": ["Shoulders"], "olympic": False, "skill": False, "run": False},
                 {"day": "Tue", "heavy": [], "wod": ["Core"], "stimulus": tue_stim, "light": [], "olympic": True, "skill": True, "run": False},
@@ -66,9 +65,10 @@ class PlanGenerator:
                 {"day": "Thu", "heavy": [], "wod": [], "stimulus": None, "light": [], "olympic": False, "skill": False, "run": True},
                 {"day": "Fri", "heavy": [chest_or_back], "wod": ["Shoulders"], "stimulus": fri_stim, "light": [glutes_or_quads], "olympic": False, "skill": False, "run": False},
                 {"day": "Sat", "heavy": [], "wod": [], "stimulus": sat_stim, "light": [glutes_or_quads], "olympic": True, "skill": False, "run": False},
-                None
+                None  # Sunday rest
             ]
         return framework
+
 
     def generate_daily_plan(self, config, week_number):
         if config is None:
