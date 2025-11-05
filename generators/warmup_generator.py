@@ -45,45 +45,38 @@ class WarmupGenerator:
         return [e["name"] for e in self.exercises if e["id"] in exercise_ids]
 
     def generate(self, muscles):
-        # General warmup exercises
         general_pool = self.get_general_warmup()
-        general_selected = random.sample(general_pool, min(8, len(general_pool)))
-
-        # Specific warmup exercises
         specific_pool = []
         for muscle in muscles:
             specific_pool.extend(self.get_exercises_by_muscle(muscle))
+    
+        general_selected = random.sample(general_pool, min(8, len(general_pool)))
         specific_selected = random.sample(specific_pool, min(8, len(specific_pool)))
-
-# Combine general and specific into a unified exercises list
+    
+        # Combine and structure exercises
         combined_exercises = []
-
-        for i, ex in enumerate(general_selected):
-            combined_exercises.append({
-                "name": ex,
-                "set": 1,
-                "reps": f"{EXERCISE_DURATION} sec",
-                "intensity": "Low",
-                "rest": TRANSITION_TIME,
-                "notes": "General warmup"
-            })
-
-        for i, ex in enumerate(specific_selected):
-            combined_exercises.append({
-                "name": ex,
-                "set": 1,
-                "reps": f"{EXERCISE_DURATION} sec",
-                "intensity": "Moderate",
-                "rest": TRANSITION_TIME,
-                "notes": "Specific warmup"
-            })
-
+        all_selected = [("General", general_selected), ("Specific", specific_selected)]
+        order = 1
+    
+        for category, selected_list in all_selected:
+            for ex_name in selected_list:
+                ex_id = next((e["id"] for e in self.exercises if e["name"] == ex_name), None)
+                combined_exercises.append({
+                    "name": ex_name,
+                    "exercise_id": ex_id,
+                    "set": 1,
+                    "reps": f"{EXERCISE_DURATION} sec",
+                    "intensity": "Low" if category == "General" else "Moderate",
+                    "rest": TRANSITION_TIME,
+                    "notes": f"{category} warmup",
+                    "exercise_order": order
+                })
+                order += 1
+    
         return {
             "type": "Warmup",
             "muscles": muscles,
             "time": WARMUP_TIME,
             "details": "10-minute warmup split into general and specific components",
-            "general": [{"exercise": ex, "duration": EXERCISE_DURATION, "transition": TRANSITION_TIME} for ex in general_selected],
-            "specific": [{"exercise": ex, "duration": EXERCISE_DURATION, "transition": TRANSITION_TIME} for ex in specific_selected],
-            "exercises": combined_exercises  # ✅ This enables syncing
+            "exercises": combined_exercises
         }
