@@ -167,7 +167,7 @@ class WODGenerator:
             "WOD Name": name,
             "Type": wod_type,
             "Estimated Time": f"{duration} min",
-            "Description": description.strip(),
+            "Details": description.strip(),
             "Performance Targets": self.generate_targets(wod_type),
             "exercises": structured_exercises,  # ✅ Enables syncing
             "debug": {
