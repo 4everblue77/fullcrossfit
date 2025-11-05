@@ -36,7 +36,7 @@ class PlanGenerator:
             "Warmup": self.warmup_gen.generate(muscles),
 
             "Heavy": heavy_session,
-            "Debug": heavy_session.get("debug", {}) if self.debug else None
+            "Debug": heavy_session.get("debug", {}) if self.debug else {}
 
             # "WOD": self.wod_gen.generate(muscles),
             # "Light": self.light_gen.generate(muscles),
