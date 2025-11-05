@@ -69,17 +69,18 @@ if st.session_state.full_plan:
                 if day_data.get("Rest"):
                     rows.append([week_label, day_label, "Rest", "", "", "", ""])
                 else:
-                    for section, content in day_data["plan"].items():
-                        if section != "Debug":
-                            rows.append([
-                                week_label,
-                                day_label,
-                                section,
-                                ", ".join(day_data.get("muscles", [])),
-                                day_data.get("stimulus", ""),
-                                content.get("details", ""),
-                                content.get("time", "")
-                            ])
+                    if "plan" in day_data:
+                        for section, content in day_data["plan"].items():
+                            if section != "Debug" and isinstance(content, dict):  # ✅ Skip strings
+                                rows.append([
+                                    week_label,
+                                    day_label,
+                                    section,
+                                    ", ".join(day_data.get("muscles", [])),
+                                    day_data.get("stimulus", ""),
+                                    content.get("details", ""),
+                                    content.get("time", "")
+                                ])
         df = pd.DataFrame(rows, columns=["Week", "Day", "Type", "Target Muscles", "Stimulus", "Details", "Duration"])
         csv = df.to_csv(index=False)
         st.download_button("Download CSV", csv, "12_week_plan.csv", "text/csv")
