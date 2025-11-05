@@ -14,7 +14,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 plan_gen = PlanGenerator(supabase)
 
 st.title("Workout Plan Generator")
-
+debug_mode = st.checkbox("Enable Debug Mode")
 # Fetch muscle groups for selection
 muscle_groups = [mg["name"] for mg in supabase.table("md_muscle_groups").select("name").execute().data]
 selected_muscles = st.multiselect("Select muscle groups:", muscle_groups)
