@@ -13,15 +13,25 @@ class HeavyGenerator:
         self.mappings = data["mappings"]
 
     def get_exercises_by_muscle_and_type(self, muscle, category_name):
+        
+        def normalize_name(value):
+            if isinstance(value, list):
+                return value[0].lower()
+            if isinstance(value, dict):
+                return value.get("text", "").lower()
+            return str(value).lower()
+
         # Find muscle group ID
-        mg_id = next((mg["id"] for mg in self.muscle_groups if mg["name"].lower() == muscle.lower()), None)
+        mg_id = next((mg["id"] for mg in self.muscle_groups if normalize_name(mg["name"]) == muscle.lower()), None)
         if not mg_id:
             return []
+
     
         # Find category ID
-        cat_id = next((c["id"] for c in self.categories if c["name"].lower() == category_name.lower()), None)
+        cat_id = next((c["id"] for c in self.categories if normalize_name(c["name"]) == category_name.lower()), None)
         if not cat_id:
             return []
+
     
         # Get exercise IDs for muscle group
         muscle_ex_ids = {m["exercise_id"] for m in self.mappings if m["musclegroup_id"] == mg_id}
