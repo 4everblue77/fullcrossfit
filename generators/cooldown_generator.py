@@ -31,20 +31,20 @@ class CooldownGenerator:
         category_ex_ids = {m["exercise_id"] for m in self.category_mappings if m["category_id"] == self.cooldown_category_id}
         return [ex for ex in self.exercises if ex["id"] in category_ex_ids]
 
-    def generate(self, muscles):
+      def generate(self, muscles):
         muscle_specific_pool = self.get_muscle_specific_cooldowns(muscles)
         general_pool = self.get_general_cooldowns()
-
+    
         # Remove duplicates across pools
         general_pool = [ex for ex in general_pool if ex["id"] not in {e["id"] for e in muscle_specific_pool}]
-
+    
         # Shuffle pools to randomize selection
         random.shuffle(muscle_specific_pool)
         random.shuffle(general_pool)
-
+    
         selected = []
         used_ids = set()
-
+    
         # Select up to half from muscle-specific pool
         for ex in muscle_specific_pool:
             if len(selected) >= MAX_EXERCISES // 2:
@@ -52,7 +52,7 @@ class CooldownGenerator:
             if ex["id"] not in used_ids:
                 selected.append((ex, "Targeted"))
                 used_ids.add(ex["id"])
-
+    
         # Fill remaining slots from general pool
         for ex in general_pool:
             if len(selected) >= MAX_EXERCISES:
@@ -60,7 +60,7 @@ class CooldownGenerator:
             if ex["id"] not in used_ids:
                 selected.append((ex, "General"))
                 used_ids.add(ex["id"])
-
+    
         cooldown_plan = [
             {
                 "exercise": ex["name"],
@@ -70,11 +70,25 @@ class CooldownGenerator:
             }
             for ex, focus in selected
         ]
-
+    
+        # ✅ Structured exercises for Supabase syncing
+        exercises = [
+            {
+                "name": item["exercise"],
+                "set": i + 1,
+                "reps": f"{item['duration']} sec",
+                "intensity": "Recovery",
+                "rest": item["transition"],
+                "notes": f"{item['focus']} cooldown"
+            }
+            for i, item in enumerate(cooldown_plan)
+        ]
+    
         return {
             "type": "Cooldown",
             "muscles": muscles,
             "time": TOTAL_COOLDOWN_TIME,
             "details": f"10-minute cooldown targeting {', '.join(muscles)}",
-            "activities": cooldown_plan
+            "activities": cooldown_plan,
+            "exercises": exercises  # ✅ Enables syncing
         }
