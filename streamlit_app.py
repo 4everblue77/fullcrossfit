@@ -20,7 +20,7 @@ sync_to_supabase = st.checkbox("Sync Plan to Supabase")
 if "full_plan" not in st.session_state:
     st.session_state.full_plan = None
 
-if st.button("Generate 12-Week Plan"):
+if st.button("Generate 6-Week Plan"):
     st.session_state.full_plan = None  # Reset previous data
     full_plan = plan_gen.generate_full_plan()
     st.session_state.full_plan = full_plan
@@ -35,8 +35,10 @@ if st.button("Generate 12-Week Plan"):
 if st.session_state.full_plan:
     full_plan = st.session_state.full_plan
 
-    # Tabs for each week
-    week_tabs = st.tabs([f"Week {i}" for i in range(1, 13)])
+
+    # Tabs for each week (now 6 weeks)
+    week_tabs = st.tabs([f"Week {i}" for i in range(1, 7)])
+    
 
     for idx, (week_label, week_data) in enumerate(full_plan.items()):
         with week_tabs[idx]:
