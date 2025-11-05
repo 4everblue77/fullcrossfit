@@ -101,6 +101,20 @@ class HeavyGenerator:
         total_time = sum(estimate_set_time(s["reps"], s["rest"]) for s in warmup_sets + working_sets)
         total_time = max(20, round(total_time))
 
+        
+        # Convert sets into unified exercise format
+        exercises = []
+        for s in warmup_sets + working_sets:
+            exercises.append({
+                "name": exercise,
+                "set": s["set"],
+                "reps": str(s["reps"]),
+                "intensity": f"{s['intensity']}%",
+                "rest": s["rest"],
+                "notes": s["type"]
+            })
+
+
         result = {
             "type": "Heavy",
             "target": target,
@@ -108,7 +122,8 @@ class HeavyGenerator:
             "exercise": exercise,
             "time": total_time,
             "details": f"Progressive strength session for {target} using {exercise}",
-            "sets": warmup_sets + working_sets
+            "sets": warmup_sets + working_sets,
+            "exercises": exercises
         }
 
         if self.debug:
