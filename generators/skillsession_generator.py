@@ -1,12 +1,12 @@
 class SkillSessionGenerator:
-    def __init__(self, supabase,debug=False):
+    def __init__(self, data, supabase, debug=False):
         """
+        data: Dictionary containing exercises and other mappings
         supabase: Supabase client instance
         """
         self.data = data  # ✅ Store exercise dataset
         self.supabase = supabase
         self.debug = debug
-
 
     def get_skill_id(self, skill_name):
         response = self.supabase.table("skills").select("skill_id").eq("skill_name", skill_name).execute()
@@ -31,7 +31,7 @@ class SkillSessionGenerator:
                 "session": None,
                 "exercises": []
             }
-    
+
         session = self.get_session_plan(skill_id, week)
         if not session:
             return {
@@ -42,20 +42,17 @@ class SkillSessionGenerator:
                 "session": None,
                 "exercises": []
             }
-    
-        # Parse session_plan into structured exercises
-        # Assuming session["session_plan"] is a list of dicts like:
-        # [{"name": "Wall Walk", "sets": 3, "reps": "5", "rest": 60, "notes": "Strict form"}]
-        raw_plan = session.get("session_plan", [])
-        exercises = []
-        raw_plan = [item if isinstance(item, dict) else {"name": item} for item in raw_plan]
-        for i, item in enumerate(raw_plan, start=1):
-            
 
+        raw_plan = session.get("session_plan", [])
+        raw_plan = [item if isinstance(item, dict) else {"name": item} for item in raw_plan]
+
+        exercises = []
+        for i, item in enumerate(raw_plan, start=1):
+            name = item.get("name", f"Skill Move {i}")
             ex_id = next((e["id"] for e in self.data["exercises"] if e["name"] == name), None)
 
             exercises.append({
-                "name": item.get("name", f"Skill Move {i}"),
+                "name": name,
                 "exercise_id": ex_id,
                 "set": item.get("sets", 1),
                 "reps": item.get("reps", ""),
@@ -67,7 +64,7 @@ class SkillSessionGenerator:
                 "expected_weight": item.get("expected_weight", ""),
                 "equipment": item.get("equipment", "")
             })
-    
+
         return {
             "type": "Skill Session",
             "skill": skill_name,
@@ -75,5 +72,5 @@ class SkillSessionGenerator:
             "focus": session.get("focus", ""),
             "details": f"Week {week} skill session for {skill_name}",
             "session_plan": raw_plan,
-            "exercises": exercises  # ✅ Enables syncing
+            "exercises": exercises
         }
