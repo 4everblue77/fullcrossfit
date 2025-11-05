@@ -1,10 +1,11 @@
 import random
 
 class WODGenerator:
-    def __init__(self, data, debug=False):
-        self.exercise_pool = exercise_pool
-        self.muscle_groups = muscle_group
+    def __init__(self, data, debug=False)
+        self.data = data  # ✅ Store full data dictionary
+        self.exercise_pool = data["exercise_pool"]
         self.debug = debug
+
 
     def get_combined_exercise_pool(self):
         # ✅ Pull all exercises from exercise_pool
