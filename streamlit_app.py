@@ -43,22 +43,18 @@ if st.session_state.full_plan:
                     st.markdown(f"**Target Muscles:** {', '.join(day_data.get('muscles', []))}")
                     st.markdown(f"**Stimulus:** `{day_data.get('stimulus', 'N/A')}`")
                     st.markdown(f"**Estimated Time:** `{day_data.get('estimated_time', 'N/A')} min`")
-
-                    # Show each section
-                    if "plan" in day_data:
-                        for section, content in day_data["plan"].items():
-                            if section != "Debug":
-                                st.markdown(f"#### {section}")
-                                if isinstance(content, dict):
-                                    if "details" in content:
-                                        st.markdown(f"**Details:** {content['details']}")
-                                    st.json(content)
-                                else:
-                                    st.json(content)
-
-                    if debug_mode and "Debug" in day_data.get("plan", {}):
-                        st.markdown("**Debug Info**")
-                        st.json(day_data["plan"]["Debug"])
+                
+                    for section, content in day_data["plan"].items():
+                        if section != "Debug":
+                            st.markdown(f"### {section}")
+                            if isinstance(content, dict):
+                                if "details" in content:
+                                    st.markdown(f"**Details:** {content['details']}")
+                                st.json(content)
+                
+                                    if debug_mode and "Debug" in day_data.get("plan", {}):
+                                        st.markdown("**Debug Info**")
+                                        st.json(day_data["plan"]["Debug"])
 
     # Export to CSV
     if st.button("Export Plan to CSV"):
