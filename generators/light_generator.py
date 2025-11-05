@@ -53,21 +53,43 @@ class LightGenerator:
         primary_pool = self.get_light_exercises_by_muscle(target)
         opposing_group = self.opposing_map.get(target, target)
         opposing_pool = self.get_light_exercises_by_muscle(opposing_group)
-
+    
         supersets = []
-        for _ in range(3):
+        exercises = []
+    
+        for i in range(1, 4):  # 3 supersets
             ex1 = random.choice(primary_pool) if primary_pool else f"No match for {target}"
             ex2 = random.choice(opposing_pool) if opposing_pool else f"No match for {opposing_group}"
+    
             supersets.append({
                 "Superset": f"{ex1} + {ex2}",
                 "Sets": LIGHT_SETS,
                 "Reps": LIGHT_REPS
             })
-
+    
+            # Add both exercises to the structured list
+            exercises.append({
+                "name": ex1,
+                "set": i,
+                "reps": LIGHT_REPS,
+                "intensity": "<60% 1RM",
+                "rest": 30,
+                "notes": f"Superset {i} - Primary ({target})"
+            })
+            exercises.append({
+                "name": ex2,
+                "set": i,
+                "reps": LIGHT_REPS,
+                "intensity": "<60% 1RM",
+                "rest": 30,
+                "notes": f"Superset {i} - Opposing ({opposing_group})"
+            })
+    
         return {
             "type": "Light",
             "target": target,
             "time": LIGHT_TIME,
             "details": f"3 supersets targeting {target} with opposing muscle activation",
-            "supersets": supersets
+            "supersets": supersets,
+            "exercises": exercises  # ✅ Enables syncing
         }
