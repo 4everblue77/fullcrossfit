@@ -90,6 +90,11 @@ class WODGenerator:
         scaled = exercises
         while attempt < 5:
             total_time = sum(self._estimate_exercise_time(ex["details"]) for ex in scaled)
+            
+            # ✅ Prevent division by zero
+            if total_time == 0:
+                return {"exercises": scaled, "time": 0}
+
             if min_time <= total_time <= max_time:
                 return {"exercises": scaled, "time": round(total_time)}
             scale_factor = min((min_time if total_time < min_time else max_time) / total_time, 2.0)
