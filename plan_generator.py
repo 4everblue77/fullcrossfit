@@ -34,7 +34,7 @@ class PlanGenerator:
             "exercise_pool": self.supabase.table("exercise_pool").select("*").execute().data
         }
 
-    def generate_daily_plan(self, muscles):
+    def generate_daily_plan(self, muscles, stimulus="anaerobic"):
         """Build a daily plan using all generators."""
         heavy_session = self.heavy_gen.generate(muscles)
         olympic_session = self.olympic_gen.generate()
