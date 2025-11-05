@@ -4,10 +4,10 @@ from generators.olympic_generator import OlympicGenerator
 from generators.run_generator import RunGenerator
 from generators.wod_generator import WODGenerator
 from generators.benchmark_generator import BenchmarkGenerator
-
+from generators.light_generator import LightGenerator
 # Future imports:
 # from generators.cooldown_generator import CooldownGenerator
-# from generators.light_generator import LightGenerator
+
 
 class PlanGenerator:
     def __init__(self, supabase, debug=False):
@@ -22,6 +22,7 @@ class PlanGenerator:
         self.run_gen = RunGenerator(user_5k_time=24, debug=debug)
         self.wod_gen = WODGenerator(self.data, debug=debug)
         self.benchmark_gen = BenchmarkGenerator(supabase)
+        self.light_gen = LightGenerator(self.data)
         # self.cooldown_gen = CooldownGenerator(self.data)
         # self.light_gen = LightGenerator(self.data)
 
@@ -43,6 +44,7 @@ class PlanGenerator:
         run_session = self.run_gen.generate()
         wod_session = self.wod_gen.generate(target_muscle=muscles[0] if muscles else None,  stimulus=stimulus)
         benchmark_session = self.benchmark_gen.generate()
+        light_session = self.light_gen.generate(target=muscles[0] if muscles else "Core")
         
 
 
@@ -54,6 +56,7 @@ class PlanGenerator:
             "Run": run_session,  
             "WOD": wod_session,
             "Benchmark": benchmark_session,
+            "Light": light_session,
             "Debug": {
                 
 
