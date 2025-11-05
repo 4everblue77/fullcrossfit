@@ -1,4 +1,14 @@
 
+from generators.warmup_generator import WarmupGenerator
+from generators.heavy_generator import HeavyGenerator
+from generators.olympic_generator import OlympicGenerator
+from generators.run_generator import RunGenerator
+from generators.wod_generator import WODGenerator
+from generators.benchmark_generator import BenchmarkGenerator
+from generators.light_generator import LightGenerator
+from generators.cooldown_generator import CooldownGenerator
+from generators.skillsession_generator import SkillSessionGenerator
+
 class PlanGenerator:
     def __init__(self, supabase, debug=False):
         self.supabase = supabase
