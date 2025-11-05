@@ -24,7 +24,7 @@ class LightGenerator:
             "Chest": "Back",
             "Back": "Chest",
             "Quads": "Glutes/Hamstrings",
-            "Glutes_Hamstrings": "Quads",
+            "Glutes/Hamstrings": "Quads",
             "Shoulders": "Core",
             "Core": "Shoulders"
         }
