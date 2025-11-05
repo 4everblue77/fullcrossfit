@@ -27,7 +27,7 @@ class HeavyGenerator:
             value = value[0]
         if isinstance(value, dict):
             value = value.get("text", "")
-        return return str(value).lower().replace("_", "/").strip()
+        return str(value).lower().replace("_", "/").strip()
 
     def get_exercises_by_muscle_and_type(self, muscle, category_name):
         debug_info = {
