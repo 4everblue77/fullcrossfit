@@ -17,6 +17,7 @@ class HeavyGenerator:
         if not mg_id:
             return []
         exercise_ids = [m["exercise_id"] for m in self.mappings if m["musclegroup_id"] == mg_id]
+        print([e["name"] for e in self.exercises if e["id"] in exercise_ids])
         return [e["name"] for e in self.exercises if e["id"] in exercise_ids]
 
     def assign_exercise(self, target):
