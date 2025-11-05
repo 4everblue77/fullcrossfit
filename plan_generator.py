@@ -1,5 +1,6 @@
 from generators.warmup_generator import WarmupGenerator
 from generators.heavy_generator import HeavyGenerator
+from generators.olympic_generator import OlympicGenerator
 
 # Future imports:
 # from generators.cooldown_generator import CooldownGenerator
@@ -14,7 +15,8 @@ class PlanGenerator:
 
         # Initialize generators with preloaded data
         self.warmup_gen = WarmupGenerator(self.data)
-        self.heavy_gen = HeavyGenerator(self.data)
+        self.heavy_gen = HeavyGenerator(self.data, debug=debug)
+        self.olympic_gen = OlympicGenerator(self.data, debug=debug)
         # self.cooldown_gen = CooldownGenerator(self.data)
         # self.wod_gen = WODGenerator(self.data)
         # self.light_gen = LightGenerator(self.data)
@@ -32,11 +34,16 @@ class PlanGenerator:
     def generate_daily_plan(self, muscles):
         """Build a daily plan using all generators."""
         heavy_session = self.heavy_gen.generate(muscles)
+        olympic_session = self.olympic_gen.generate()
         return {
             "Warmup": self.warmup_gen.generate(muscles),
 
             "Heavy": heavy_session,
-            "Debug": heavy_session.get("debug", {}) if self.debug else {}
+            "Olympic": olympic_session,
+            "Debug": {
+                "Heavy": heavy_session.get("debug", {}),
+                "Olympic": olympic_session.get("debug", {})
+            } if self.debug else {}
 
             # "WOD": self.wod_gen.generate(muscles),
             # "Light": self.light_gen.generate(muscles),
