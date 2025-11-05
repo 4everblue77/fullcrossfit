@@ -14,6 +14,7 @@ plan_gen = PlanGenerator(supabase)
 st.title("12-Week CrossFit Plan Generator")
 
 debug_mode = st.checkbox("Enable Debug Mode")
+sync_to_supabase = st.checkbox("Sync Plan to Supabase")
 
 # Clear previous plan when button clicked
 if "full_plan" not in st.session_state:
@@ -23,6 +24,12 @@ if st.button("Generate 12-Week Plan"):
     st.session_state.full_plan = None  # Reset previous data
     full_plan = plan_gen.generate_full_plan()
     st.session_state.full_plan = full_plan
+
+
+    if sync_to_supabase:
+        plan_gen.sync_plan_to_supabase(full_plan)
+        st.success("Plan synced to Supabase!")
+
 
 # Display plan if available
 if st.session_state.full_plan:
