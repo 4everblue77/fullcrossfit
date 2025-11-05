@@ -25,7 +25,7 @@ class PlanGenerator:
         self.benchmark_gen = BenchmarkGenerator(supabase)
         self.light_gen = LightGenerator(self.data)
         self.cooldown_gen = CooldownGenerator(self.data)
-        self.skill_gen = SkillSessionGenerator(supabase)
+        self.skill_gen = SkillSessionGenerator(self.data, self.supabase, debug=self.debug)
 
     def _load_data(self):
         return {
