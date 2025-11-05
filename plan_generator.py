@@ -60,6 +60,7 @@ class PlanGenerator:
             "WOD": wod_session,
             "Benchmark": benchmark_session,
             "Light": light_session,
+            "Skill": skill_session,
             "Cooldown": cooldown_session,
             "Debug": {
                 
