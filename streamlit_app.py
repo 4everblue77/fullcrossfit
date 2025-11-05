@@ -20,14 +20,16 @@ muscle_groups = [mg["name"] for mg in supabase.table("md_muscle_groups").select(
 selected_muscles = st.multiselect("Select muscle groups:", muscle_groups)
 
 if st.button("Generate Plan"):
+
     if selected_muscles:
         plan = plan_gen.generate_daily_plan(selected_muscles)
-        st.subheader("Generated Plan")
-        st.json(plan["session"])
+        st.subheader("Workout Plan")
+        st.json(plan)
 
         st.subheader("Debug Info")
-        st.json(plan["debug"])
+        st.json(plan["Debug"])
     else:
         st.warning("Please select at least one muscle group.")
+
 
 
