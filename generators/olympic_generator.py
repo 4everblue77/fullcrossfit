@@ -55,12 +55,11 @@ class OlympicGenerator:
         if not pool:
             return {"error": "No Olympic exercises found", "debug": debug_info}
 
-        # Pick main lift and variations
+        # ✅ Pick ONE main lift for entire session
         main_lift = random.choice(pool)
-        variations = [e for e in pool if e["id"] != main_lift["id"]]
-
         intensity_range = self.INTENSITY_SCHEDULE.get(week, [65, 70])
 
+        # Warm-up sets (same lift, lighter intensity)
         warmup_sets = [
             {
                 "set": 1,
@@ -73,18 +72,19 @@ class OlympicGenerator:
             {
                 "set": 2,
                 "type": "Warmup",
-                "exercise": random.choice(variations)["name"] if variations else main_lift["name"],
+                "exercise": main_lift["name"],
                 "intensity": intensity_range[0] - 10,
                 "reps": 3,
                 "rest": 60
             }
         ]
 
+        # Working sets (same lift, progressive intensity)
         working_sets = [
             {
                 "set": i + 1,
                 "type": "Working",
-                "exercise": random.choice([main_lift] + variations)["name"],
+                "exercise": main_lift["name"],
                 "intensity": intensity,
                 "reps": 3,
                 "rest": 120
@@ -93,11 +93,7 @@ class OlympicGenerator:
         ]
 
         # Collect muscles
-        muscles = set()
-        for s in warmup_sets + working_sets:
-            ex_id = next((e["id"] for e in pool if e["name"] == s["exercise"]), None)
-            if ex_id:
-                muscles.update(self.get_muscles_for_exercise(ex_id))
+        muscles = set(self.get_muscles_for_exercise(main_lift["id"]))
 
         result = {
             "type": "Olympic",
