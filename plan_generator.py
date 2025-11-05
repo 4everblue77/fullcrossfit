@@ -168,7 +168,14 @@ class PlanGenerator:
                     for session_type, session_data in day_data["plan"].items():
                         if session_type == "Debug":
                             continue
-    
+                        
+                    if not isinstance(session_data, dict):
+                            continue  # Skip non-dict entries like "Total Time"
+                    
+                    if session_type in ["Debug", "Total Time", "Rest Day"]:
+                        continue
+
+
                         session_resp = self.supabase.table("plan_sessions").insert({
                             "day_id": day_id,
                             "type": session_type,
