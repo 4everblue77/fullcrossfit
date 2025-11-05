@@ -43,14 +43,14 @@ class WODGenerator:
     def select_exercises(self, target_muscle, count):
         # Filter from exercise_pool by muscle group if available
         pool = [
-            ex["name"] for ex in self.data["exercise_pool"]
+            ex["exercise"] for ex in self.data["exercise_pool"]
             if target_muscle.lower() in (ex.get("muscle_group", "").lower() or "")
         ]
-
-        # Fallback to all exercises if no match
+    
+        # If no match, fallback to all exercises in exercise_pool
         if not pool:
-            pool = [ex["name"] for ex in self.data["exercise_pool"]]
-
+            pool = [ex["exercise_name"] for ex in self.data["exercise_pool"]]
+    
         return random.sample(pool, min(count, len(pool)))
 
     def format_exercise(self, ex, reps):
