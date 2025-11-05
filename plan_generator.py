@@ -6,7 +6,7 @@ from generators.wod_generator import WODGenerator
 from generators.benchmark_generator import BenchmarkGenerator
 from generators.light_generator import LightGenerator
 from generators.cooldown_generator import CooldownGenerator
-from generators.skill_session_generator import SkillSessionGenerator
+from generators.skillsession_generator import SkillSessionGenerator
 
 
 
