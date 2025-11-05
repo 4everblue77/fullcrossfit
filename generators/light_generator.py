@@ -23,7 +23,7 @@ class LightGenerator:
         self.opposing_map = {
             "Chest": "Back",
             "Back": "Chest",
-            "Quads": "Glutes_Hamstrings",
+            "Quads": "Glutes/Hamstrings",
             "Glutes_Hamstrings": "Quads",
             "Shoulders": "Core",
             "Core": "Shoulders"
