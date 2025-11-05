@@ -1,6 +1,7 @@
 from generators.warmup_generator import WarmupGenerator
+from generators.heavy_generator import HeavyGenerator
+
 # Future imports:
-# from generators.heavy_generator import HeavyGenerator
 # from generators.cooldown_generator import CooldownGenerator
 # from generators.wod_generator import WODGenerator
 # from generators.light_generator import LightGenerator
