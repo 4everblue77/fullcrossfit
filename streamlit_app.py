@@ -31,14 +31,13 @@ if st.button("Generate Plan"):
 
 
     
-        st.subheader("Debug Raw Plan")
-        st.json(plan)
+        #st.subheader("Debug Raw Plan")
+        #st.json(plan)
         
-        st.subheader("Debug WOD Section")
-        st.json(plan.get("WOD", {}))
+        #st.subheader("Debug WOD Section")
+        #st.json(plan.get("WOD", {}))
         
-        st.subheader("Debug Info")
-        st.json(plan.get("Debug", {}))
+
 
 
 
