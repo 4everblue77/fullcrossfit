@@ -12,7 +12,7 @@ class PlanGenerator:
 
         # Initialize generators with preloaded data
         self.warmup_gen = WarmupGenerator(self.data)
-        # self.heavy_gen = HeavyGenerator(self.data)
+        self.heavy_gen = HeavyGenerator(self.data)
         # self.cooldown_gen = CooldownGenerator(self.data)
         # self.wod_gen = WODGenerator(self.data)
         # self.light_gen = LightGenerator(self.data)
@@ -31,7 +31,7 @@ class PlanGenerator:
         """Build a daily plan using all generators."""
         return {
             "Warmup": self.warmup_gen.generate(muscles),
-            # "Heavy": self.heavy_gen.generate(muscles),
+            "Heavy": self.heavy_gen.generate(muscles),
             # "WOD": self.wod_gen.generate(muscles),
             # "Light": self.light_gen.generate(muscles),
             # "Cooldown": self.cooldown_gen.generate(muscles)
