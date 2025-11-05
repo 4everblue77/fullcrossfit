@@ -79,19 +79,19 @@ class HeavyGenerator:
         pool = [e["name"] for e in self.exercises if e["id"] in exercise_ids]
 
 
-        debug_info("muscle", muscle)
-        debug_info("mg names", [self.normalize_name(mg["name"]) for mg in self.muscle_groups])
-        debug_info("category names", [self.normalize_name(c["name"]) for c in self.categories])
-        debug_info("muscle_ex_ids", muscle_ex_ids)
-        debug_info("category_ex_ids", category_ex_ids)
-        debug_info("intersection", exercise_ids)
+        debug_info.update({
+            "muscle_ex_ids": muscle_ex_ids,
+            "category_ex_ids": category_ex_ids,
+            "intersection": exercise_ids
+        })
+
 
 
 
         # Fallback if no match found
         if not pool:
             pool = [e["name"] for e in self.exercises]
-        return pool
+        return pool, debug_info
 
     def assign_exercise(self, target):
         pool = self.get_exercises_by_muscle_and_type(target, "Heavy")
