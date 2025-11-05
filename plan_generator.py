@@ -31,6 +31,7 @@ class PlanGenerator:
             "mappings": self.supabase.table("md_map_exercise_muscle_groups").select("*").execute().data,
             "categories": self.supabase.table("md_categories").select("*").execute().data,
             "category_mappings": self.supabase.table("md_map_exercise_categories").select("*").execute().data
+            "exercise_pool": self.supabase.table("exercise_pool").select("*").execute().data
         }
 
     def generate_daily_plan(self, muscles):
@@ -38,7 +39,7 @@ class PlanGenerator:
         heavy_session = self.heavy_gen.generate(muscles)
         olympic_session = self.olympic_gen.generate()
         run_session = self.run_gen.generate()
-        wod_session = self.wod_gen.generate(target_muscle=muscles[0] if muscles else None, stimulus="anaerobic")
+        wod_session = self.wod_gen.generate(target_muscle=muscles[0] if muscles else None,  stimulus=stimulus))
         
         return {
             "Warmup": self.warmup_gen.generate(muscles),
