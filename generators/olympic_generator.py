@@ -2,12 +2,12 @@ import random
 
 class OlympicGenerator:
     INTENSITY_SCHEDULE = {
-        1: [70, 75],
-        2: [75, 80],
-        3: [80, 85],
-        4: [85, 90],
-        5: [90, 95],  # Peak
-        6: [65, 70]   # Deload
+        1: [60, 65],
+        2: [65, 70],
+        3: [70, 75],
+        4: [75, 80],
+        5: [85, 90],
+        6: [60, 65]
     }
 
     def __init__(self, data, debug=False):
@@ -43,72 +43,51 @@ class OlympicGenerator:
     def get_muscles_for_exercise(self, exercise_id):
         muscle_ids = {m["musclegroup_id"] for m in self.mappings if m["exercise_id"] == exercise_id}
         return [mg["name"] for mg in self.muscle_groups if mg["id"] in muscle_ids]
-    
+
     def generate(self, week=1):
         pool, debug_info = self.get_olympic_exercises()
         if not pool:
             return {"error": "No Olympic exercises found", "debug": debug_info}
-    
+
         main_lift = random.choice(pool)
+        exercise_id = main_lift["id"]
         intensity_range = self.INTENSITY_SCHEDULE.get(week, [65, 70])
-    
+
         warmup_sets = [
-            {
-                "set": 1,
-                "type": "Warmup",
-                "exercise": main_lift["name"],
-                "intensity": intensity_range[0] - 20,
-                "reps": 5,
-                "rest": 60
-            },
-            {
-                "set": 2,
-                "type": "Warmup",
-                "exercise": main_lift["name"],
-                "intensity": intensity_range[0] - 10,
-                "reps": 3,
-                "rest": 60
-            }
+            {"set": 1, "reps": 5, "intensity": intensity_range[0] - 20, "rest": 60, "notes": "Warmup"},
+            {"set": 2, "reps": 3, "intensity": intensity_range[0] - 10, "rest": 60, "notes": "Warmup"}
         ]
-    
         working_sets = [
-            {
-                "set": i + 1,
-                "type": "Working",
-                "exercise": main_lift["name"],
-                "intensity": intensity,
-                "reps": 3,
-                "rest": 120
-            }
+            {"set": i + 1, "reps": 3, "intensity": intensity, "rest": 120, "notes": "Working"}
             for i, intensity in enumerate(intensity_range)
         ]
-    
-        muscles = set(self.get_muscles_for_exercise(main_lift["id"]))
-    
-        # ✅ Format for Supabase syncing
+
         exercises = []
-        for s in warmup_sets + working_sets:
+        for i, s in enumerate(warmup_sets + working_sets):
             exercises.append({
-                "name": s["exercise"],
+                "name": main_lift["name"],
+                "exercise_id": exercise_id,
                 "set": s["set"],
                 "reps": str(s["reps"]),
                 "intensity": f"{s['intensity']}%",
                 "rest": s["rest"],
-                "notes": s["type"]
+                "notes": s["notes"],
+                "tempo": "30X0",
+                "expected_weight": "",
+                "equipment": "Barbell",
+                "exercise_order": i + 1
             })
-    
-        result = {
+
+        muscles = set(self.get_muscles_for_exercise(exercise_id))
+
+        return {
             "type": "Olympic",
             "week": week,
             "exercise": main_lift["name"],
             "muscles": list(muscles),
             "time": 20,
             "details": f"Olympic lifting session focusing on {main_lift['name']}",
+            "exercises": exercises,
             "sets": warmup_sets + working_sets,
-            "exercises": exercises  # ✅ Enables syncing
+            "debug": debug_info if self.debug else {}
         }
-    
-        if self.debug:
-            result["debug"] = debug_info
-    
-        return result
