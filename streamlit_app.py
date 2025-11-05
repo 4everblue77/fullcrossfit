@@ -29,8 +29,6 @@ if st.button("Generate Plan"):
     if selected_muscles:
         plan = plan_gen.generate_daily_plan(selected_muscles, stimulus=selected_stimulus)
 
-        st.write("DEBUG: Plan keys:", list(plan.keys()))
-        st.write("DEBUG: WOD value:", plan.get("WOD"))
 
     
         st.subheader("Debug Raw Plan")
