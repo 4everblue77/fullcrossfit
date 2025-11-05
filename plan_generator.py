@@ -41,9 +41,7 @@ class PlanGenerator:
         run_session = self.run_gen.generate()
         wod_session = self.wod_gen.generate(target_muscle_id=muscles[0] if muscles else None,  stimulus=stimulus)
         
-        # Map muscle IDs to names for debug
-        id_to_name = {m["id"]: m["name"] for m in self.data["muscle_groups"]}
-        muscle_names = [id_to_name.get(m, f"Unknown ID {m}") for m in muscles]
+
 
         return {
             "Warmup": self.warmup_gen.generate(muscles),
@@ -54,8 +52,6 @@ class PlanGenerator:
             "WOD": wod_session,
             "Debug": {
                 
-                "Muscle IDs": muscles,
-                "Muscle Names": muscle_names,
 
                 "Heavy": heavy_session.get("debug", {}),
                 "Olympic": olympic_session.get("debug", {}),
