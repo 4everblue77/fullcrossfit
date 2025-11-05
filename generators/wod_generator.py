@@ -42,7 +42,7 @@ class WODGenerator:
 
     def select_exercises(self, target_muscle, count):
         muscle_ids = [mg["id"] for mg in self.data["muscle_groups"] if mg["name"].lower() == target_muscle.lower()]
-        mapped_ex_ids = [m["exercise_id"] for m in self.data["mappings"] if m["muscle_group_id"] in muscle_ids]
+        mapped_ex_ids = [m["exercise_id"] for m in self.data["mappings"] if m.get("musclegroup_id") in muscle_ids]
 
         general_ex_ids = [
             m["exercise_id"] for m in self.data["category_mappings"]
