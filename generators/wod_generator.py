@@ -174,4 +174,5 @@ class WODGenerator:
                 "selected_exercises": wod_exercises
             }
 
+        return result
     
