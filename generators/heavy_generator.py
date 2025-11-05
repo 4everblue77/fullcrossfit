@@ -97,12 +97,19 @@ class HeavyGenerator:
         pool = self.get_exercises_by_muscle_and_type(target, "Heavy")
         return random.choice(pool) if pool else "No exercise available"
 
-    def generate(self, target="Chest", week=1):
+    def generate(self, target, week=1):
         """
         Generate heavy session for a muscle group.
         target: muscle group name
         week: current week number (1-6 for intensity cycle)
         """
+
+        if isinstance(target, list):
+            target = target[0]
+    
+        pool, debug_info = self.get_exercises_by_muscle_and_type(target, "Heavy")
+
+        
         # Intensity progression schedule
         intensity_schedule = {
             1: [60, 65, 70],
@@ -146,5 +153,6 @@ class HeavyGenerator:
             "exercise": exercise,
             "time": total_time,
             "details": f"Progressive strength session for {target} using {exercise}",
-            "sets": warmup_sets + working_sets
+            "sets": warmup_sets + working_sets,
+            "debug": debug_info  # ✅ Add debug info here
         }
