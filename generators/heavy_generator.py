@@ -1,5 +1,8 @@
 import random
 
+EXERCISE_DURATION = 30  # seconds per rep estimate for time calculation
+TRANSITION_TIME = 5     # seconds between exercises
+
 class HeavyGenerator:
     def __init__(self, data):
         """
@@ -7,55 +10,52 @@ class HeavyGenerator:
             - exercises
             - muscle_groups
             - mappings (exercise-muscle)
+            - categories
+            - category_mappings (exercise-category)
         """
         self.exercises = data["exercises"]
         self.muscle_groups = data["muscle_groups"]
         self.mappings = data["mappings"]
+        self.categories = data["categories"]
+        self.category_mappings = data["category_mappings"]
+
+    def normalize_name(self, value):
+        """Normalize name field to lowercase string."""
+        if isinstance(value, list):
+            return value[0].lower()
+        if isinstance(value, dict):
+            return value.get("text", "").lower()
+        return str(value).lower()
 
     def get_exercises_by_muscle_and_type(self, muscle, category_name):
-        
-        def normalize_name(value):
-            if isinstance(value, list):
-                return value[0].lower()
-            if isinstance(value, dict):
-                return value.get("text", "").lower()
-            return str(value).lower()
-
-        # Find muscle group ID
-        mg_id = next((mg["id"] for mg in self.muscle_groups if normalize_name(mg["name"]) == muscle.lower()), None)
+        """Return exercises matching both muscle group and category."""
+        mg_id = next((mg["id"] for mg in self.muscle_groups if self.normalize_name(mg["name"]) == muscle.lower()), None)
         if not mg_id:
             return []
 
-    
-        # Find category ID
-        cat_id = next((c["id"] for c in self.categories if normalize_name(c["name"]) == category_name.lower()), None)
+        cat_id = next((c["id"] for c in self.categories if self.normalize_name(c["name"]) == category_name.lower()), None)
         if not cat_id:
             return []
 
-    
-        # Get exercise IDs for muscle group
         muscle_ex_ids = {m["exercise_id"] for m in self.mappings if m["musclegroup_id"] == mg_id}
-    
-        # Get exercise IDs for category
         category_ex_ids = {m["exercise_id"] for m in self.category_mappings if m["category_id"] == cat_id}
-    
-        # Intersection of both sets
+
         exercise_ids = muscle_ex_ids.intersection(category_ex_ids)
-    
-        # Return exercise names
         pool = [e["name"] for e in self.exercises if e["id"] in exercise_ids]
+
+        # Fallback if no match found
         if not pool:
-            pool = [e["name"] for e in self.exercises]  # fallback
+            pool = [e["name"] for e in self.exercises]
         return pool
 
     def assign_exercise(self, target):
         pool = self.get_exercises_by_muscle_and_type(target, "Heavy")
-        print(pool)
         return random.choice(pool) if pool else "No exercise available"
 
-    def generate(self, target, week=1):
+    def generate(self, target, week):
         """
-        target: muscle group or 'Olympic'
+        Generate heavy session for a muscle group.
+        target: muscle group name
         week: current week number (1-6 for intensity cycle)
         """
         # Intensity progression schedule
@@ -87,18 +87,19 @@ class HeavyGenerator:
 
         exercise = self.assign_exercise(target)
 
-        # Estimate total time
+        # Estimate total time (add buffer for transitions)
         def estimate_set_time(reps, rest):
             return (reps * 5 + rest) / 60  # convert to minutes
 
         total_time = sum(estimate_set_time(s["reps"], s["rest"]) for s in warmup_sets + working_sets)
+        total_time = max(20, round(total_time))  # Ensure minimum 20 min session
 
         return {
             "type": "Heavy",
             "target": target,
             "week": week,
             "exercise": exercise,
-            "time": round(total_time),
+            "time": total_time,
             "details": f"Progressive strength session for {target} using {exercise}",
             "sets": warmup_sets + working_sets
         }
