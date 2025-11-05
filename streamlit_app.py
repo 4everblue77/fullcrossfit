@@ -52,9 +52,6 @@ if st.session_state.full_plan:
                                     st.markdown(f"**Details:** {content['details']}")
                                 st.json(content)
                 
-                                    if debug_mode and "Debug" in day_data.get("plan", {}):
-                                        st.markdown("**Debug Info**")
-                                        st.json(day_data["plan"]["Debug"])
 
     # Export to CSV
     if st.button("Export Plan to CSV"):
