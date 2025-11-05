@@ -55,11 +55,35 @@ class WarmupGenerator:
             specific_pool.extend(self.get_exercises_by_muscle(muscle))
         specific_selected = random.sample(specific_pool, min(8, len(specific_pool)))
 
+# Combine general and specific into a unified exercises list
+        combined_exercises = []
+
+        for i, ex in enumerate(general_selected):
+            combined_exercises.append({
+                "name": ex,
+                "set": 1,
+                "reps": f"{EXERCISE_DURATION} sec",
+                "intensity": "Low",
+                "rest": TRANSITION_TIME,
+                "notes": "General warmup"
+            })
+
+        for i, ex in enumerate(specific_selected):
+            combined_exercises.append({
+                "name": ex,
+                "set": 1,
+                "reps": f"{EXERCISE_DURATION} sec",
+                "intensity": "Moderate",
+                "rest": TRANSITION_TIME,
+                "notes": "Specific warmup"
+            })
+
         return {
             "type": "Warmup",
             "muscles": muscles,
             "time": WARMUP_TIME,
             "details": "10-minute warmup split into general and specific components",
             "general": [{"exercise": ex, "duration": EXERCISE_DURATION, "transition": TRANSITION_TIME} for ex in general_selected],
-            "specific": [{"exercise": ex, "duration": EXERCISE_DURATION, "transition": TRANSITION_TIME} for ex in specific_selected]
+            "specific": [{"exercise": ex, "duration": EXERCISE_DURATION, "transition": TRANSITION_TIME} for ex in specific_selected],
+            "exercises": combined_exercises  # ✅ This enables syncing
         }
