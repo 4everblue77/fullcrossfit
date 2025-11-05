@@ -69,64 +69,72 @@ class PlanGenerator:
             ]
         return framework
 
-    def generate_daily_plan(self, muscles, stimulus="anaerobic"):
-        heavy_session = self.heavy_gen.generate(muscles)
-        olympic_session = self.olympic_gen.generate()
-        run_session = self.run_gen.generate()
-        wod_session = self.wod_gen.generate(target_muscle=muscles[0] if muscles else None, stimulus=stimulus)
-        benchmark_session = self.benchmark_gen.generate()
-        
-        # If Olympic is in muscles, Light should target Core instead
-        light_target = "Core" if "Olympic" in muscles else (muscles[0] if muscles else "Core")
-        light_session = self.light_gen.generate(target=light_target)
-
-        cooldown_session = self.cooldown_gen.generate(muscles)
-
-        return {
-            "Warmup": self.warmup_gen.generate(muscles),
-            "Heavy": heavy_session,
-            "Olympic": olympic_session,
-            "Run": run_session,
-            "WOD": wod_session,
-            "Benchmark": benchmark_session,
-            "Light": light_session,
-            "Cooldown": cooldown_session,
-            "Debug": {
-                "Heavy": heavy_session.get("debug", {}),
-                "Olympic": olympic_session.get("debug", {}),
-                "Run": run_session.get("debug", {}),
-                "WOD": wod_session.get("debug", {}),
-                "Benchmark": benchmark_session if self.debug else {},
-                "Light": light_session if self.debug else {},
-                "Cooldown": cooldown_session if self.debug else {}
-            } if self.debug else {}
-        }
+    def generate_daily_plan(self, muscles, stimulus="anaerobic", day_type=None):
+        """
+        day_type: str or None (e.g., 'Run', 'Olympic', 'Skill/Weakness')
+        """
+        plan = {}
+    
+        # Always include Warmup
+        plan["Warmup"] = self.warmup_gen.generate(muscles)
+    
+        # Heavy only if day_type is not Run or Olympic
+        if day_type not in ["Run", "Olympic", "Skill/Weakness"]:
+            plan["Heavy"] = self.heavy_gen.generate(muscles)
+    
+        # Olympic only if day_type == 'Olympic'
+        if day_type == "Olympic":
+            plan["Olympic"] = self.olympic_gen.generate()
+    
+        # Run only if day_type == 'Run'
+        if day_type == "Run":
+            plan["Run"] = self.run_gen.generate()
+    
+        # WOD only if stimulus is Girl/Hero or Anaerobic
+        if stimulus in ["Girl/Hero", "Anaerobic"]:
+            plan["WOD"] = self.wod_gen.generate(target_muscle=muscles[0] if muscles else None, stimulus=stimulus)
+    
+        # Benchmark WOD only on Saturday or special stimulus
+        if stimulus == "Girl/Hero":
+            plan["Benchmark"] = self.benchmark_gen.generate()
+    
+        # Light session: Core if Olympic day, else first muscle
+        light_target = "Core" if day_type == "Olympic" else (muscles[0] if muscles else "Core")
+        plan["Light"] = self.light_gen.generate(target=light_target)
+    
+        # Always include Cooldown
+        plan["Cooldown"] = self.cooldown_gen.generate(muscles)
+    
+        # Debug info
+        if self.debug:
+            plan["Debug"] = {k: v.get("debug", {}) for k, v in plan.items() if isinstance(v, dict)}
+    
+        return plan
 
     def generate_full_plan(self):
         framework = self.build_framework()
         full_plan = {}
-
+    
         for week, days in framework.items():
             full_plan[f"Week {week}"] = {}
             for day_index, day_targets in enumerate(days, start=1):
                 day_key = f"Day {day_index}"
-
+    
                 if day_targets is None:
-                    full_plan[f"Week {week}"][day_key] = {
-                        "Rest": True,
-                        "details": "Rest day"
-                    }
+                    full_plan[f"Week {week}"][day_key] = {"Rest": True, "details": "Rest day"}
                     continue
-
+    
                 muscles = [m for m in day_targets[:3] if m and m != "Any"]
                 stimulus = day_targets[3]
-
-                daily_plan = self.generate_daily_plan(muscles=muscles, stimulus=stimulus)
+                day_type = day_targets[0]  # First element indicates primary focus (Run/Olympic/etc.)
+    
+                daily_plan = self.generate_daily_plan(muscles=muscles, stimulus=stimulus, day_type=day_type)
                 full_plan[f"Week {week}"][day_key] = {
                     "muscles": muscles,
                     "stimulus": stimulus,
+                    "day_type": day_type,
                     "plan": daily_plan,
                     "estimated_time": self._estimate_total_time(daily_plan)
                 }
-
+    
         return full_plan
