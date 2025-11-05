@@ -94,7 +94,7 @@ class HeavyGenerator:
         total_time = sum(estimate_set_time(s["reps"], s["rest"]) for s in warmup_sets + working_sets)
         total_time = max(20, round(total_time))  # Ensure minimum 20 min session
 
-        return {
+        return { "list": pool,
             "type": "Heavy",
             "target": target,
             "week": week,
