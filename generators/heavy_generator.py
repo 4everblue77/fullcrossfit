@@ -22,10 +22,13 @@ class HeavyGenerator:
     def normalize_name(self, value):
         """Normalize name field to lowercase string."""
         if isinstance(value, list):
-            return value[0].lower()
+            value = value[0]  # unwrap first item
+    
         if isinstance(value, dict):
-            return value.get("text", "").lower()
+            value = value.get("text", "")
+    
         return str(value).lower()
+
 
     def get_exercises_by_muscle_and_type(self, muscle, category_name):
         """Return exercises matching both muscle group and category."""
