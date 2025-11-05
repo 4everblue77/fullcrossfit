@@ -62,7 +62,7 @@ class HeavyGenerator:
 
         return pool, debug_info
 
-     def generate(self, target, week=1):
+    def generate(self, target, week=1):
         if isinstance(target, list):
             target = target[0]
     
