@@ -47,10 +47,10 @@ class PlanGenerator:
         framework = {}
         for week in range(1, 13):
             if week <= 6:
-                glutes_or_quads = "Glutes_Hamstrings" if week % 2 != 0 else "Quads"
+                glutes_or_quads = "Glutes/Hamstrings" if week % 2 != 0 else "Quads"
                 chest_or_back = "Chest" if week % 2 != 0 else "Back"
             else:
-                glutes_or_quads = "Quads" if week % 2 != 0 else "Glutes_Hamstrings"
+                glutes_or_quads = "Quads" if week % 2 != 0 else "Glutes/Hamstrings"
                 chest_or_back = "Back" if week % 2 != 0 else "Chest"
 
             mon_stim = "VO2 Max"
