@@ -134,10 +134,18 @@ class PlanGenerator:
             full_plan[f"Week {week}"] = {}
             for day_config in days:
                 if day_config is None:
-                    full_plan[f"Week {week}"][day_config] = {"Rest": True, "details": "Rest day"}
+                    full_plan[f"Week {week}"]["Rest"] = {"Rest": True, "details": "Rest day"}
                     continue
     
                 daily_plan = self.generate_daily_plan(day_config, week)
-                full_plan[f"Week {week}"][day_config["day"]] = daily_plan
+                muscles = list(set(day_config["heavy"] + day_config["wod"] + day_config["light"]))
+                estimated_time = self._estimate_total_time(daily_plan)
+    
+                full_plan[f"Week {week}"][day_config["day"]] = {
+                    "muscles": muscles,
+                    "stimulus": day_config["stimulus"],
+                    "estimated_time": estimated_time,
+                    "plan": daily_plan
+                }
     
         return full_plan
