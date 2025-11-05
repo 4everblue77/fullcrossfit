@@ -2,18 +2,12 @@ import random
 
 class OlympicGenerator:
     INTENSITY_SCHEDULE = {
-        1: [60, 65],
-        2: [65, 70],
-        3: [70, 75],
-        4: [75, 80],
-        5: [85, 90],  # Peak
-        6: [60, 65],  # Deload
-        7: [70, 75],
-        8: [75, 80],
-        9: [80, 85],
-        10: [85, 90],
-        11: [90, 95],  # Peak
-        12: [65, 70]   # Deload
+        1: [70, 75],
+        2: [75, 80],
+        3: [80, 85],
+        4: [85, 90],
+        5: [90, 95],  # Peak
+        6: [65, 70]   # Deload
     }
 
     def __init__(self, data, debug=False):
