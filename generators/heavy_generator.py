@@ -74,13 +74,13 @@ class HeavyGenerator:
         exercise_ids = muscle_ex_ids.intersection(category_ex_ids)
         pool = [e["name"] for e in self.exercises if e["id"] in exercise_ids]
 
-
-        st.write("DEBUG muscle:", muscle)
-        st.write("DEBUG mg names:", [self.normalize_name(mg["name"]) for mg in self.muscle_groups])
-        st.write("DEBUG category names:", [self.normalize_name(c["name"]) for c in self.categories])
-        st.write("DEBUG muscle_ex_ids:", muscle_ex_ids)
-        st.write("DEBUG category_ex_ids:", category_ex_ids)
-        st.write("DEBUG intersection:", exercise_ids)
+        with st.sidebar:
+            st.write("DEBUG muscle:", muscle)
+            st.write("DEBUG mg names:", [self.normalize_name(mg["name"]) for mg in self.muscle_groups])
+            st.write("DEBUG category names:", [self.normalize_name(c["name"]) for c in self.categories])
+            st.write("DEBUG muscle_ex_ids:", muscle_ex_ids)
+            st.write("DEBUG category_ex_ids:", category_ex_ids)
+            st.write("DEBUG intersection:", exercise_ids)
 
 
         # Fallback if no match found
