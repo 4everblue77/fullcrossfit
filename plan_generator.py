@@ -5,8 +5,8 @@ from generators.run_generator import RunGenerator
 from generators.wod_generator import WODGenerator
 from generators.benchmark_generator import BenchmarkGenerator
 from generators.light_generator import LightGenerator
-# Future imports:
-# from generators.cooldown_generator import CooldownGenerator
+from generators.cooldown_generator import CooldownGenerator
+
 
 
 class PlanGenerator:
@@ -23,8 +23,8 @@ class PlanGenerator:
         self.wod_gen = WODGenerator(self.data, debug=debug)
         self.benchmark_gen = BenchmarkGenerator(supabase)
         self.light_gen = LightGenerator(self.data)
-        # self.cooldown_gen = CooldownGenerator(self.data)
-        # self.light_gen = LightGenerator(self.data)
+        self.cooldown_gen = CooldownGenerator(self.data)
+
 
     def _load_data(self):
         """Fetch all required tables from Supabase once."""
@@ -45,7 +45,7 @@ class PlanGenerator:
         wod_session = self.wod_gen.generate(target_muscle=muscles[0] if muscles else None,  stimulus=stimulus)
         benchmark_session = self.benchmark_gen.generate()
         light_session = self.light_gen.generate(target=muscles[0] if muscles else "Core")
-        
+        cooldown_session = self.cooldown_gen.generate(muscles)
 
 
         return {
@@ -57,6 +57,7 @@ class PlanGenerator:
             "WOD": wod_session,
             "Benchmark": benchmark_session,
             "Light": light_session,
+            "Cooldown": cooldown_session,
             "Debug": {
                 
 
