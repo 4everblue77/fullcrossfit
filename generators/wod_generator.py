@@ -150,15 +150,21 @@ class WODGenerator:
         
         # Build structured exercise list for syncing
         structured_exercises = []
-        for ex in exercises:
+        for i, ex in enumerate(exercises):
             reps = random.randint(*self.rep_ranges.get(ex, (10, 15)))
+            ex_id = next((e["id"] for e in self.data["exercises"] if e["name"] == ex), None)
             structured_exercises.append({
                 "name": ex,
+                "exercise_id": ex_id,
                 "set": 1,
                 "reps": str(reps),
                 "intensity": "High",
                 "rest": 30,
-                "notes": f"{wod_type} format"
+                "notes": f"{wod_type} format",
+                "exercise_order": i + 1,
+                "tempo": "",
+                "expected_weight": "",
+                "equipment": "",
             })
 
 
