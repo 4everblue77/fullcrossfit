@@ -3,6 +3,7 @@ from generators.heavy_generator import HeavyGenerator
 from generators.olympic_generator import OlympicGenerator
 from generators.run_generator import RunGenerator
 from generators.wod_generator import WODGenerator
+from generators.benchmark_generator import BenchmarkGenerator
 
 # Future imports:
 # from generators.cooldown_generator import CooldownGenerator
@@ -20,6 +21,7 @@ class PlanGenerator:
         self.olympic_gen = OlympicGenerator(self.data, debug=debug)
         self.run_gen = RunGenerator(user_5k_time=24, debug=debug)
         self.wod_gen = WODGenerator(self.data, debug=debug)
+        self.benchmark_gen = BenchmarkGenerator()
         # self.cooldown_gen = CooldownGenerator(self.data)
         # self.light_gen = LightGenerator(self.data)
 
@@ -31,7 +33,8 @@ class PlanGenerator:
             "mappings": self.supabase.table("md_map_exercise_muscle_groups").select("*").execute().data,
             "categories": self.supabase.table("md_categories").select("*").execute().data,
             "category_mappings": self.supabase.table("md_map_exercise_categories").select("*").execute().data,
-            "exercise_pool": self.supabase.table("exercise_pool").select("*").execute().data
+            "exercise_pool": self.supabase.table("exercise_pool").select("*").execute().data,
+            "benchmark_wods": self.supabase.table("benchmark_wods").select("*").execute()
         }
 
     def generate_daily_plan(self, muscles, stimulus="anaerobic"):
@@ -40,6 +43,7 @@ class PlanGenerator:
         olympic_session = self.olympic_gen.generate()
         run_session = self.run_gen.generate()
         wod_session = self.wod_gen.generate(target_muscle=muscles[0] if muscles else None,  stimulus=stimulus)
+        benchmark_wod = self._get_random_benchmark_wod()
         
 
 
@@ -50,13 +54,15 @@ class PlanGenerator:
             "Olympic": olympic_session,
             "Run": run_session,  
             "WOD": wod_session,
+            "Benchmark": benchmark_wod,
             "Debug": {
                 
 
                 "Heavy": heavy_session.get("debug", {}),
                 "Olympic": olympic_session.get("debug", {}),
                 "Run": run_session.get("debug", {}),
-                "WOD": wod_session.get("debug", {})
+                "WOD": wod_session.get("debug", {}),
+                "Benchmark": benchmark_wod if self.debug else {}
             } if self.debug else {}
 
             # "WOD": self.wod_gen.generate(muscles),
