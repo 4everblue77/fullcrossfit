@@ -142,13 +142,14 @@ class PlanGenerator:
         return full_plan
     
     def sync_plan_to_supabase(self, full_plan):
-        # Clear previous plan safely
+        # Clear previous plan safely (requires WHERE clause)
         self.supabase.table("plan_session_exercises").delete().gt("id", 0).execute()
         self.supabase.table("plan_sessions").delete().gt("id", 0).execute()
         self.supabase.table("plan_days").delete().gt("id", 0).execute()
         self.supabase.table("plan_weeks").delete().gt("id", 0).execute()
     
         for week_number, (week_label, week_data) in enumerate(full_plan.items(), start=1):
+            # Insert week
             week_resp = self.supabase.table("plan_weeks").insert({
                 "number": week_number,
                 "notes": week_label
@@ -156,6 +157,7 @@ class PlanGenerator:
             week_id = week_resp.data[0]["id"]
     
             for day_number, (day_label, day_data) in enumerate(week_data.items(), start=1):
+                # Insert day
                 day_resp = self.supabase.table("plan_days").insert({
                     "week_id": week_id,
                     "day_number": day_number,
@@ -164,34 +166,36 @@ class PlanGenerator:
                 }).execute()
                 day_id = day_resp.data[0]["id"]
     
-                if not day_data.get("Rest") and "plan" in day_data:
-                    for session_type, session_data in day_data["plan"].items():
-                        if session_type in ["Debug", "Total Time", "Rest Day"]:
-                            continue
-                        
-                    if not isinstance(session_data, dict):
-                            continue  # Skip non-dict entries like "Total Time"
-                    
-
-
-
-                        session_resp = self.supabase.table("plan_sessions").insert({
-                            "day_id": day_id,
-                            "type": session_type,
-                            "target_muscle": ", ".join(day_data.get("muscles", [])),
-                            "duration": session_data.get("time", 0),
-                            "details": session_data.get("details", "")
-                        }).execute()
-                        session_id = session_resp.data[0]["id"]
+                # Skip if it's a rest day
+                if day_data.get("Rest") or "plan" not in day_data:
+                    continue
     
-                        if "exercises" in session_data:
-                            for ex in session_data["exercises"]:
-                                self.supabase.table("plan_session_exercises").insert({
-                                    "session_id": session_id,
-                                    "exercise_name": ex.get("name", ""),
-                                    "set_number": ex.get("set", 1),
-                                    "reps": ex.get("reps", ""),
-                                    "intensity": ex.get("intensity", ""),
-                                    "rest": ex.get("rest", 0),
-                                    "notes": ex.get("notes", "")
-                                }).execute()
+                for session_type, session_data in day_data["plan"].items():
+                    # Skip non-session entries
+                    if session_type in ["Debug", "Total Time"]:
+                        continue
+                    if not isinstance(session_data, dict):
+                        continue
+    
+                    # Insert session
+                    session_resp = self.supabase.table("plan_sessions").insert({
+                        "day_id": day_id,
+                        "type": session_type,
+                        "target_muscle": ", ".join(day_data.get("muscles", [])),
+                        "duration": session_data.get("time", 0),
+                        "details": session_data.get("details", "")
+                    }).execute()
+                    session_id = session_resp.data[0]["id"]
+    
+                    # Insert exercises if present
+                    if "exercises" in session_data and isinstance(session_data["exercises"], list):
+                        for ex in session_data["exercises"]:
+                            self.supabase.table("plan_session_exercises").insert({
+                                "session_id": session_id,
+                                "exercise_name": ex.get("name", ""),
+                                "set_number": ex.get("set", 1),
+                                "reps": ex.get("reps", ""),
+                                "intensity": ex.get("intensity", ""),
+                                "rest": ex.get("rest", 0),
+                                "notes": ex.get("notes", "")
+                            }).execute()
