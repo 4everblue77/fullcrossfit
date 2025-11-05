@@ -30,7 +30,7 @@ class PlanGenerator:
             "muscle_groups": self.supabase.table("md_muscle_groups").select("*").execute().data,
             "mappings": self.supabase.table("md_map_exercise_muscle_groups").select("*").execute().data,
             "categories": self.supabase.table("md_categories").select("*").execute().data,
-            "category_mappings": self.supabase.table("md_map_exercise_categories").select("*").execute().data
+            "category_mappings": self.supabase.table("md_map_exercise_categories").select("*").execute().data,
             "exercise_pool": self.supabase.table("exercise_pool").select("*").execute().data
         }
 
