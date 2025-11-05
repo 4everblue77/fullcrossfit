@@ -116,7 +116,7 @@ class WODGenerator:
         target_muscle_id = None
         if target_muscle:
             target_muscle_id = next(
-                (mg["id"] for mg in self.data["muscle_groups"] if mg["name"].lower() == target_muscle.lower()),
+                (mg["id"] for mg in self.data["muscle_groups"] if mg["name"].strip().lower() == target_muscle.strip().lower()),
                 None
             )
             if not target_muscle_id:
@@ -164,6 +164,14 @@ class WODGenerator:
             "details": f"{stimulus.capitalize()} WOD with format: {format_type}"
         }
     
+
+            
         if self.debug:
-            result["debug"] = debug_info
+            result["debug"] = {
+                "target_muscle": target_muscle,
+                "target_muscle_id": target_muscle_id,
+                "available_muscles": [mg["name"] for mg in self.data["muscle_groups"]],
+                "selected_exercises": wod_exercises
+            }
+
     
