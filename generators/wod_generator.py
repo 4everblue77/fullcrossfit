@@ -120,6 +120,12 @@ class WODGenerator:
         scaled_exercises = scaled_result["exercises"]
         actual_time = scaled_result["time"]
 
+        
+        # Map muscle ID to name
+        id_to_name = {m["id"]: m["name"] for m in self.data["muscle_groups"]}
+        target_muscle_name = id_to_name.get(target_muscle_id, "None") if target_muscle_id else "None"
+
+
         result = {
             "type": "WOD",
             "stimulus": stimulus.capitalize(),
@@ -127,6 +133,10 @@ class WODGenerator:
             "format": format_type,
             "order": "Circuit",
             "focus": f"50% target muscle + 50% general" if target_muscle_id else "General conditioning",
+            
+            "target_muscle_id": target_muscle_id if target_muscle_id else None,
+            "target_muscle_name": target_muscle_name,
+
             "exercises": scaled_exercises,
             "time": actual_time,
             "details": f"{stimulus.capitalize()} WOD with format: {format_type}"
