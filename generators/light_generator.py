@@ -13,14 +13,13 @@ class LightGenerator:
             - mappings (exercise-muscle)
             - categories
             - category_mappings (exercise-category)
-            - exercise_pool (custom pool with type tags)
         """
         self.exercises = data["exercises"]
         self.muscle_groups = data["muscle_groups"]
         self.mappings = data["mappings"]
-        self.exercise_pool = data["exercise_pool"]
+        self.categories = data["categories"]
+        self.category_mappings = data["category_mappings"]
 
-        # Define opposing muscle group logic
         self.opposing_map = {
             "Chest": "Back",
             "Back": "Chest",
@@ -30,22 +29,35 @@ class LightGenerator:
             "Core": "Shoulders"
         }
 
-    def get_light_exercises(self, group_name):
-        # Filter pool by group and type
-        return [
-            ex["name"] for ex in self.exercise_pool
-            if ex.get("muscle_group") == group_name and "Light" in ex.get("types", [])
-        ]
+        # Get category ID for "Muscular Endurance"
+        self.light_category_id = next(
+            (c["id"] for c in self.categories if c["name"].lower() == "muscular endurance"), None
+        )
+
+    def get_light_exercises_by_muscle(self, muscle_name):
+        # Get muscle group ID
+        mg_id = next((mg["id"] for mg in self.muscle_groups if mg["name"] == muscle_name), None)
+        if not mg_id or not self.light_category_id:
+            return []
+
+        # Get exercise IDs mapped to both the muscle group and the "Muscular Endurance" category
+        muscle_ex_ids = {m["exercise_id"] for m in self.mappings if m["musclegroup_id"] == mg_id}
+        category_ex_ids = {m["exercise_id"] for m in self.category_mappings if m["category_id"] == self.light_category_id}
+
+        # Intersection of both sets
+        valid_ex_ids = muscle_ex_ids & category_ex_ids
+
+        return [ex["name"] for ex in self.exercises if ex["id"] in valid_ex_ids]
 
     def generate(self, target):
-        primary_pool = self.get_light_exercises(target)
+        primary_pool = self.get_light_exercises_by_muscle(target)
         opposing_group = self.opposing_map.get(target, target)
-        opposing_pool = self.get_light_exercises(opposing_group)
+        opposing_pool = self.get_light_exercises_by_muscle(opposing_group)
 
         supersets = []
         for _ in range(3):
-            ex1 = random.choice(primary_pool) if primary_pool else "Placeholder"
-            ex2 = random.choice(opposing_pool) if opposing_pool else "Placeholder"
+            ex1 = random.choice(primary_pool) if primary_pool else f"No match for {target}"
+            ex2 = random.choice(opposing_pool) if opposing_pool else f"No match for {opposing_group}"
             supersets.append({
                 "Superset": f"{ex1} + {ex2}",
                 "Sets": LIGHT_SETS,
