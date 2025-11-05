@@ -30,10 +30,13 @@ class PlanGenerator:
 
     def generate_daily_plan(self, muscles):
         """Build a daily plan using all generators."""
+        heavy_session = self.heavy_gen.generate(muscles)
         return {
             "Warmup": self.warmup_gen.generate(muscles),
-            "Heavy": self.heavy_gen.generate(muscles),
-            "Debug": heavy_session.get("debug", {})  # ✅ Add debug info
+
+            "Heavy": heavy_session,
+            "Debug": heavy_session.get("debug", {}) if self.debug else None
+
             # "WOD": self.wod_gen.generate(muscles),
             # "Light": self.light_gen.generate(muscles),
             # "Cooldown": self.cooldown_gen.generate(muscles)
