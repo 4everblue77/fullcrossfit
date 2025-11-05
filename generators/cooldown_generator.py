@@ -3,6 +3,7 @@ import random
 COOLDOWN_DURATION = 55  # seconds per exercise
 TRANSITION_TIME = 5     # seconds
 TOTAL_COOLDOWN_TIME = 10  # minutes
+MAX_EXERCISES = 10
 
 class CooldownGenerator:
     def __init__(self, data):
@@ -20,39 +21,43 @@ class CooldownGenerator:
         self.categories = data["categories"]
         self.category_mappings = data["category_mappings"]
 
-    def get_cooldown_exercises_by_muscle(self, muscle_name):
-        # Find muscle group ID
-        mg_id = next((mg["id"] for mg in self.muscle_groups if mg["name"] == muscle_name), None)
-        if not mg_id:
+        # Get category ID for "Cooldown"
+        self.cooldown_category_id = next(
+            (c["id"] for c in self.categories if c["name"].lower() == "cooldown"), None
+        )
+
+    def get_muscle_specific_cooldowns(self, muscles):
+        # Get muscle group IDs
+        mg_ids = [mg["id"] for mg in self.muscle_groups if mg["name"] in muscles]
+        if not mg_ids or not self.cooldown_category_id:
             return []
 
-        # Get exercise IDs linked to this muscle group
-        exercise_ids = [m["exercise_id"] for m in self.mappings if m["musclegroup_id"] == mg_id]
+        # Get exercise IDs mapped to both the muscle group and cooldown category
+        muscle_ex_ids = {m["exercise_id"] for m in self.mappings if m["musclegroup_id"] in mg_ids}
+        category_ex_ids = {m["exercise_id"] for m in self.category_mappings if m["category_id"] == self.cooldown_category_id}
+        valid_ex_ids = muscle_ex_ids & category_ex_ids
 
-        return [e["name"] for e in self.exercises if e["id"] in exercise_ids and "Cooldown" in (e.get("types") or [])]
+        return [ex["name"] for ex in self.exercises if ex["id"] in valid_ex_ids]
 
-    def get_general_cooldown_exercises(self):
-        # Find category ID for "Cooldown"
-        category_id = next((c["id"] for c in self.categories if c["name"].lower() == "cooldown"), None)
-        if not category_id:
+    def get_general_cooldowns(self):
+        if not self.cooldown_category_id:
             return []
-
-        # Get exercise IDs linked to this category
-        exercise_ids = [m["exercise_id"] for m in self.category_mappings if m["category_id"] == category_id]
-
-        return [e["name"] for e in self.exercises if e["id"] in exercise_ids]
+        category_ex_ids = {m["exercise_id"] for m in self.category_mappings if m["category_id"] == self.cooldown_category_id}
+        return [ex["name"] for ex in self.exercises if ex["id"] in category_ex_ids]
 
     def generate(self, muscles):
-        pool = []
+        muscle_specific_pool = self.get_muscle_specific_cooldowns(muscles)
+        general_pool = self.get_general_cooldowns()
 
-        # Add muscle-specific cooldowns
-        for muscle in muscles:
-            pool.extend(self.get_cooldown_exercises_by_muscle(muscle))
+        # Ensure at least half are muscle-specific
+        num_muscle_ex = min(len(muscle_specific_pool), MAX_EXERCISES // 2)
+        num_general_ex = MAX_EXERCISES - num_muscle_ex
 
-        # Add general cooldowns
-        pool.extend(self.get_general_cooldown_exercises())
+        selected_muscle = random.sample(muscle_specific_pool, num_muscle_ex) if muscle_specific_pool else []
+        selected_general = random.sample(general_pool, num_general_ex) if general_pool else []
 
-        selected = random.sample(pool, min(10, len(pool)))
+        selected = selected_muscle + selected_general
+        random.shuffle(selected)
 
         cooldown_plan = [
             {"exercise": ex, "duration": COOLDOWN_DURATION, "transition": TRANSITION_TIME}
