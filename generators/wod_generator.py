@@ -1,7 +1,7 @@
 import random
 
 class WODGenerator:
-    def __init__(self, data, debug=False)
+    def __init__(self, data, debug=False):
         self.data = data  # ✅ Store full data dictionary
         self.exercise_pool = data["exercise_pool"]
         self.debug = debug
