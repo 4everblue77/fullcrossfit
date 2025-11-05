@@ -10,6 +10,7 @@ class PlanGenerator:
     def __init__(self, supabase):
         self.supabase = supabase
         self.data = self._load_data()
+        self.debug = debug
 
         # Initialize generators with preloaded data
         self.warmup_gen = WarmupGenerator(self.data)
