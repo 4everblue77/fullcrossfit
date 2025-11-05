@@ -43,17 +43,15 @@ class OlympicGenerator:
     def get_muscles_for_exercise(self, exercise_id):
         muscle_ids = {m["musclegroup_id"] for m in self.mappings if m["exercise_id"] == exercise_id}
         return [mg["name"] for mg in self.muscle_groups if mg["id"] in muscle_ids]
-
+    
     def generate(self, week=1):
         pool, debug_info = self.get_olympic_exercises()
         if not pool:
             return {"error": "No Olympic exercises found", "debug": debug_info}
-
-        # ✅ Pick ONE main lift for entire session
+    
         main_lift = random.choice(pool)
         intensity_range = self.INTENSITY_SCHEDULE.get(week, [65, 70])
-
-        # Warm-up sets (same lift, lighter intensity)
+    
         warmup_sets = [
             {
                 "set": 1,
@@ -72,8 +70,7 @@ class OlympicGenerator:
                 "rest": 60
             }
         ]
-
-        # Working sets (same lift, progressive intensity)
+    
         working_sets = [
             {
                 "set": i + 1,
@@ -85,10 +82,21 @@ class OlympicGenerator:
             }
             for i, intensity in enumerate(intensity_range)
         ]
-
-        # Collect muscles
+    
         muscles = set(self.get_muscles_for_exercise(main_lift["id"]))
-
+    
+        # ✅ Format for Supabase syncing
+        exercises = []
+        for s in warmup_sets + working_sets:
+            exercises.append({
+                "name": s["exercise"],
+                "set": s["set"],
+                "reps": str(s["reps"]),
+                "intensity": f"{s['intensity']}%",
+                "rest": s["rest"],
+                "notes": s["type"]
+            })
+    
         result = {
             "type": "Olympic",
             "week": week,
@@ -96,10 +104,11 @@ class OlympicGenerator:
             "muscles": list(muscles),
             "time": 20,
             "details": f"Olympic lifting session focusing on {main_lift['name']}",
-            "sets": warmup_sets + working_sets
+            "sets": warmup_sets + working_sets,
+            "exercises": exercises  # ✅ Enables syncing
         }
-
+    
         if self.debug:
             result["debug"] = debug_info
-
+    
         return result
