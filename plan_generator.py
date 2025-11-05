@@ -39,7 +39,7 @@ class PlanGenerator:
         heavy_session = self.heavy_gen.generate(muscles)
         olympic_session = self.olympic_gen.generate()
         run_session = self.run_gen.generate()
-        wod_session = self.wod_gen.generate(muscles[0] if muscles else None,  stimulus=stimulus)
+        wod_session = self.wod_gen.generate(target_muscle=muscles[0] if muscles else None,  stimulus=stimulus)
         
 
 
