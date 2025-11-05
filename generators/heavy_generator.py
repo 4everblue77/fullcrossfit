@@ -1,4 +1,5 @@
 import random
+import streamlit as st
 
 EXERCISE_DURATION = 30  # seconds per rep estimate for time calculation
 TRANSITION_TIME = 5     # seconds between exercises
@@ -73,12 +74,14 @@ class HeavyGenerator:
         exercise_ids = muscle_ex_ids.intersection(category_ex_ids)
         pool = [e["name"] for e in self.exercises if e["id"] in exercise_ids]
 
-        print("DEBUG muscle:", muscle)
-        print("DEBUG mg names:", [self.normalize_name(mg["name"]) for mg in self.muscle_groups])
-        print("DEBUG category names:", [self.normalize_name(c["name"]) for c in self.categories])
-        print("DEBUG muscle_ex_ids:", muscle_ex_ids)
-        print("DEBUG category_ex_ids:", category_ex_ids)
-        print("DEBUG intersection:", exercise_ids)
+
+        st.write("DEBUG muscle:", muscle)
+        st.write("DEBUG mg names:", [self.normalize_name(mg["name"]) for mg in self.muscle_groups])
+        st.write("DEBUG category names:", [self.normalize_name(c["name"]) for c in self.categories])
+        st.write("DEBUG muscle_ex_ids:", muscle_ex_ids)
+        st.write("DEBUG category_ex_ids:", category_ex_ids)
+        st.write("DEBUG intersection:", exercise_ids)
+
 
         # Fallback if no match found
         if not pool:
