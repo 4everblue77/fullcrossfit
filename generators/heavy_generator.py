@@ -52,7 +52,7 @@ class HeavyGenerator:
         pool = self.get_exercises_by_muscle_and_type(target, "Heavy")
         return random.choice(pool) if pool else "No exercise available"
 
-    def generate(self, target, week):
+    def generate(self, target, week=1):
         """
         Generate heavy session for a muscle group.
         target: muscle group name
