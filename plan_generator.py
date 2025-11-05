@@ -7,7 +7,7 @@ from generators.heavy_generator import HeavyGenerator
 # from generators.light_generator import LightGenerator
 
 class PlanGenerator:
-    def __init__(self, supabase):
+    def __init__(self, supabase, debug=False):
         self.supabase = supabase
         self.data = self._load_data()
         self.debug = debug
