@@ -2,177 +2,147 @@ import random
 
 class WODGenerator:
     def __init__(self, data, debug=False):
-        self.data = data  # ✅ Store full data dictionary
-        self.exercise_pool = data["exercise_pool"]
+        self.data = data
         self.debug = debug
 
+        self.rep_ranges = {
+            "Treadmill Run": (200, 400),
+            "Pull-ups": (4, 6), "Deadlifts (100/70kg)": (4, 6), "Ring Rows": (6, 8),
+            "Push-ups": (8, 12), "Bench Press (60/40kg)": (4, 6), "Burpees": (6, 8),
+            "Handstand Push-ups": (3, 5), "Push Press (50/35kg)": (6, 8), "Wall Balls (9/6kg)": (8, 10),
+            "Kettlebell Swings (24/16kg)": (8, 10), "Hip Thrusts (40/30kg)": (8, 10), "Box Step Overs (24/20\")": (6, 8),
+            "Front Squats (60/40kg)": (4, 6), "Air Squats": (12, 15), "Lunges": (8, 10),
+            "Double Unders": (15, 25), "Sit-ups": (10, 15), "Single Unders": (20, 30),
+            "V-Ups": (10, 15), "Hollow Rocks": (10, 15), "Superman Holds": (20, 30),
+            "Plank Holds": (20, 30), "Box Jumps (24/20\")": (6, 10), "Knees-to-Elbows": (6, 10),
+            "Bear Crawl": (10, 20), "Mountain Climbers": (20, 30), "Tuck Ups": (10, 15),
+            "Leg Raises": (10, 15), "Dragon Flags": (5, 10), "Farmer’s Carry": (20, 40),
+            "Front Rack Carry": (20, 40), "Overhead Carry": (20, 40), "Rowing": (10, 15),
+            "SkiErg": (10, 15), "Assault Bike": (10, 15)
+        }
 
-    def get_combined_exercise_pool(self):
-        # ✅ Pull all exercises from exercise_pool
-        return [ex["exercise"] for ex in self.exercise_pool]
+        self.stimulus_map = {
+            "vo2 max": ["AMRAP", "Interval", "Alternating EMOM"],
+            "lactate threshold": ["Chipper", "For Time", "Tabata"],
+            "anaerobic": ["Ladder", "Death by", "EMOM"]
+        }
 
-    def get_exercises_by_muscle_group(self, muscle_group_id):
-        # ✅ Filter by musclegroup_id
-        return [ex["exercise"] for ex in self.exercise_pool if ex["musclegroup_id"] == muscle_group_id]
+        self.adjectives = ["Savage", "Blazing", "Iron", "Crimson", "Furious", "Relentless", "Vicious", "Explosive", "Brutal", "Wicked"]
+        self.nouns = ["Storm", "Inferno", "Titan", "Crusher", "Blitz", "Rage", "Pulse", "Grind", "Surge", "Reaper"]
+        self.actions = ["Charge", "Strike", "Burn", "Smash", "Blast", "Crush", "Rush", "Roar", "Clash", "Ignite"]
 
-    def _parse_time_str(self, t):
-        t = str(t).strip().lower()
-        if "min" in t:
-            return float(t.replace("min", "").strip())
-        if ":" in t:
-            mins, secs = map(int, t.split(":"))
-            return mins + secs / 60
-        return float(t)
-
-    def _estimate_exercise_time(self, details):
-        if "duration" in details:
-            return self._parse_time_str(details["duration"])
-        if "sets" in details and "work" in details:
-            work_min = self._parse_time_str(details["work"])
-            rest_min = self._parse_time_str(details.get("rest", "0"))
-            return (work_min + rest_min) * details["sets"]
-        if "rounds" in details and "reps" in details:
-            reps = details["reps"] if isinstance(details["reps"], int) else 10
-            time_per_rep = 0.07 if "weight" in details and "Bodyweight" not in details.get("weight", "") else 0.05
-            return (reps * time_per_rep + 0.3) * details["rounds"]
-        return 2  # fallback
-
-    def _get_time_bounds_for_stimulus(self, stimulus):
-        stimulus = stimulus.lower()
-        if stimulus == "anaerobic":
-            return 8, 12
-        elif stimulus in ["lactate threshold", "vo2 max"]:
-            return 15, 30
-        return 15, 20
-
-    def _assign_details(self, exercise, format_type, stimulus):
-        details = {}
-        # Basic logic for reps/weight
-        if any(lift in exercise for lift in ["Squat", "Deadlift", "Thruster"]):
-            details["weight"] = "Moderate to heavy (70–90% 1RM)" if stimulus == "anaerobic" else "Moderate (60–75% 1RM)"
-            details["reps"] = random.choice([6, 8, 10]) if stimulus == "anaerobic" else random.choice([8, 10, 12])
+    def generate_wod_name(self):
+        pattern = random.choice(["adj_noun", "noun_action", "adj_noun_action"])
+        if pattern == "adj_noun":
+            return f"{random.choice(self.adjectives)} {random.choice(self.nouns)}"
+        elif pattern == "noun_action":
+            return f"{random.choice(self.nouns)} {random.choice(self.actions)}"
         else:
-            details["weight"] = "Light to moderate (40–60% 1RM)"
-            details["reps"] = random.choice([10, 12, 15])
+            return f"{random.choice(self.adjectives)} {random.choice(self.nouns)} {random.choice(self.actions)}"
 
-        # Format-specific details
-        if format_type == "Tabata":
-            details.update({"sets": 8, "work": "20s", "rest": "10s"})
-        elif format_type == "Sprint Intervals":
-            details.update({"sets": 6, "work": "30s", "rest": "90s"})
-        elif format_type == "AMRAP":
-            details.update({"duration": "15 min", "goal": "Max rounds"})
-        elif format_type == "Chipper":
-            details.update({"rounds": 1, "goal": "Complete sequentially"})
-        elif format_type == "For Time":
-            details.update({"rounds": 2, "goal": "Complete as fast as possible"})
-        elif format_type == "Rounds for Time":
-            details.update({"rounds": 3, "goal": "Complete each round"})
-        elif format_type == "Interval Rounds":
-            details.update({"sets": 4, "work": "2 min", "rest": "1 min"})
+    def select_exercises(self, target_muscle, count):
+        muscle_ids = [mg["id"] for mg in self.data["muscle_groups"] if mg["name"].lower() == target_muscle.lower()]
+        mapped_ex_ids = [m["exercise_id"] for m in self.data["mappings"] if m["muscle_group_id"] in muscle_ids]
+
+        general_ex_ids = [
+            m["exercise_id"] for m in self.data["category_mappings"]
+            if any(c["name"].lower() == "general" and c["id"] == m["category_id"] for c in self.data["categories"])
+        ]
+
+        valid_ids = set(mapped_ex_ids + general_ex_ids)
+        pool = [ex["name"] for ex in self.data["exercises"] if ex["id"] in valid_ids]
+
+        return random.sample(pool, min(count, len(pool)))
+
+    def format_exercise(self, ex, reps):
+        if "Run" in ex or "Carry" in ex:
+            return f"- {reps}m {ex}"
+        elif "Hold" in ex:
+            return f"- {reps}s {ex}"
         else:
-            details.update({"sets": 3, "rest": "60s"})
-        return details
+            return f"- {reps} {ex}"
 
-    def _scale_wod_to_time(self, exercises, stimulus):
-        min_time, max_time = self._get_time_bounds_for_stimulus(stimulus)
-        attempt = 0
-        scaled = exercises
-        while attempt < 5:
-            total_time = sum(self._estimate_exercise_time(ex["details"]) for ex in scaled)
-            if total_time == 0:
-                return {"exercises": scaled, "time": 0}
-            if min_time <= total_time <= max_time:
-                return {"exercises": scaled, "time": round(total_time)}
-            scale_factor = min((min_time if total_time < min_time else max_time) / total_time, 2.0)
-            new_scaled = []
-            for ex in scaled:
-                details = ex["details"].copy()
-                if "sets" in details:
-                    details["sets"] = min(20, max(1, int(details["sets"] * scale_factor)))
-                elif "rounds" in details:
-                    details["rounds"] = min(20, max(1, int(details["rounds"] * scale_factor)))
-                elif "duration" in details:
-                    original_duration = self._parse_time_str(details["duration"])
-                    scaled_duration = max(min_time, min(max_time, int(original_duration * scale_factor)))
-                    details["duration"] = f"{scaled_duration} min"
-                new_scaled.append({"name": ex["name"], "details": details})
-            scaled = new_scaled
-            attempt += 1
-        return {"exercises": scaled, "time": round(sum(self._estimate_exercise_time(ex["details"]) for ex in scaled))}
+    def generate_targets(self, wod_type):
+        targets = {
+            "AMRAP": {"Beginner": "3-4 rounds", "Intermediate": "5-6 rounds", "Advanced": "7-8 rounds", "Elite": "9+ rounds"},
+            "Chipper": {"Beginner": "Complete in 20+ min", "Intermediate": "Complete in 15-20 min", "Advanced": "Complete in 10-15 min", "Elite": "Complete in <10 min"},
+            "Interval": {"Beginner": "1-2 rounds per interval", "Intermediate": "2-3 rounds per interval", "Advanced": "3-4 rounds per interval", "Elite": "4+ rounds per interval"},
+            "Tabata": {"Beginner": "8-10 reps per round", "Intermediate": "11-13 reps per round", "Advanced": "14-16 reps per round", "Elite": "17+ reps per round"},
+            "For Time": {"Beginner": "Complete in 20+ min", "Intermediate": "Complete in 15-20 min", "Advanced": "Complete in 10-15 min", "Elite": "Complete in <10 min"},
+            "Ladder": {"Beginner": "Complete 3 rounds", "Intermediate": "Complete 4 rounds", "Advanced": "Complete 5 rounds", "Elite": "Complete all rounds unbroken"},
+            "Death by": {"Beginner": "5-7 minutes", "Intermediate": "8-10 minutes", "Advanced": "11-13 minutes", "Elite": "14+ minutes"},
+            "EMOM": {"Beginner": "Maintain for 6-8 minutes", "Intermediate": "Maintain for 9-12 minutes", "Advanced": "Maintain for 13-15 minutes", "Elite": "Maintain full duration unbroken"},
+            "Alternating EMOM": {"Beginner": "Maintain for 6-8 minutes", "Intermediate": "Maintain for 9-12 minutes", "Advanced": "Maintain for 13-15 minutes", "Elite": "Maintain full duration unbroken"}
+        }
+        return targets.get(wod_type, {})
 
     def generate(self, target_muscle=None, stimulus="anaerobic"):
-        """
-        target_muscle: Muscle name (string) or None
-        stimulus: Training stimulus (e.g., 'anaerobic', 'lactate threshold', 'vo2 max')
-        """
-        # Debug info
-        debug_info = {
-            "target_muscle": target_muscle,
-            "available_muscles": [mg["name"] for mg in self.data["muscle_groups"]]
-        }
-    
-        # Resolve muscle name to ID
-        target_muscle_id = None
-        if target_muscle:
-            target_muscle_id = next(
-                (mg["id"] for mg in self.data["muscle_groups"] if mg["name"].strip().lower() == target_muscle.strip().lower()),
-                None
-            )
-            if not target_muscle_id:
-                debug_info["error"] = f"Muscle '{target_muscle}' not found"
-        
-        # Continue with existing logic using target_muscle_id
-        formats = {
-            "anaerobic": ["For Time", "Sprint Intervals", "Tabata"],
-            "lactate threshold": ["AMRAP", "Chipper", "For Time"],
-            "vo2 max": ["EMOM", "Interval Rounds", "Rounds for Time"]
-        }
-        format_type = random.choice(formats.get(stimulus.lower(), ["AMRAP"]))
-    
-        full_pool = self.get_combined_exercise_pool()
-        target_pool = self.get_exercises_by_muscle_group(target_muscle_id) if target_muscle_id else []
-    
-        target_sample = random.sample(target_pool, min(3, len(target_pool))) if target_pool else []
-        random_sample = random.sample(full_pool, min(3, len(full_pool)))
-        wod_exercises = target_sample + random_sample
-        random.shuffle(wod_exercises)
-    
-        detailed_exercises = []
-        id_to_name = {m["id"]: m["name"] for m in self.data["muscle_groups"]}
-        for ex in wod_exercises:
-            musclegroup_id = next((item["musclegroup_id"] for item in self.exercise_pool if item["exercise"] == ex), None)
-            muscle_name = id_to_name.get(musclegroup_id, "Unknown")
-            details = self._assign_details(ex, format_type, stimulus)
-            detailed_exercises.append({"name": ex, "muscle_group": muscle_name, "details": details})
-    
-        scaled_result = self._scale_wod_to_time(detailed_exercises, stimulus.lower())
-        scaled_exercises = scaled_result["exercises"]
-        actual_time = scaled_result["time"]
-    
-        result = {
-            "type": "WOD",
-            "stimulus": stimulus.capitalize(),
-            "duration": f"{actual_time} min",
-            "format": format_type,
-            "order": "Circuit",
-            "focus": f"50% target muscle + 50% general" if target_muscle_id else "General conditioning",
-            "target_muscle_id": target_muscle_id,
-            "target_muscle_name": target_muscle if target_muscle else "None",
-            "exercises": scaled_exercises,
-            "time": actual_time,
-            "details": f"{stimulus.capitalize()} WOD with format: {format_type}"
-        }
-    
+        stimulus = stimulus.lower()
+        if stimulus not in self.stimulus_map:
+            return {"error": "Invalid stimulus type. Choose from: vo2 max, lactate threshold, anaerobic."}
 
-            
-        if self.debug:
-            result["debug"] = {
-                "target_muscle": target_muscle,
-                "target_muscle_id": target_muscle_id,
-                "available_muscles": [mg["name"] for mg in self.data["muscle_groups"]],
-                "selected_exercises": wod_exercises
-            }
+        wod_type = random.choice(self.stimulus_map[stimulus])
+        name = self.generate_wod_name()
+        duration = random.choice([12, 15, 20])
+        exercises = self.select_exercises(target_muscle or "general", 2 if wod_type in ["EMOM", "Alternating EMOM"] else 3)
 
-        return result
-    
+        description = f"{wod_type} for {duration} minutes\n"
+        if wod_type == "AMRAP":
+            description += "Complete as many rounds as possible:\n"
+            for ex in exercises:
+                reps = random.randint(*self.rep_ranges.get(ex, (10, 15)))
+                description += self.format_exercise(ex, reps) + "\n"
+        elif wod_type == "Chipper":
+            description += "Work through the following:\n"
+            for ex in exercises:
+                base, top = self.rep_ranges.get(ex, (10, 15))
+                reps = random.randint(base * 3, top * 3)
+                description += self.format_exercise(ex, reps) + "\n"
+        elif wod_type == "Interval":
+            work = random.choice([3, 4])
+            rest = random.choice([1, 2])
+            description += f"Work {work} min / Rest {rest} min:\n"
+            for ex in exercises:
+                reps = random.randint(*self.rep_ranges.get(ex, (10, 15)))
+                description += self.format_exercise(ex, reps) + "\n"
+        elif wod_type == "Tabata":
+            description += "8 rounds of 20s work / 10s rest per movement:\n"
+            for ex in exercises:
+                description += f"- {ex}\n"
+        elif wod_type == "For Time":
+            rounds = random.choice([2, 3])
+            description += f"Complete {rounds} rounds:\n"
+            for ex in exercises:
+                reps = random.randint(*self.rep_ranges.get(ex, (10, 15)))
+                description += self.format_exercise(ex, reps) + "\n"
+        elif wod_type == "Ladder":
+            base = random.choice([3, 5])
+            rounds = 5
+            description += f"Increase reps each round: {', '.join(str(base * i) for i in range(1, rounds + 1))}\n"
+            for ex in exercises:
+                description += f"- {ex}\n"
+        elif wod_type == "Death by":
+            description += "Start with 1 rep in minute 1, 2 reps in minute 2, etc. Continue until failure:\n"
+            for ex in exercises:
+                description += f"- {ex}\n"
+        elif wod_type == "EMOM":
+            reps = random.randint(*self.rep_ranges.get(exercises[0], (10, 15)))
+            description += f"Each minute:\n{self.format_exercise(exercises[0], reps)}"
+        elif wod_type == "Alternating EMOM":
+            description += "Alternate each minute:\n"
+            for i, ex in enumerate(exercises):
+                reps = random.randint(*self.rep_ranges.get(ex, (10, 15)))
+                description += f"Minute {'Odd' if i == 0 else 'Even'}: {self.format_exercise(ex, reps)}\n"
+
+        return {
+            "WOD Name": name,
+            "Type": wod_type,
+            "Estimated Time": f"{duration} min",
+            "Description": description.strip(),
+            "Performance Targets": self.generate_targets(wod_type),
+            "debug": {
+                "muscle": target_muscle,
+                "stimulus": stimulus,
+                "selected_exercises": exercises
+            } if self.debug else {}
+        }
