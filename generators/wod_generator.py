@@ -2,29 +2,16 @@ import random
 
 class WODGenerator:
     def __init__(self, data, debug=False):
-        """
-        data: dict containing Supabase tables:
-            - exercise_pool (custom table for WOD exercises)
-            - categories
-        debug: bool to enable debug info
-        """
-        self.exercise_pool = data["exercise_pool"]  # ✅ Supabase table for WOD pool
-        self.categories = data["categories"]
+        self.exercise_pool = data["exercise_pool"]  # Supabase table
         self.debug = debug
 
-    def normalize_name(self, value):
-        if isinstance(value, list):
-            value = value[0]
-        if isinstance(value, dict):
-            value = value.get("text", "")
-        return str(value).lower()
-
     def get_combined_exercise_pool(self):
-        # Pull all exercises marked for WOD from Supabase exercise_pool
-        return [ex["name"] for ex in self.exercise_pool if "WOD" in ex.get("types", [])]
+        # ✅ Pull all exercises from exercise_pool
+        return [ex["exercise"] for ex in self.exercise_pool]
 
-    def get_exercises_by_muscle_group(self, group):
-        return [ex["name"] for ex in self.exercise_pool if group in ex.get("muscle_groups", []) and "WOD" in ex.get("types", [])]
+    def get_exercises_by_muscle_group(self, muscle_group_id):
+        # ✅ Filter by musclegroup_id
+        return [ex["exercise"] for ex in self.exercise_pool if ex["musclegroup_id"] == muscle_group_id]
 
     def _parse_time_str(self, t):
         t = str(t).strip().lower()
@@ -58,6 +45,7 @@ class WODGenerator:
 
     def _assign_details(self, exercise, format_type, stimulus):
         details = {}
+        # Basic logic for reps/weight
         if any(lift in exercise for lift in ["Squat", "Deadlift", "Thruster"]):
             details["weight"] = "Moderate to heavy (70–90% 1RM)" if stimulus == "anaerobic" else "Moderate (60–75% 1RM)"
             details["reps"] = random.choice([6, 8, 10]) if stimulus == "anaerobic" else random.choice([8, 10, 12])
@@ -90,11 +78,8 @@ class WODGenerator:
         scaled = exercises
         while attempt < 5:
             total_time = sum(self._estimate_exercise_time(ex["details"]) for ex in scaled)
-            
-            # ✅ Prevent division by zero
             if total_time == 0:
                 return {"exercises": scaled, "time": 0}
-
             if min_time <= total_time <= max_time:
                 return {"exercises": scaled, "time": round(total_time)}
             scale_factor = min((min_time if total_time < min_time else max_time) / total_time, 2.0)
@@ -114,7 +99,7 @@ class WODGenerator:
             attempt += 1
         return {"exercises": scaled, "time": round(sum(self._estimate_exercise_time(ex["details"]) for ex in scaled))}
 
-    def generate(self, target_muscle=None, stimulus="anaerobic"):
+    def generate(self, target_muscle_id=None, stimulus="anaerobic"):
         formats = {
             "anaerobic": ["For Time", "Sprint Intervals", "Tabata"],
             "lactate threshold": ["AMRAP", "Chipper", "For Time"],
@@ -123,7 +108,7 @@ class WODGenerator:
         format_type = random.choice(formats.get(stimulus.lower(), ["AMRAP"]))
 
         full_pool = self.get_combined_exercise_pool()
-        target_pool = self.get_exercises_by_muscle_group(target_muscle) if target_muscle else []
+        target_pool = self.get_exercises_by_muscle_group(target_muscle_id) if target_muscle_id else []
 
         target_sample = random.sample(target_pool, min(3, len(target_pool))) if target_pool else []
         random_sample = random.sample(full_pool, min(3, len(full_pool)))
@@ -141,7 +126,7 @@ class WODGenerator:
             "duration": f"{actual_time} min",
             "format": format_type,
             "order": "Circuit",
-            "focus": f"50% {target_muscle} + 50% general" if target_muscle else "General conditioning",
+            "focus": f"50% target muscle + 50% general" if target_muscle_id else "General conditioning",
             "exercises": scaled_exercises,
             "time": actual_time,
             "details": f"{stimulus.capitalize()} WOD with format: {format_type}"
