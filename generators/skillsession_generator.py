@@ -45,9 +45,10 @@ class SkillSessionGenerator:
         # [{"name": "Wall Walk", "sets": 3, "reps": "5", "rest": 60, "notes": "Strict form"}]
         raw_plan = session.get("session_plan", [])
         exercises = []
+        raw_plan = [item if isinstance(item, dict) else {"name": item} for item in raw_plan]
         for i, item in enumerate(raw_plan, start=1):
             
-            name = item.get("name") if isinstance(item, dict) else str(item)
+
             ex_id = next((e["id"] for e in self.data["exercises"] if e["name"] == name), None)
 
             exercises.append({
