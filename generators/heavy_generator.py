@@ -51,7 +51,7 @@ class HeavyGenerator:
 
     def get_exercises_by_muscle_and_type(self, muscle, category_name):
         """Return exercises matching both muscle group and category."""
-
+        debug_info = {}  # ✅ Make sure this is a dictionary
 
 
 
