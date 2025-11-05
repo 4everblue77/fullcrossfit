@@ -45,69 +45,83 @@ class PlanGenerator:
     def build_framework(self):
         framework = {}
         for week in range(1, 13):
+            # Alternating logic
             if week <= 6:
-                glutes_or_quads = "Glutes/Hamstrings" if week % 2 != 0 else "Quads"
+                glutes_or_quads = "Glutes_Hamstrings" if week % 2 != 0 else "Quads"
                 chest_or_back = "Chest" if week % 2 != 0 else "Back"
             else:
-                glutes_or_quads = "Quads" if week % 2 != 0 else "Glutes/Hamstrings"
+                glutes_or_quads = "Quads" if week % 2 != 0 else "Glutes_Hamstrings"
                 chest_or_back = "Back" if week % 2 != 0 else "Chest"
-
+    
+            # Stimulus
             mon_stim = "VO2 Max"
             tue_stim = "Lactate Threshold"
             wed_stim = "VO2 Max"
-            fri_stim = "Lactate Threshold"
+            thu_stim = None
+            fri_stim = "VO2 Max"
             sat_stim = "Girl/Hero" if week % 2 != 0 else "Anaerobic"
-
+    
             framework[week] = [
-                (glutes_or_quads, chest_or_back, "Shoulders", mon_stim),
-                ("Olympic", "Core", "Skill/Weakness", tue_stim),
-                ("Shoulders", glutes_or_quads, chest_or_back, wed_stim),
-                ("Run", None, None, "Run"),
-                (chest_or_back, "Shoulders", glutes_or_quads, fri_stim),
-                ("Olympic", "Any", "Core", sat_stim),
-                None  # Rest day
+                # Monday
+                {"day": "Mon", "heavy": [glutes_or_quads], "wod": [chest_or_back], "stimulus": mon_stim, "light": ["Shoulders"], "olympic": False, "skill": False, "run": False},
+                # Tuesday
+                {"day": "Tue", "heavy": [], "wod": ["Core"], "stimulus": tue_stim, "light": [], "olympic": True, "skill": True, "run": False},
+                # Wednesday
+                {"day": "Wed", "heavy": ["Shoulders"], "wod": [glutes_or_quads], "stimulus": wed_stim, "light": [chest_or_back], "olympic": False, "skill": False, "run": False},
+                # Thursday
+                {"day": "Thu", "heavy": [], "wod": [], "stimulus": thu_stim, "light": [], "olympic": False, "skill": False, "run": True},
+                # Friday
+                {"day": "Fri", "heavy": [chest_or_back], "wod": ["Shoulders"], "stimulus": fri_stim, "light": [glutes_or_quads], "olympic": False, "skill": False, "run": False},
+                # Saturday
+                {"day": "Sat", "heavy": [], "wod": [], "stimulus": sat_stim, "light": [glutes_or_quads], "olympic": True, "skill": False, "run": False},
+                # Sunday
+                None
             ]
         return framework
 
-    def generate_daily_plan(self, muscles, stimulus="anaerobic", day_type=None):
-        """
-        day_type: str or None (e.g., 'Run', 'Olympic', 'Skill/Weakness')
-        """
-        plan = {}
+    def generate_daily_plan(self, config, week_number):
+        if config is None:
+            return {"Rest Day": "No workout scheduled"}
     
-        # Always include Warmup
+        plan = {}
+        muscles = list(set(config["heavy"] + config["wod"] + config["light"]))
+    
+        # Always Warmup
         plan["Warmup"] = self.warmup_gen.generate(muscles)
     
-        # Heavy only if day_type is not Run or Olympic
-        if day_type not in ["Run", "Olympic", "Skill/Weakness"]:
-            plan["Heavy"] = self.heavy_gen.generate(muscles)
+        # Heavy only if heavy list is not empty
+        if config["heavy"]:
+            plan["Heavy"] = self.heavy_gen.generate(config["heavy"])
     
-        # Olympic only if day_type == 'Olympic'
-        if day_type == "Olympic":
+        # Olympic only if flag is True
+        if config["olympic"]:
             plan["Olympic"] = self.olympic_gen.generate()
     
-        # Run only if day_type == 'Run'
-        if day_type == "Run":
+        # Run only if flag is True
+        if config["run"]:
             plan["Run"] = self.run_gen.generate()
     
-        # WOD only if stimulus is Girl/Hero or Anaerobic
-        if stimulus in ["Girl/Hero", "Anaerobic"]:
-            plan["WOD"] = self.wod_gen.generate(target_muscle=muscles[0] if muscles else None, stimulus=stimulus)
+        # WOD only if wod list and stimulus exist
+        if config["wod"] and config["stimulus"]:
+            plan["WOD"] = self.wod_gen.generate(target_muscle=config["wod"][0], stimulus=config["stimulus"])
     
-        # Benchmark WOD only on Saturday or special stimulus
-        if stimulus == "Girl/Hero":
+        # Benchmark only if stimulus is Girl/Hero
+        if config["stimulus"] == "Girl/Hero":
             plan["Benchmark"] = self.benchmark_gen.generate()
     
-        # Light session: Core if Olympic day, else first muscle
-        light_target = "Core" if day_type == "Olympic" else (muscles[0] if muscles else "Core")
+        # Light session: Core if Olympic day else config["light"]
+        light_target = "Core" if config["olympic"] else (config["light"][0] if config["light"] else "Core")
         plan["Light"] = self.light_gen.generate(target=light_target)
     
-        # Always include Cooldown
+        # Skill only if flag is True
+        if config["skill"]:
+            plan["Skill"] = self.skill_gen.generate("Handstand Push-Up", week_number)
+    
+        # Always Cooldown
         plan["Cooldown"] = self.cooldown_gen.generate(muscles)
     
-        # Debug info
-        if self.debug:
-            plan["Debug"] = {k: v.get("debug", {}) for k, v in plan.items() if isinstance(v, dict)}
+        # Total time
+        plan["Total Time"] = f"{self._estimate_total_time(plan)} min"
     
         return plan
 
@@ -117,24 +131,12 @@ class PlanGenerator:
     
         for week, days in framework.items():
             full_plan[f"Week {week}"] = {}
-            for day_index, day_targets in enumerate(days, start=1):
-                day_key = f"Day {day_index}"
-    
-                if day_targets is None:
-                    full_plan[f"Week {week}"][day_key] = {"Rest": True, "details": "Rest day"}
+            for day_config in days:
+                if day_config is None:
+                    full_plan[f"Week {week}"][day_config] = {"Rest": True, "details": "Rest day"}
                     continue
     
-                muscles = [m for m in day_targets[:3] if m and m != "Any"]
-                stimulus = day_targets[3]
-                day_type = day_targets[0]  # First element indicates primary focus (Run/Olympic/etc.)
-    
-                daily_plan = self.generate_daily_plan(muscles=muscles, stimulus=stimulus, day_type=day_type)
-                full_plan[f"Week {week}"][day_key] = {
-                    "muscles": muscles,
-                    "stimulus": stimulus,
-                    "day_type": day_type,
-                    "plan": daily_plan,
-                    "estimated_time": self._estimate_total_time(daily_plan)
-                }
+                daily_plan = self.generate_daily_plan(day_config, week)
+                full_plan[f"Week {week}"][day_config["day"]] = daily_plan
     
         return full_plan
