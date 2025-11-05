@@ -147,15 +147,33 @@ class WODGenerator:
                 reps = random.randint(*self.rep_ranges.get(ex, (10, 15)))
                 description += f"Minute {'Odd' if i == 0 else 'Even'}: {self.format_exercise(ex, reps)}\n"
 
+        
+        # Build structured exercise list for syncing
+        structured_exercises = []
+        for ex in exercises:
+            reps = random.randint(*self.rep_ranges.get(ex, (10, 15)))
+            structured_exercises.append({
+                "name": ex,
+                "set": 1,
+                "reps": str(reps),
+                "intensity": "High",
+                "rest": 30,
+                "notes": f"{wod_type} format"
+            })
+
+
+
         return {
             "WOD Name": name,
             "Type": wod_type,
             "Estimated Time": f"{duration} min",
             "Description": description.strip(),
             "Performance Targets": self.generate_targets(wod_type),
+            "exercises": structured_exercises,  # ✅ Enables syncing
             "debug": {
                 "muscle": target_muscle,
                 "stimulus": stimulus,
                 "selected_exercises": exercises
             } if self.debug else {}
         }
+
