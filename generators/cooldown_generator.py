@@ -1,8 +1,8 @@
 import random
 
-COOLDOWN_DURATION = 55  # seconds per exercise
-TRANSITION_TIME = 5     # seconds
-TOTAL_COOLDOWN_TIME = 10  # minutes
+COOLDOWN_DURATION = 55
+TRANSITION_TIME = 5
+TOTAL_COOLDOWN_TIME = 10
 MAX_EXERCISES = 10
 
 class CooldownGenerator:
@@ -22,7 +22,6 @@ class CooldownGenerator:
         muscle_ex_ids = {m["exercise_id"] for m in self.mappings if m["musclegroup_id"] in mg_ids}
         category_ex_ids = {m["exercise_id"] for m in self.category_mappings if m["category_id"] == self.cooldown_category_id}
         valid_ex_ids = muscle_ex_ids & category_ex_ids
-
         return [ex for ex in self.exercises if ex["id"] in valid_ex_ids]
 
     def get_general_cooldowns(self):
@@ -31,64 +30,51 @@ class CooldownGenerator:
         category_ex_ids = {m["exercise_id"] for m in self.category_mappings if m["category_id"] == self.cooldown_category_id}
         return [ex for ex in self.exercises if ex["id"] in category_ex_ids]
 
-      def generate(self, muscles):
+    def generate(self, muscles):
         muscle_specific_pool = self.get_muscle_specific_cooldowns(muscles)
         general_pool = self.get_general_cooldowns()
-    
-        # Remove duplicates across pools
         general_pool = [ex for ex in general_pool if ex["id"] not in {e["id"] for e in muscle_specific_pool}]
-    
-        # Shuffle pools to randomize selection
+
         random.shuffle(muscle_specific_pool)
         random.shuffle(general_pool)
-    
+
         selected = []
         used_ids = set()
-    
-        # Select up to half from muscle-specific pool
+
         for ex in muscle_specific_pool:
             if len(selected) >= MAX_EXERCISES // 2:
                 break
             if ex["id"] not in used_ids:
                 selected.append((ex, "Targeted"))
                 used_ids.add(ex["id"])
-    
-        # Fill remaining slots from general pool
+
         for ex in general_pool:
             if len(selected) >= MAX_EXERCISES:
                 break
             if ex["id"] not in used_ids:
                 selected.append((ex, "General"))
                 used_ids.add(ex["id"])
-    
-        cooldown_plan = [
-            {
-                "exercise": ex["name"],
-                "duration": COOLDOWN_DURATION,
-                "transition": TRANSITION_TIME,
-                "focus": focus
-            }
-            for ex, focus in selected
-        ]
-    
-        # ✅ Structured exercises for Supabase syncing
-        exercises = [
-            {
-                "name": item["exercise"],
-                "set": i + 1,
-                "reps": f"{item['duration']} sec",
+
+        exercises = []
+        for i, (ex, focus) in enumerate(selected):
+            exercises.append({
+                "name": ex["name"],
+                "exercise_id": ex["id"],
+                "set": 1,
+                "reps": f"{COOLDOWN_DURATION} sec",
                 "intensity": "Recovery",
-                "rest": item["transition"],
-                "notes": f"{item['focus']} cooldown"
-            }
-            for i, item in enumerate(cooldown_plan)
-        ]
-    
+                "rest": TRANSITION_TIME,
+                "notes": f"{focus} cooldown",
+                "tempo": "",
+                "expected_weight": "",
+                "equipment": ex.get("equipment", ""),
+                "exercise_order": i + 1
+            })
+
         return {
             "type": "Cooldown",
             "muscles": muscles,
             "time": TOTAL_COOLDOWN_TIME,
             "details": f"10-minute cooldown targeting {', '.join(muscles)}",
-            "activities": cooldown_plan,
-            "exercises": exercises  # ✅ Enables syncing
+            "exercises": exercises
         }
