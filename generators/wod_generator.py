@@ -40,22 +40,20 @@ class WODGenerator:
         else:
             return f"{random.choice(self.adjectives)} {random.choice(self.nouns)} {random.choice(self.actions)}"
 
-    def select_exercises(self, target_muscle, count):
-        muscle_ids = [mg["id"] for mg in self.data["muscle_groups"] if mg["name"].lower() == target_muscle.lower()]
-        mapped_ex_ids = [m["exercise_id"] for m in self.data["mappings"] if m.get("musclegroup_id") in muscle_ids]
 
-        general_ex_ids = [
-            m["exercise_id"] for m in self.data["category_mappings"]
-            if any(c["name"].lower() == "general" and c["id"] == m["category_id"] for c in self.data["categories"])
-        ]
+def select_exercises(self, target_muscle, count):
+    # Filter from exercise_pool by muscle group if available
+    pool = [
+        ex["name"] for ex in self.data["exercise_pool"]
+        if target_muscle.lower() in (ex.get("muscle_group", "").lower() or "")
+    ]
 
-        valid_ids = set(mapped_ex_ids + general_ex_ids)
-        pool = [ex["name"] for ex in self.data["exercises"] if ex["id"] in valid_ids]
+    # If no match, fallback to all exercises in exercise_pool
+    if not pool:
+        pool = [ex["name"] for ex in self.data["exercise_pool"]]
 
-        if not pool:
-            pool = [ex["name"] for ex in self.data["exercises"]]  # fallback to all exercises
+    return random.sample(pool, min(count, len(pool)))
 
-        return random.sample(pool, min(count, len(pool)))
 
     def format_exercise(self, ex, reps):
         if "Run" in ex or "Carry" in ex:
