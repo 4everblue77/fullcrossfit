@@ -99,54 +99,69 @@ class WODGenerator:
             attempt += 1
         return {"exercises": scaled, "time": round(sum(self._estimate_exercise_time(ex["details"]) for ex in scaled))}
 
-    def generate(self, target_muscle_id=None, stimulus="anaerobic"):
-        formats = {
-            "anaerobic": ["For Time", "Sprint Intervals", "Tabata"],
-            "lactate threshold": ["AMRAP", "Chipper", "For Time"],
-            "vo2 max": ["EMOM", "Interval Rounds", "Rounds for Time"]
-        }
-        format_type = random.choice(formats.get(stimulus.lower(), ["AMRAP"]))
+    def generate(self, target_muscle=None, stimulus="anaerobic"):
+    """
+    target_muscle: Muscle name (string) or None
+    stimulus: Training stimulus (e.g., 'anaerobic', 'lactate threshold', 'vo2 max')
+    """
+    # Debug info
+    debug_info = {
+        "target_muscle": target_muscle,
+        "available_muscles": [mg["name"] for mg in self.data["muscle_groups"]]
+    }
 
-        full_pool = self.get_combined_exercise_pool()
-        target_pool = self.get_exercises_by_muscle_group(target_muscle_id) if target_muscle_id else []
+    # Resolve muscle name to ID
+    target_muscle_id = None
+    if target_muscle:
+        target_muscle_id = next(
+            (mg["id"] for mg in self.data["muscle_groups"] if mg["name"].lower() == target_muscle.lower()),
+            None
+        )
+        if not target_muscle_id:
+            debug_info["error"] = f"Muscle '{target_muscle}' not found"
+    
+    # Continue with existing logic using target_muscle_id
+    formats = {
+        "anaerobic": ["For Time", "Sprint Intervals", "Tabata"],
+        "lactate threshold": ["AMRAP", "Chipper", "For Time"],
+        "vo2 max": ["EMOM", "Interval Rounds", "Rounds for Time"]
+    }
+    format_type = random.choice(formats.get(stimulus.lower(), ["AMRAP"]))
 
-        target_sample = random.sample(target_pool, min(3, len(target_pool))) if target_pool else []
-        random_sample = random.sample(full_pool, min(3, len(full_pool)))
-        wod_exercises = target_sample + random_sample
-        random.shuffle(wod_exercises)
+    full_pool = self.get_combined_exercise_pool()
+    target_pool = self.get_exercises_by_muscle_group(target_muscle_id) if target_muscle_id else []
 
-        detailed_exercises = [{"name": ex, "details": self._assign_details(ex, format_type, stimulus)} for ex in wod_exercises]
-        scaled_result = self._scale_wod_to_time(detailed_exercises, stimulus.lower())
-        scaled_exercises = scaled_result["exercises"]
-        actual_time = scaled_result["time"]
+    target_sample = random.sample(target_pool, min(3, len(target_pool))) if target_pool else []
+    random_sample = random.sample(full_pool, min(3, len(full_pool)))
+    wod_exercises = target_sample + random_sample
+    random.shuffle(wod_exercises)
 
-        
-        # Map muscle ID to name
-        id_to_name = {m["id"]: m["name"] for m in self.data["muscle_groups"]}
-        target_muscle_name = id_to_name.get(target_muscle_id, "None") if target_muscle_id else "None"
+    detailed_exercises = []
+    id_to_name = {m["id"]: m["name"] for m in self.data["muscle_groups"]}
+    for ex in wod_exercises:
+        musclegroup_id = next((item["musclegroup_id"] for item in self.exercise_pool if item["exercise"] == ex), None)
+        muscle_name = id_to_name.get(musclegroup_id, "Unknown")
+        details = self._assign_details(ex, format_type, stimulus)
+        detailed_exercises.append({"name": ex, "muscle_group": muscle_name, "details": details})
 
+    scaled_result = self._scale_wod_to_time(detailed_exercises, stimulus.lower())
+    scaled_exercises = scaled_result["exercises"]
+    actual_time = scaled_result["time"]
 
-        result = {
-            "type": "WOD",
-            "stimulus": stimulus.capitalize(),
-            "duration": f"{actual_time} min",
-            "format": format_type,
-            "order": "Circuit",
-            "focus": f"50% target muscle + 50% general" if target_muscle_id else "General conditioning",
-            
-            "target_muscle_id": target_muscle_id if target_muscle_id else None,
-            "target_muscle_name": target_muscle_name,
+    result = {
+        "type": "WOD",
+        "stimulus": stimulus.capitalize(),
+        "duration": f"{actual_time} min",
+        "format": format_type,
+        "order": "Circuit",
+        "focus": f"50% target muscle + 50% general" if target_muscle_id else "General conditioning",
+        "target_muscle_id": target_muscle_id,
+        "target_muscle_name": target_muscle if target_muscle else "None",
+        "exercises": scaled_exercises,
+        "time": actual_time,
+        "details": f"{stimulus.capitalize()} WOD with format: {format_type}"
+    }
 
-            "exercises": scaled_exercises,
-            "time": actual_time,
-            "details": f"{stimulus.capitalize()} WOD with format: {format_type}"
-        }
+    if self.debug:
+        result["debug"] = debug_info
 
-        if self.debug:
-            result["debug"] = {
-                "format": format_type,
-                "selected_exercises": wod_exercises,
-                "scaled_time": actual_time
-            }
-
-        return result
