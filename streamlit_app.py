@@ -11,7 +11,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # Initialize PlanGenerator
 plan_gen = PlanGenerator(supabase)
 
-st.title("12-Week CrossFit Plan Generator")
+st.title("6-Week CrossFit Plan Generator")
 
 debug_mode = st.checkbox("Enable Debug Mode")
 sync_to_supabase = st.checkbox("Sync Plan to Supabase")
