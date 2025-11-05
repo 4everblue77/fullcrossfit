@@ -12,16 +12,35 @@ class HeavyGenerator:
         self.muscle_groups = data["muscle_groups"]
         self.mappings = data["mappings"]
 
-    def get_exercises_by_muscle(self, muscle):
-        mg_id = next((mg["id"] for mg in self.muscle_groups if mg["name"] == muscle), None)
+    def get_exercises_by_muscle_and_type(self, muscle, category_name):
+        # Find muscle group ID
+        mg_id = next((mg["id"] for mg in self.muscle_groups if mg["name"].lower() == muscle.lower()), None)
         if not mg_id:
             return []
-        exercise_ids = [m["exercise_id"] for m in self.mappings if m["musclegroup_id"] == mg_id]
-        
-        return [e["name"] for e in self.exercises if e["id"] in exercise_ids]
+    
+        # Find category ID
+        cat_id = next((c["id"] for c in self.categories if c["name"].lower() == category_name.lower()), None)
+        if not cat_id:
+            return []
+    
+        # Get exercise IDs for muscle group
+        muscle_ex_ids = {m["exercise_id"] for m in self.mappings if m["musclegroup_id"] == mg_id}
+    
+        # Get exercise IDs for category
+        category_ex_ids = {m["exercise_id"] for m in self.category_mappings if m["category_id"] == cat_id}
+    
+        # Intersection of both sets
+        exercise_ids = muscle_ex_ids.intersection(category_ex_ids)
+    
+        # Return exercise names
+        pool = [e["name"] for e in self.exercises if e["id"] in exercise_ids]
+        if not pool:
+            pool = [e["name"] for e in self.exercises]  # fallback
+        return pool
 
     def assign_exercise(self, target):
-        pool = self.get_exercises_by_muscle(target)
+        pool = self.get_exercises_by_muscle_and_type(target, "Heavy")
+        print(pool)
         return random.choice(pool) if pool else "No exercise available"
 
     def generate(self, target, week=1):
