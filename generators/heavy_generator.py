@@ -23,7 +23,7 @@ class HeavyGenerator:
         pool = self.get_exercises_by_muscle(target)
         return random.choice(pool) if pool else "No exercise available"
 
-    def generate(self, target, week):
+    def generate(self, target, week=1):
         """
         target: muscle group or 'Olympic'
         week: current week number (1-6 for intensity cycle)
