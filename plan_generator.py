@@ -79,7 +79,7 @@ class PlanGenerator:
                 None
             ]
         return framework
-
+            
     def generate_daily_plan(self, config, week_number):
         if config is None:
             return {"Rest Day": "No workout scheduled"}
@@ -87,8 +87,9 @@ class PlanGenerator:
         plan = {}
         muscles = list(set(config["heavy"] + config["wod"] + config["light"]))
     
-        # Always Warmup
-        plan["Warmup"] = self.warmup_gen.generate(muscles)
+        # Warmup: Skip on Thursday (Run day)
+        if not config["run"]:
+            plan["Warmup"] = self.warmup_gen.generate(muscles)
     
         # Heavy only if heavy list is not empty
         if config["heavy"]:
@@ -110,16 +111,18 @@ class PlanGenerator:
         if config["stimulus"] == "Girl/Hero":
             plan["Benchmark"] = self.benchmark_gen.generate()
     
-        # Light session: Core if Olympic day else config["light"]
-        light_target = "Core" if config["olympic"] else (config["light"][0] if config["light"] else "Core")
-        plan["Light"] = self.light_gen.generate(target=light_target)
+        # Light session: Skip on Tuesday (Skill day) and Thursday (Run day)
+        if not config["skill"] and not config["run"]:
+            light_target = "Core" if config["olympic"] else (config["light"][0] if config["light"] else "Core")
+            plan["Light"] = self.light_gen.generate(target=light_target)
     
         # Skill only if flag is True
         if config["skill"]:
             plan["Skill"] = self.skill_gen.generate("Handstand Push-Up", week_number)
     
-        # Always Cooldown
-        plan["Cooldown"] = self.cooldown_gen.generate(muscles)
+        # Cooldown: Skip on Thursday (Run day)
+        if not config["run"]:
+            plan["Cooldown"] = self.cooldown_gen.generate(muscles)
     
         # Total time
         plan["Total Time"] = f"{self._estimate_total_time(plan)} min"
