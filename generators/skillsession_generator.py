@@ -25,9 +25,10 @@ class SkillSessionGenerator:
                 "skill": skill_name,
                 "week": week,
                 "details": f"No skill found with name '{skill_name}'",
-                "session": None
+                "session": None,
+                "exercises": []
             }
-
+    
         session = self.get_session_plan(skill_id, week)
         if not session:
             return {
@@ -35,14 +36,31 @@ class SkillSessionGenerator:
                 "skill": skill_name,
                 "week": week,
                 "details": f"No session plan found for week {week}",
-                "session": None
+                "session": None,
+                "exercises": []
             }
-
+    
+        # Parse session_plan into structured exercises
+        # Assuming session["session_plan"] is a list of dicts like:
+        # [{"name": "Wall Walk", "sets": 3, "reps": "5", "rest": 60, "notes": "Strict form"}]
+        raw_plan = session.get("session_plan", [])
+        exercises = []
+        for i, item in enumerate(raw_plan, start=1):
+            exercises.append({
+                "name": item.get("name", f"Skill Move {i}"),
+                "set": item.get("sets", 1),
+                "reps": item.get("reps", ""),
+                "intensity": item.get("intensity", "Skill Focus"),
+                "rest": item.get("rest", 30),
+                "notes": item.get("notes", "")
+            })
+    
         return {
             "type": "Skill Session",
             "skill": skill_name,
             "week": week,
-            "focus": session["focus"],
+            "focus": session.get("focus", ""),
             "details": f"Week {week} skill session for {skill_name}",
-            "session_plan": session["session_plan"]
+            "session_plan": raw_plan,
+            "exercises": exercises  # ✅ Enables syncing
         }
