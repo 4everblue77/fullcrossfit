@@ -45,10 +45,15 @@ if st.session_state.full_plan:
                     st.markdown(f"**Stimulus:** `{day_data.get('stimulus', 'N/A')}`")
                     st.markdown(f"**Estimated Time:** `{day_data.get('estimated_time', 'N/A')} min`")
 
-                    # Show each section
+                    # Show each section with Tuesday/Thursday logic applied
                     if "plan" in day_data:
                         for section, content in day_data["plan"].items():
                             if section != "Debug":
+                                # Skip Light on Tuesday and Warmup/Cooldown/Light on Thursday
+                                if (day_label == "Tue" and section == "Light") or \
+                                   (day_label == "Thu" and section in ["Warmup", "Cooldown", "Light"]):
+                                    continue
+
                                 st.markdown(f"### {section}")
                                 if isinstance(content, dict):
                                     if "details" in content:
@@ -71,7 +76,12 @@ if st.session_state.full_plan:
                 else:
                     if "plan" in day_data:
                         for section, content in day_data["plan"].items():
-                            if section != "Debug" and isinstance(content, dict):  # ✅ Skip strings
+                            if section != "Debug" and isinstance(content, dict):
+                                # Apply Tuesday/Thursday logic for export
+                                if (day_label == "Tue" and section == "Light") or \
+                                   (day_label == "Thu" and section in ["Warmup", "Cooldown", "Light"]):
+                                    continue
+
                                 rows.append([
                                     week_label,
                                     day_label,
