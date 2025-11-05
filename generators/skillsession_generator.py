@@ -1,7 +1,7 @@
 class SkillSessionGenerator:
     def __init__(self, supabase,debug=False):
         """
-        #supabase: Supabase client instance
+        supabase: Supabase client instance
         """
         self.data = data  # ✅ Store exercise dataset
         self.supabase = supabase
