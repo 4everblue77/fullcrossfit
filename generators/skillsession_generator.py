@@ -46,7 +46,10 @@ class SkillSessionGenerator:
         raw_plan = session.get("session_plan", [])
         exercises = []
         for i, item in enumerate(raw_plan, start=1):
-            ex_id = next((e["id"] for e in self.supabase.table("md_exercises").select("*").execute().data if e["name"] == item.get("name")), None)
+            
+            name = item.get("name") if isinstance(item, dict) else str(item)
+            ex_id = next((e["id"] for e in self.data["exercises"] if e["name"] == name), None)
+
             exercises.append({
                 "name": item.get("name", f"Skill Move {i}"),
                 "exercise_id": ex_id,
