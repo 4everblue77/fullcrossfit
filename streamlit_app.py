@@ -28,6 +28,11 @@ if st.button("Generate Plan"):
 
     if selected_muscles:
         plan = plan_gen.generate_daily_plan(selected_muscles, stimulus=selected_stimulus)
+        
+        # Debug print to console
+        print("DEBUG: Full Plan Output:", plan)
+        print("DEBUG: WOD Section:", plan.get("WOD"))
+
         st.subheader("Workout Plan")
         st.json(plan)
 
