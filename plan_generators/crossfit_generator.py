@@ -1,0 +1,114 @@
+import random
+from generators.warmup_generator import WarmupGenerator
+from generators.heavy_generator import HeavyGenerator
+from generators.olympic_generator import OlympicGenerator
+from generators.run_generator import RunGenerator
+from generators.wod_generator import WODGenerator
+from generators.benchmark_generator import BenchmarkGenerator
+from generators.light_generator import LightGenerator
+from generators.cooldown_generator import CooldownGenerator
+from generators.skillsession_generator import SkillSessionGenerator
+
+class CrossFitPlanGenerator:
+    def __init__(self, supabase, debug=False):
+        self.supabase = supabase
+        self.data = self._load_data()
+        self.debug = debug
+
+        self.warmup_gen = WarmupGenerator(self.data)
+        self.heavy_gen = HeavyGenerator(self.data, debug=debug)
+        self.olympic_gen = OlympicGenerator(self.data, debug=debug)
+        self.run_gen = RunGenerator(user_5k_time=24, debug=debug)
+        self.wod_gen = WODGenerator(self.data, debug=debug)
+        self.benchmark_gen = BenchmarkGenerator(supabase)
+        self.light_gen = LightGenerator(self.data)
+        self.cooldown_gen = CooldownGenerator(self.data)
+        self.skill_gen = SkillSessionGenerator(self.data, self.supabase, debug=self.debug)
+
+    def _load_data(self):
+        return {
+            "exercises": self.supabase.table("md_exercises").select("*").execute().data,
+            "muscle_groups": self.supabase.table("md_muscle_groups").select("*").execute().data,
+            "mappings": self.supabase.table("md_map_exercise_muscle_groups").select("*").execute().data,
+            "categories": self.supabase.table("md_categories").select("*").execute().data,
+            "category_mappings": self.supabase.table("md_map_exercise_categories").select("*").execute().data,
+            "exercise_pool": self.supabase.table("exercise_pool").select("*").execute().data
+        }
+
+    def _estimate_total_time(self, daily_plan):
+        total = 0
+        for block in daily_plan.values():
+            if isinstance(block, dict) and "time" in block:
+                total += block["time"]
+        return total
+
+    def build_framework(self):
+        framework = {}
+        for week in range(1, 7):
+            glutes_or_quads = "Glutes/Hamstrings" if week % 2 != 0 else "Quads"
+            chest_or_back = "Chest" if week % 2 != 0 else "Back"
+            mon_stim = random.choice(["VO2 Max", "Lactate Threshold"])
+            tue_stim = random.choice(["VO2 Max", "Lactate Threshold"])
+            wed_stim = random.choice(["VO2 Max", "Lactate Threshold"])
+            fri_stim = random.choice(["VO2 Max", "Lactate Threshold"])
+            sat_stim = "Girl/Hero" if week % 2 != 0 else "Anaerobic"
+            framework[week] = [
+                {"day": "Mon", "heavy": [glutes_or_quads], "wod": [chest_or_back], "stimulus": mon_stim, "light": ["Shoulders"], "olympic": False, "skill": False, "run": False},
+                {"day": "Tue", "heavy": [], "wod": ["Core"], "stimulus": tue_stim, "light": [], "olympic": True, "skill": True, "run": False},
+                {"day": "Wed", "heavy": ["Shoulders"], "wod": [glutes_or_quads], "stimulus": wed_stim, "light": [chest_or_back], "olympic": False, "skill": False, "run": False},
+                {"day": "Thu", "heavy": [], "wod": [], "stimulus": None, "light": [], "olympic": False, "skill": False, "run": True},
+                {"day": "Fri", "heavy": [chest_or_back], "wod": ["Shoulders"], "stimulus": fri_stim, "light": [glutes_or_quads], "olympic": False, "skill": False, "run": False},
+                {"day": "Sat", "heavy": [], "wod": [], "stimulus": sat_stim, "light": [glutes_or_quads], "olympic": True, "skill": False, "run": False},
+                None  # Sunday rest
+            ]
+        return framework
+
+    def generate_daily_plan(self, config, week_number):
+        if config is None:
+            return {"Rest Day": "No workout scheduled"}
+        plan = {}
+        muscles = list(set(config["heavy"] + config["wod"] + config["light"]))
+        if not config["run"]:
+            plan["Warmup"] = self.warmup_gen.generate(muscles)
+        if config["heavy"]:
+            plan["Heavy"] = self.heavy_gen.generate(config["heavy"])
+        if config["olympic"]:
+            plan["Olympic"] = self.olympic_gen.generate()
+        if config["run"]:
+            plan["Run"] = self.run_gen.generate()
+        if config["wod"] and config["stimulus"]:
+            plan["WOD"] = self.wod_gen.generate(target_muscle=config["wod"][0], stimulus=config["stimulus"])
+        if config["stimulus"] == "Girl/Hero":
+            plan["Benchmark"] = self.benchmark_gen.generate()
+        if not config["skill"] and not config["run"]:
+            light_target = "Core" if config["olympic"] else (config["light"][0] if config["light"] else "Core")
+            plan["Light"] = self.light_gen.generate(target=light_target)
+        if config["skill"]:
+            plan["Skill"] = self.skill_gen.generate("Handstand Push-Up", week_number)
+        if not config["run"]:
+            plan["Cooldown"] = self.cooldown_gen.generate(muscles)
+        plan["Total Time"] = f"{self._estimate_total_time(plan)} min"
+        return plan
+
+    def generate_full_plan(self):
+        framework = self.build_framework()
+        full_plan = {}
+        for week, days in framework.items():
+            full_plan[f"Week {week}"] = {}
+            for day_config in days:
+                if day_config is None:
+                    full_plan[f"Week {week}"]["Sun"] = {"Rest": True, "details": "Rest day"}
+                    continue
+                daily_plan = self.generate_daily_plan(day_config, week)
+                full_plan[f"Week {week}"][day_config["day"]] = {
+                    "muscles": list(set(day_config["heavy"] + day_config["wod"] + day_config["light"])),
+                    "stimulus": day_config["stimulus"],
+                    "day_type": day_config["day"],
+                    "plan": daily_plan,
+                    "estimated_time": self._estimate_total_time(daily_plan)
+                }
+        return full_plan
+
+    def sync_plan_to_supabase(self, full_plan):
+        # Your existing sync logic here (unchanged)
+        pass
