@@ -5,11 +5,6 @@ st.set_page_config(page_title="FullCrossFit Dashboard", page_icon="🏠")
 st.title("🏠 Weekly Dashboard")
 
 
-if st.button("➡️ Go to Plan Generator"):
-    st.switch_page("pages/2_⚙️_Plan_Generator.py")
-
-if st.button("📄 View Session Details"):
-    st.switch_page("pages/3_📄_Session_Detail.py")
 
 
 
@@ -71,12 +66,4 @@ else:
         if "details" in session_content:
             st.markdown(f"- {session_content['details']}")
 
-        # Clicking button sets session in state for detail page
-        if st.button(f"View {session_type} Details", key=f"view_{session_type}"):
-            st.session_state.selected_session = {
-                "type": session_type,
-                "content": session_content,
-                "day": selected_day,
-                "week": current_week
-            }
-            st.switch_page("pages/3_📄_Session_Detail.py")
+
