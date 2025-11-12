@@ -5,10 +5,7 @@ st.set_page_config(page_title="FullCrossFit Dashboard", page_icon="🏠")
 st.title("🏠 Weekly Dashboard")
 
 
-# Show navigation links after title
-with st.container():
-    st.page_link("pages/2_⚙️_Plan_Generator.py", label="Go to Plan Generator", icon="➡️")
-    st.page_link("pages/3_📄_Session_Detail.py", label="View Session Details", icon="📄")
+
 
 
 # Check if a plan exists
