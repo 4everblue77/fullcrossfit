@@ -68,7 +68,7 @@ def render_session_button(session_type, details, icon, indicator, key):
     </div>
     """
     st.markdown(button_html, unsafe_allow_html=True)
-    return st.button("hidden_button", key=key, label_visibility="collapsed")
+    return st.button("", key=key)  # ✅ Compatible with older Streamlit
 
 # ✅ Dashboard View
 if st.session_state.selected_session is None:
