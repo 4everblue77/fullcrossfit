@@ -5,6 +5,11 @@ st.set_page_config(page_title="FullCrossFit Dashboard", page_icon="🏠")
 st.title("🏠 Weekly Dashboard")
 
 
+if st.button("➡️ Go to Plan Generator"):
+    st.switch_page("pages/2_⚙️_Plan_Generator.py")
+
+if st.button("📄 View Session Details"):
+
 
 
 
