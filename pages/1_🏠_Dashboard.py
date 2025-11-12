@@ -85,5 +85,5 @@ else:
                 "day": selected_day,
                 "week": week_label
             }
-            st.switch_page("📄 Session Detail")
+            st.switch_page("Session_Detail")
         
