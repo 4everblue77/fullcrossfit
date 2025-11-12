@@ -10,18 +10,6 @@ SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
-def switch_to_page_by_filename(filename: str):
-    """
-    Switch to a Streamlit page by its filename (without .py).
-    Example: switch_to_page_by_filename("3_📄_Session_Detail")
-    """
-    pages = st.get_pages()
-    for page_name, page_info in pages.items():
-        # Check if the script name matches the filename provided
-        if page_info["script_path"].endswith(f"{filename}.py"):
-            st.switch_page(page_name)
-            return
-    st.error(f"Page '{filename}' not found. Available pages: {list(pages.keys())}")
 
 
 # ✅ Get all weeks
@@ -97,5 +85,5 @@ else:
                 "day": selected_day,
                 "week": week_label
             }
-            switch_to_page_by_filename("3_📄_Session_Detail") 
+            st.switch_page("pages/3_📄_Session_Detail")
         
