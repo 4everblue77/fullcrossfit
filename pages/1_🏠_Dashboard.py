@@ -21,22 +21,12 @@ week_label = f"Week {current_week['number']}"
 
 # ✅ Get all days for this week
 days = supabase.table("plan_days").select("*").eq("week_id", current_week["id"]).execute().data
-day_map = {d["id"]: d for d in days}
+day_ids = [d["id"] for d in days]
 
 # ✅ Get all sessions for these days in one query
-day_ids = [d["id"] for d in days]
 sessions = supabase.table("plan_sessions").select("*").in_("day_id", day_ids).execute().data
 
-# ✅ Get all exercises for these sessions in one query
-session_ids = [s["id"] for s in sessions]
-exercises = supabase.table("plan_session_exercises").select("*").in_("session_id", session_ids).execute().data
-
-# ✅ Group exercises by session_id
-exercise_map = {}
-for ex in exercises:
-    exercise_map.setdefault(ex["session_id"], []).append(ex)
-
-# ✅ Build full_plan in memory
+# ✅ Build full_plan without exercises
 full_plan = {week_label: {}}
 for day in days:
     day_label = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][day["day_number"]-1]
@@ -50,7 +40,7 @@ for day in days:
                 "details": s.get("details", ""),
                 "time": s.get("duration", 0),
                 "completed": s.get("completed", False),
-                "exercises": exercise_map.get(s["id"], [])
+                "session_id": s["id"]  # ✅ Needed for Page 3
             }
         full_plan[week_label][day_label] = {
             "muscles": day_sessions[0].get("target_muscle", "").split(", ") if day_sessions else [],
@@ -78,12 +68,19 @@ else:
         }
         icon = icon_map.get(session_type, "📋")
         indicator = "✅" if session_content.get("completed") else "⚫"
+
+        # Show session summary
         st.markdown(f"**{icon} {session_type} {indicator}**")
         if "details" in session_content:
             st.markdown(f"- {session_content['details']}")
 
-        # Show exercises for this session
-        if session_content.get("exercises"):
-            st.markdown("**Exercises:**")
-            for ex in session_content["exercises"]:
-                st.markdown(f"- {ex['exercise_name']} ({ex.get('reps','')} reps, {ex.get('intensity','')})")
+        # ✅ Button to view details in Page 3
+        if st.button(f"View {session_type} Details", key=f"view_{session_type}"):
+            st.session_state.selected_session = {
+                "type": session_type,
+                "session_id": session_content["session_id"],
+                "day": selected_day,
+                "week": week_label
+            }
+            st.switch_page("pages/3_📄_Session_Detail.py")
+        
