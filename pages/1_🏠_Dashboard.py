@@ -1,11 +1,22 @@
 import streamlit as st
 
+st.set_page_config(page_title="FullCrossFit Dashboard", page_icon="🏠")
+
 st.title("🏠 Weekly Dashboard")
 
-# Ensure a plan exists
+# Navigation shortcuts
+st.page_link("pages/2_⚙️_Plan_Generator.py", label="Go to Plan Generator", icon="➡️")
+st.page_link("pages/3_📄_Session_Detail.py", label="View Session Details", icon="📄")
+
+# Check if a plan exists
 full_plan = st.session_state.get("full_plan", None)
+
 if not full_plan:
-    st.warning("No plan generated yet. Please go to the Plan Generator page.")
+    st.warning("No plan generated yet.")
+    st.write("""
+    👉 Use the **Plan Generator** page to create your 6-week plan.
+    Once generated, you'll see your weekly overview here.
+    """)
     st.stop()
 
 # Assume current week is the first one for now
@@ -63,4 +74,4 @@ else:
                 "day": selected_day,
                 "week": current_week
             }
-            st.switch_page("pages/3_📋_Session_Detail.py")
+            st.switch_page("pages/3_📄_Session_Detail.py")
