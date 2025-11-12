@@ -13,49 +13,56 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 if "selected_session" not in st.session_state:
     st.session_state.selected_session = None
 
-# ✅ Helper function for styled session button
+# ✅ CSS for styling session cards
+st.markdown("""
+<style>
+    .session-btn {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 2px solid #ccc;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        background-color: #f9f9f9;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .session-btn:hover {
+        background-color: #e6f0ff;
+    }
+    .session-left {
+        display: flex;
+        align-items: center;
+    }
+    .session-icon {
+        font-size: 32px;
+        margin-right: 12px;
+    }
+    .session-text {
+        display: flex;
+        flex-direction: column;
+    }
+    .session-title {
+        font-size: 22px;
+        font-weight: bold;
+    }
+    .session-details {
+        font-size: 14px;
+        color: #555;
+    }
+    .session-indicator {
+        font-size: 32px;
+    }
+    .hidden-btn {
+        display: none;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ✅ Helper function for clickable session card
 def render_session_button(session_type, details, icon, indicator, key):
     button_html = f"""
-    <style>
-        .session-btn {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 2px solid #ccc;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            background-color: #f9f9f9;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }}
-        .session-btn:hover {{
-            background-color: #e6f0ff;
-        }}
-        .session-left {{
-            display: flex;
-            align-items: center;
-        }}
-        .session-icon {{
-            font-size: 32px;
-            margin-right: 12px;
-        }}
-        .session-text {{
-            display: flex;
-            flex-direction: column;
-        }}
-        .session-title {{
-            font-size: 22px;
-            font-weight: bold;
-        }}
-        .session-details {{
-            font-size: 14px;
-            color: #555;
-        }}
-        .session-indicator {{
-            font-size: 32px;
-        }}
-    </style>
     <div class="session-btn" onclick="document.getElementById('{key}').click()">
         <div class="session-left">
             <span class="session-icon">{icon}</span>
@@ -68,7 +75,7 @@ def render_session_button(session_type, details, icon, indicator, key):
     </div>
     """
     st.markdown(button_html, unsafe_allow_html=True)
-    return st.button("", key=key)  # ✅ Compatible with older Streamlit
+    return st.button("click", key=key)
 
 # ✅ Dashboard View
 if st.session_state.selected_session is None:
