@@ -63,8 +63,9 @@ def render(session):
 
     # ✅ Overall progress bar (include current exercise)
     overall_progress = st.progress(0)
-    overall_percent = int(((completed_count + (1 if st.session_state.phase == "exercise" else 0)) / len(exercises)) * 100)
-    overall_progress.progress(overall_percent)
+    overall_fraction = (completed_count + (1 if st.session_state.phase == "exercise" else 0)) / len(exercises)
+    overall_progress.progress(overall_fraction)
+    
 
     placeholder = st.empty()
 
