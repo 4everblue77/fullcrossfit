@@ -113,25 +113,24 @@ def render(session):
 
 
     if col3.button("⬅ Back to Dashboard"):
-        # Stop autorefresh
-        st.session_state.running = False
+        # Ensure session_completed is initialized
+        if "session_completed" not in st.session_state:
+            st.session_state.session_completed = session.get("completed", False)
     
-        # Debug: show what will be saved
-        st.write("Saving to Supabase:", {
-            "session_completed": st.session_state.session_completed,
-            "exercise_completion": st.session_state.exercise_completion
-        })
+        # Sync exercise completion states
+        for ex in exercises:
+            st.session_state.exercise_completion[ex["id"]] = st.session_state.exercise_completion.get(ex["id"], False)
     
-        # Update session
+        # ✅ Update session completion in Supabase
         supabase.table("plan_sessions").update({
             "completed": st.session_state.session_completed
         }).eq("id", session["session_id"]).execute()
     
-        # Update exercises
-        for ex_id, completed in st.session_state.exercise_completion.items():
+        # ✅ Update each exercise completion in Supabase
+        for ex in exercises:
             supabase.table("plan_session_exercises").update({
-                "completed": completed
-            }).eq("id", ex_id).execute()
+                "completed": st.session_state.exercise_completion[ex["id"]]
+            }).eq("id", ex["id"]).execute()
     
         st.success("✅ Progress saved to Supabase")
         st.session_state.selected_session = None
