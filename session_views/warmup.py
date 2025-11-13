@@ -37,7 +37,7 @@ def render(session):
     if first_incomplete_index is None:
         st.info("Warmup marked as completed, but you can adjust below.")
         # Do NOT return — allow manual adjustments
-        st.session_state.exercise_index = len(exercises) - 
+        st.session_state.exercise_index = len(exercises) 
 
 
     if st.session_state.exercise_index is None:
