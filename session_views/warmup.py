@@ -110,22 +110,31 @@ def render(session):
         st.session_state.running = True
     if col2.button("⏸ Pause"):
         st.session_state.running = False
+
     if col3.button("⬅ Back to Dashboard"):
+        # Ensure session_completed is initialized
+        if "session_completed" not in st.session_state:
+            st.session_state.session_completed = session.get("completed", False)
+    
+        # Sync exercise completion states
         for ex in exercises:
             st.session_state.exercise_completion[ex["id"]] = st.session_state.exercise_completion.get(ex["id"], False)
-
+    
+        # ✅ Update session completion in Supabase
         supabase.table("plan_sessions").update({
             "completed": st.session_state.session_completed
         }).eq("id", session["session_id"]).execute()
-
+    
+        # ✅ Update each exercise completion in Supabase
         for ex in exercises:
             supabase.table("plan_session_exercises").update({
                 "completed": st.session_state.exercise_completion[ex["id"]]
             }).eq("id", ex["id"]).execute()
-
-        st.success("Progress saved to Supabase ✅")
+    
+        st.success("✅ Progress saved to Supabase")
         st.session_state.selected_session = None
         st.rerun()
+
 
     # ✅ Collapsible summary
     with st.expander("Exercise Summary"):
