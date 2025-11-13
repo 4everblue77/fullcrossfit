@@ -138,6 +138,24 @@ def render(session):
         summary_html += "</ul>"
         st.markdown(summary_html, unsafe_allow_html=True)
 
+        # ✅ Manual adjustment checkboxes
+        st.markdown("**Manually adjust completion:**")
+        for ex in exercises:
+            ex_id = ex["id"]
+            ex_name = ex["exercise_name"]
+            st.session_state.exercise_completion[ex_id] = st.checkbox(
+                ex_name,
+                value=st.session_state.exercise_completion[ex_id],
+                key=f"manual_{ex_id}"
+            )
+
+        # ✅ Reset All button
+        if st.button("🔄 Reset All"):
+            for ex_id in st.session_state.exercise_completion.keys():
+                st.session_state.exercise_completion[ex_id] = False
+            st.session_state.completed_count = 0
+            st.success("All exercises reset!")
+
     # ✅ Autorefresh timer logic
     if st.session_state.running:
         st_autorefresh(interval=1000, limit=None, key="timer_refresh")
@@ -175,3 +193,4 @@ def render(session):
                     st.session_state.phase = "exercise"
                     next_ex = exercises[st.session_state.exercise_index]
                     st.session_state.remaining_time = int(next_ex.get("duration", 30))
+    
