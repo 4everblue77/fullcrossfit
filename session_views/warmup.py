@@ -34,14 +34,23 @@ def render(session):
     first_incomplete_index = next((i for i, ex in enumerate(exercises) if not ex.get("completed", False)), None)
 
 
+
     if first_incomplete_index is None:
         st.info("Warmup marked as completed, but you can adjust below.")
-        # Do NOT return — allow manual adjustments
-        st.session_state.exercise_index = len(exercises) 
+        # Reset index to 0 so UI doesn't break
+        st.session_state.exercise_index = 0
 
 
-    if st.session_state.exercise_index is None:
+
+    # Ensure exercise_index is valid and points to an incomplete exercise
+    if st.session_state.exercise_index is None or st.session_state.exercise_index >= len(exercises):
+        # Find first incomplete exercise based on manual completion state
+        first_incomplete_index = next(
+            (i for i, ex in enumerate(exercises) if not st.session_state.exercise_completion.get(ex["id"], False)),
+            0  # fallback to 0 if all are complete
+        )
         st.session_state.exercise_index = first_incomplete_index
+
 
     current_ex = exercises[st.session_state.exercise_index]
     exercise_name = current_ex["exercise_name"]
