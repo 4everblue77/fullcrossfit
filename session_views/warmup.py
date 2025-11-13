@@ -116,20 +116,26 @@ def render(session):
         if "session_completed" not in st.session_state:
             st.session_state.session_completed = session.get("completed", False)
     
-        # Sync exercise completion states
-        for ex in exercises:
-            st.session_state.exercise_completion[ex["id"]] = st.session_state.exercise_completion.get(ex["id"], False)
+        # ✅ Force sync from DB before saving
+        exercises_db = supabase.table("plan_session_exercises") \
+            .select("id, completed") \
+            .eq("session_id", session["session_id"]) \
+            .execute().data
     
-        # ✅ Update session completion in Supabase
+        for ex in exercises_db:
+            # Merge DB state with session state
+            st.session_state.exercise_completion[ex["id"]] = st.session_state.exercise_completion.get(ex["id"], ex["completed"])
+    
+        # ✅ Update session completion
         supabase.table("plan_sessions").update({
             "completed": st.session_state.session_completed
         }).eq("id", session["session_id"]).execute()
     
-        # ✅ Update each exercise completion in Supabase
-        for ex in exercises:
+        # ✅ Update exercises completion
+        for ex_id, completed in st.session_state.exercise_completion.items():
             supabase.table("plan_session_exercises").update({
-                "completed": st.session_state.exercise_completion[ex["id"]]
-            }).eq("id", ex["id"]).execute()
+                "completed": completed
+            }).eq("id", ex_id).execute()
     
         st.success("✅ Progress saved to Supabase")
         st.session_state.selected_session = None
