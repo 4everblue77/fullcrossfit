@@ -151,21 +151,17 @@ def render(session):
 
     # ✅ Timer loop without blocking
     if st.session_state.running:
-        # Recompute completed count dynamically
-        completed_count = sum(1 for ex_id, val in st.session_state.exercise_completion.items() if val)
-    
         color = "#f00" if st.session_state.phase == "exercise" else "#00f"
         percent = ((duration - st.session_state.remaining_time) / duration) * 100
-        progress_position = completed_count + (1 if st.session_state.phase == "exercise" else 0)
+        progress_position = st.session_state.completed_count + (1 if st.session_state.phase == "exercise" else 0)
     
         # Render circle
         render_circle(percent, st.session_state.remaining_time, exercise_name,
                       progress_position, len(exercises), color)
     
         # Update overall progress bar dynamically
-        overall_fraction = (progress_position / len(exercises))
-        overall_fraction = min(overall_fraction, 1.0)
-        overall_progress.progress(overall_fraction)
+        overall_fraction = progress_position / len(exercises)
+        overall_progress.progress(min(overall_fraction, 1.0))
     
         time.sleep(1)
         st.session_state.remaining_time -= 1
@@ -173,17 +169,18 @@ def render(session):
         if st.session_state.remaining_time <= 0:
             play_sound()
             if st.session_state.phase == "exercise":
-                # ✅ Mark exercise complete in state and DB
+                # ✅ Update state and DB
                 st.session_state.exercise_completion[current_ex["id"]] = True
+                st.session_state.completed_count += 1
                 supabase.table("plan_session_exercises").update({"completed": True}).eq("id", current_ex["id"]).execute()
     
+                # Switch to rest
                 st.session_state.phase = "rest"
                 duration = rest_duration
                 st.session_state.remaining_time = rest_duration
             else:
                 st.session_state.exercise_index += 1
                 if st.session_state.exercise_index >= len(exercises):
-                    # ✅ Mark session complete in DB
                     supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
                     st.success("Warmup completed!")
                     st.session_state.selected_session = None
