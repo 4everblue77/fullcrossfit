@@ -14,6 +14,43 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 if "selected_session" not in st.session_state:
     st.session_state.selected_session = None
 
+# ✅ CSS for full-width link buttons styled as cards
+st.markdown("""
+<style>
+.link-card a {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    text-align: left;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 2px solid #ccc;
+    border-radius: 12px;
+    background-color: #f9f9f9;
+    font-size: 18px;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.3s ease;
+}
+.link-card a:hover {
+    background-color: #e6f0ff;
+}
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    font-size: 22px;
+}
+.card-details {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #555;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # Dashboard view
 if st.session_state.selected_session is None:
     st.title("🏠 Weekly Dashboard")
@@ -77,11 +114,19 @@ if st.session_state.selected_session is None:
                 f"&week={quote(week_label)}"
             )
 
-            # Render link button
-            st.link_button(
-                label=f"{icon} {session_type}\n{details}\nStatus: {indicator}",
-                url=url
-            )
+            # Custom HTML for link button
+            card_html = f"""
+            <div class="link-card">
+                {url}
+                    <div class="card-header">
+                        <span>{icon} {session_type}</span>
+                        <span>{indicator}</span>
+                    </div>
+                    <div class="card-details">{details}</div>
+                </a>
+            </div>
+            """
+            st.markdown(card_html, unsafe_allow_html=True)
 
 # Detect query params
 params = st.experimental_get_query_params()
