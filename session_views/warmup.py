@@ -98,6 +98,13 @@ def render(session):
         </audio>
         """, unsafe_allow_html=True)
 
+
+
+    # Initialize session_completed
+    if "session_completed" not in st.session_state:
+        st.session_state.session_completed = session.get("completed", False)
+
+
     # ✅ Buttons
     col1, col2, col3 = st.columns(3)
     if col1.button("▶ Start / Resume"):
