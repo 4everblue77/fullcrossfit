@@ -118,8 +118,8 @@ if st.session_state.selected_session is None:
                 f"&week={quote(week_label)}"
             )
 
-            # Custom HTML for link button
-            card_html = f"""
+            # ✅ Render clickable card without showing URL text
+            st.markdown(f"""
             <div class="link-card">
                 {url}
                     <div class="card-content">
@@ -131,8 +131,7 @@ if st.session_state.selected_session is None:
                     </div>
                 </a>
             </div>
-            """
-            st.markdown(card_html, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
 # Detect query params
 params = st.experimental_get_query_params()
