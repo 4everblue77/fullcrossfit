@@ -69,7 +69,9 @@ def render(session):
     overall_fraction = (completed_count + (1 if st.session_state.phase == "exercise" else 0)) / len(exercises)
     overall_fraction = min(overall_fraction, 1.0)
     overall_progress.progress(overall_fraction)
-    
+
+    warmup_header = current_ex.get("notes", "").strip() or "General Warmup"
+    st.subheader(f"Warmup Type: {warmup_header}"
 
     placeholder = st.empty()
 
