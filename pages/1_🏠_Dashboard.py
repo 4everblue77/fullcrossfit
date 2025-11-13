@@ -119,10 +119,10 @@ if st.session_state.selected_session is None:
             )
 
             # ✅ Render clickable card without showing URL text
+
             st.markdown(f"""
             <div class="link-card">
-                <a>
-                    {url}
+                {url}
                     <div class="card-content">
                         <div class="card-header">
                             <span>{icon} {session_type}</span>
@@ -133,6 +133,7 @@ if st.session_state.selected_session is None:
                 </a>
             </div>
             """, unsafe_allow_html=True)
+
 
 # Detect query params
 params = st.experimental_get_query_params()
