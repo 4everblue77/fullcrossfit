@@ -104,6 +104,27 @@ if st.session_state.selected_session is None:
                 }
                 st.rerun()
 
+
+# Routing to session detail
+if st.session_state.selected_session:
+    session = st.session_state.selected_session
+    session_type = session["type"]
+
+    if session_type == "Warmup":
+        warmup.render(session)
+    elif session_type == "Heavy":
+        heavy.render(session)
+    elif session_type == "Olympic":
+        olympic.render(session)
+    elif session_type == "WOD":
+        wod.render(session)
+    elif session_type == "Cooldown":
+        cooldown.render(session)
+    else:
+        st.error("Unknown session type.")
+
+
+'''
 # ✅ Session detail view
 if st.session_state.selected_session:
     session = st.session_state.selected_session
@@ -139,3 +160,4 @@ if st.session_state.selected_session:
                 supabase.table("plan_session_exercises").update({"completed": True}).eq("id", ex["id"]).execute()
                 st.success(f"Set {ex['set_number']} marked as completed!")
                 st.rerun()
+'''
