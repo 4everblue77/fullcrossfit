@@ -95,13 +95,13 @@ if st.session_state.selected_session is None:
             week_label_encoded = quote(week_label)
 
 
-
-
+            
             card_html = (
-                f"<a class='card-link' href='?session_id={session_content['session_id']}"
-                f"&type={session_type_encoded}"
-                f"&details={details_encoded}"
-                f"&day={iv class='session-text'>"
+                f"?session_id={session_content["
+                f"<div class='session-btn'>"
+                f"<div class='session-left'>"
+                f"<span class='session-icon'>{icon}</span>"
+                f"<div class='session-text'>"
                 f"<div class='session-title'>{session_type}</div>"
                 f"<div class='session-details'>{details}</div>"
                 f"</div></div>"
