@@ -11,54 +11,57 @@ def render(session):
     st.title("🔥 Warmup")
     st.markdown(f"**Week:** {session['week']} | **Day:** {session['day']}")
 
-    # Fetch exercises for this session
+    # Fetch exercises
     exercises = supabase.table("plan_session_exercises") \
         .select("*") \
         .eq("session_id", session["session_id"]) \
         .order("set_number") \
         .execute().data
 
-    # ✅ Handle empty exercise list
     if not exercises or len(exercises) == 0:
         st.warning("No exercises found for this warmup.")
         return
 
     # ✅ Determine starting point based on completed exercises
     first_incomplete_index = None
+    completed_count = 0
     for i, ex in enumerate(exercises):
-        if not ex.get("completed", False):
-            first_incomplete_index = i
-            break
+        if ex.get("completed", False):
+            completed_count += 1
+        else:
+            if first_incomplete_index is None:
+                first_incomplete_index = i
 
     if first_incomplete_index is None:
-        # All exercises completed
         st.success("Warmup already completed!")
         st.session_state.selected_session = None
         return
 
-    # ✅ Initialize state for new session
-    st.session_state.exercise_index = first_incomplete_index
-    st.session_state.phase = "exercise"
-    st.session_state.running = False
-    st.session_state.remaining_time = None
+    # ✅ Initialize state only if not already set
+    if "exercise_index" not in st.session_state:
+        st.session_state.exercise_index = first_incomplete_index
+    if "phase" not in st.session_state:
+        st.session_state.phase = "exercise"
+    if "running" not in st.session_state:
+        st.session_state.running = False
+    if "remaining_time" not in st.session_state:
+        st.session_state.remaining_time = None
 
-    # Current exercise details
     current_ex = exercises[st.session_state.exercise_index]
     exercise_name = current_ex["exercise_name"]
     exercise_duration = int(current_ex.get("duration", 30))
     rest_duration = int(current_ex.get("rest", 30))
     duration = exercise_duration if st.session_state.phase == "exercise" else rest_duration
 
-    # Reset remaining_time if None
     if st.session_state.remaining_time is None:
         st.session_state.remaining_time = duration
 
-    # ✅ Overall progress bar
+    # ✅ Overall progress bar (includes previously completed exercises)
     overall_progress = st.progress(0)
-    overall_percent = int((st.session_state.exercise_index / len(exercises)) * 100)
+    overall_percent = int(((completed_count + st.session_state.exercise_index) / len(exercises)) * 100)
     overall_progress.progress(overall_percent)
 
-    # ✅ Responsive circular timer placeholder
+    # ✅ Responsive circular timer
     placeholder = st.empty()
 
     def render_circle(percent, remaining_time, exercise_name, index, total, color):
@@ -79,7 +82,6 @@ def render(session):
         """
         placeholder.markdown(circle_html, unsafe_allow_html=True)
 
-    # ✅ Sound alert
     def play_sound():
         st.markdown("""
         <audio autoplay>
@@ -89,21 +91,21 @@ def render(session):
 
     # ✅ Buttons
     col1, col2, col3 = st.columns(3)
-    if col1.button("▶ Start / Continue"):
+    if col1.button("▶ Start / Resume"):
         st.session_state.running = True
-    if col2.button("⏸ Stop"):
+    if col2.button("⏸ Pause"):
         st.session_state.running = False
     if col3.button("⬅ Back to Dashboard"):
-        # ✅ Save progress before leaving
+        # Save progress before leaving
         for i, ex in enumerate(exercises):
-            if i < st.session_state.exercise_index:
+            if ex.get("completed", False) or i < st.session_state.exercise_index:
                 supabase.table("plan_session_exercises").update({"completed": True}).eq("id", ex["id"]).execute()
         if st.session_state.exercise_index >= len(exercises):
             supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
         st.session_state.selected_session = None
         st.rerun()
 
-    # ✅ Timer loop with auto-continue
+    # ✅ Timer loop with pause/resume and auto-continue
     if st.session_state.running:
         while st.session_state.running:
             color = "#f00" if st.session_state.phase == "exercise" else "#00f"
@@ -113,21 +115,17 @@ def render(session):
             time.sleep(1)
             st.session_state.remaining_time -= 1
 
-            # Phase finished
             if st.session_state.remaining_time <= 0:
                 play_sound()
                 if st.session_state.phase == "exercise":
-                    # ✅ Mark exercise completed in Supabase
+                    # ✅ Mark exercise completed immediately
                     supabase.table("plan_session_exercises").update({"completed": True}).eq("id", current_ex["id"]).execute()
-                    # Switch to rest
                     st.session_state.phase = "rest"
                     duration = rest_duration
                     st.session_state.remaining_time = rest_duration
                 else:
-                    # Move to next exercise
                     st.session_state.exercise_index += 1
                     if st.session_state.exercise_index >= len(exercises):
-                        # ✅ All exercises done
                         supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
                         st.success("Warmup completed!")
                         st.session_state.selected_session = None
@@ -142,9 +140,9 @@ def render(session):
                         st.session_state.remaining_time = exercise_duration
 
                 # ✅ Update overall progress
-                overall_percent = int((st.session_state.exercise_index / len(exercises)) * 100)
+                completed_count += 1
+                overall_percent = int(((completed_count + st.session_state.exercise_index) / len(exercises)) * 100)
                 overall_progress.progress(overall_percent)
 
-            # Refresh UI
             render_circle(percent, st.session_state.remaining_time, exercise_name,
                           st.session_state.exercise_index + 1, len(exercises), color)
