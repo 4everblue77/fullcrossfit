@@ -1,6 +1,8 @@
 import streamlit as st
 from supabase import create_client
 
+from session_views import warmup, heavy, olympic, wod, cooldown
+
 # ✅ Page config
 st.set_page_config(page_title="FullCrossFit Dashboard", page_icon="🏠", layout="wide")
 
