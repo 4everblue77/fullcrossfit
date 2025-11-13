@@ -1,5 +1,6 @@
 import streamlit as st
 from supabase import create_client
+from urllib.parse import quote
 
 st.set_page_config(page_title="FullCrossFit Dashboard", page_icon="🏠")
 
@@ -83,22 +84,25 @@ if st.session_state.selected_session is None:
             icon = icon_map.get(session_type, "📋")
             indicator = "✅" if session_content.get("completed") else "⚫"
             details = session_content.get("details", "No details available")
+            details_encoded = quote(details)
 
             # ✅ Safe HTML concatenation
 
 
+
             card_html = (
-                f"?session_id={session_content["
-                f"<div class='session-btn'>"
-                f"<div class='session-left'>"
-                f"<span class='session-icon'>{icon}</span>"
-                f"<div class='session-text'>"
+                f"<a class='card-link' href='?session_id={session_content['session_id']}"
+                f"&type={session_type}"
+                f"&details={details}"
+                f"&day={selected_day}"
+                f"&weeksession-text'>"
                 f"<div class='session-title'>{session_type}</div>"
-                f"<div class='session-details'>{details}</div>"
+                f"<div class='session-details'>{details_encoded}</div>"
                 f"</div></div>"
                 f"<div class='session-indicator'>{indicator}</div>"
                 f"</div></a>"
             )
+
 
 
             st.markdown(card_html, unsafe_allow_html=True)
