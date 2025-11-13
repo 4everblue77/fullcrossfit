@@ -101,8 +101,11 @@ def render(session):
     if st.session_state.running:
         color = "#f00" if st.session_state.phase == "exercise" else "#00f"
         percent = (st.session_state.remaining_time / duration) * 100
+        progress_position = completed_count + (1 if st.session_state.phase == "exercise" else 0)
+
         render_circle(percent, st.session_state.remaining_time, exercise_name,
-                      st.session_state.exercise_index + 1, len(exercises), color)
+                      progress_position, len(exercises), color)
+
 
         time.sleep(1)
         st.session_state.remaining_time -= 1
