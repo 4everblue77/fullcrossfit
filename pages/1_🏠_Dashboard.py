@@ -98,14 +98,7 @@ if st.session_state.selected_session is None:
                     "week": week_label
                 }
 
-            st.markdown('<div class="big-button">', unsafe_allow_html=True)
-            if st.button(button_text, key=session_content["session_id"]):
-                st.session_state.selected_session = {
-                    "session_id": session_content["session_id"],
-                    "type": session_type,
-                    "day": selected_day,
-                    "week": week_label
-                }
+
             st.markdown('</div>', unsafe_allow_html=True)
 
 # Session detail view
