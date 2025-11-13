@@ -85,4 +85,4 @@ else:
                 "day": selected_day,
                 "week": week_label
             }
-            st.switch_page("pages/SessionDetail")  # ✅ Navigate to detail page
+            st.switch_page("SessionDetail")  # ✅ Navigate to detail page
