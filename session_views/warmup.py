@@ -51,7 +51,7 @@ def render(session):
     # ✅ Handle fully completed sessions (allow manual override)
     if first_incomplete_index is None:
         st.info("Warmup marked as completed, but you can adjust below.")
-        st.session_state.exercise_index = 0
+        st.session_state.exercise_index = len(exercises) - 1  # Last exercise for display
     else:
         # ✅ Ensure exercise_index is valid
         if st.session_state.exercise_index is None or st.session_state.exercise_index >= len(exercises):
@@ -73,7 +73,7 @@ def render(session):
 
     # ✅ Overall progress bar (include current exercise)
     overall_progress = st.progress(0)
-    overall_fraction = (completed_count + (1 if st.session_state.phase == "exercise" else 0)) / len(exercises)
+    overall_fraction = completed_count / len(exercises)
     overall_fraction = min(overall_fraction, 1.0)
     overall_progress.progress(overall_fraction)
 
