@@ -37,7 +37,7 @@ def render(session):
         if ex["id"] not in st.session_state.exercise_completion:
             st.session_state.exercise_completion[ex["id"]] = ex.get("completed", False)
 
-    # ✅ Count completed exercises from session state
+    # ✅ Count completed exercises
     completed_count = sum(1 for val in st.session_state.exercise_completion.values() if val)
 
     # ✅ Determine first incomplete exercise
@@ -98,10 +98,6 @@ def render(session):
         </audio>
         """, unsafe_allow_html=True)
 
-    # ✅ Initialize session_completed before buttons
-    if "session_completed" not in st.session_state:
-        st.session_state.session_completed = session.get("completed", False)
-
     # ✅ Buttons
     col1, col2, col3 = st.columns(3)
     if col1.button("▶ Start / Resume"):
@@ -120,7 +116,7 @@ def render(session):
             "completed": st.session_state.session_completed
         }).eq("id", session["session_id"]).execute()
 
-        # ✅ Save exercises completion from session state
+        # ✅ Save exercises completion
         for ex_id, completed in st.session_state.exercise_completion.items():
             supabase.table("plan_session_exercises").update({
                 "completed": completed
@@ -130,33 +126,17 @@ def render(session):
         st.session_state.selected_session = None
         st.rerun()
 
-    # ✅ Collapsible summary
+    # ✅ Dynamic HTML Summary
     with st.expander("Exercise Summary"):
-        st.markdown("**Adjust completion status manually if needed:**")
-        st.session_state.session_completed = st.checkbox(
-            "Mark entire session as completed",
-            value=st.session_state.session_completed,
-            key="session_completed_toggle"
-        )
-    
-        grouped_exercises = {}
+        st.markdown("**Progress:**")
+        summary_html = "<ul style='list-style:none;padding-left:0;'>"
         for ex in exercises:
-            group = ex.get("notes", "").strip() or "General Warmup"
-            grouped_exercises.setdefault(group, []).append(ex)
-    
-        for group_name, group_items in grouped_exercises.items():
-            st.markdown(f"### {group_name}")
-            for ex in group_items:
-                ex_id = ex["id"]
-                ex_name = ex["exercise_name"]
-                disabled = st.session_state.session_completed
-                st.session_state.exercise_completion[ex_id] = st.checkbox(
-                    ex_name,
-                    value=st.session_state.exercise_completion[ex_id],
-                    key=f"chk_{ex_id}",
-                    disabled=disabled
-                )
-            
+            ex_id = ex["id"]
+            ex_name = ex["exercise_name"]
+            checked = "✅" if st.session_state.exercise_completion.get(ex_id, False) else "⬜"
+            summary_html += f"<li style='font-size:16px;'>{checked} {ex_name}</li>"
+        summary_html += "</ul>"
+        st.markdown(summary_html, unsafe_allow_html=True)
 
     # ✅ Autorefresh timer logic
     if st.session_state.running:
@@ -195,4 +175,3 @@ def render(session):
                     st.session_state.phase = "exercise"
                     next_ex = exercises[st.session_state.exercise_index]
                     st.session_state.remaining_time = int(next_ex.get("duration", 30))
-        
