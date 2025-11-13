@@ -25,10 +25,11 @@ def render(session):
         st.session_state.exercise_index = 0
     if "phase" not in st.session_state:
         st.session_state.phase = "exercise"
-    if "running" not in st.session_state:
-        st.session_state.running = False
+    # Always reset running state when entering Warmup view
+    st.session_state.running = False
     if "remaining_time" not in st.session_state:
         st.session_state.remaining_time = None
+    
 
     current_ex = exercises[st.session_state.exercise_index]
     exercise_name = current_ex["exercise_name"]
