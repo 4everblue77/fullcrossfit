@@ -11,38 +11,38 @@ def render(session):
     st.title("🔥 Warmup")
     st.markdown(f"**Week:** {session['week']} | **Day:** {session['day']}")
 
-    # Fetch exercises
+    # Fetch exercises for this session
     exercises = supabase.table("plan_session_exercises") \
         .select("*") \
         .eq("session_id", session["session_id"]) \
         .order("set_number") \
         .execute().data
 
+    # ✅ Handle empty exercise list
     if not exercises or len(exercises) == 0:
         st.warning("No exercises found for this warmup.")
         return
 
-    # ✅ Initialize state
-    
     # ✅ Determine starting point based on completed exercises
-    first_incomplete_index = 0
+    first_incomplete_index = None
     for i, ex in enumerate(exercises):
         if not ex.get("completed", False):
             first_incomplete_index = i
             break
-    else:
+
+    if first_incomplete_index is None:
         # All exercises completed
         st.success("Warmup already completed!")
         st.session_state.selected_session = None
         return
-    
-    # ✅ Initialize state
+
+    # ✅ Initialize state for new session
     st.session_state.exercise_index = first_incomplete_index
     st.session_state.phase = "exercise"
     st.session_state.running = False
     st.session_state.remaining_time = None
-    
 
+    # Current exercise details
     current_ex = exercises[st.session_state.exercise_index]
     exercise_name = current_ex["exercise_name"]
     exercise_duration = int(current_ex.get("duration", 30))
@@ -58,7 +58,7 @@ def render(session):
     overall_percent = int((st.session_state.exercise_index / len(exercises)) * 100)
     overall_progress.progress(overall_percent)
 
-    # ✅ Responsive circular timer with text inside
+    # ✅ Responsive circular timer placeholder
     placeholder = st.empty()
 
     def render_circle(percent, remaining_time, exercise_name, index, total, color):
@@ -71,7 +71,7 @@ def render(session):
                 </svg>
                 <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
                     <div style="font-size:18px;">Exercise {index} of {total}</div>
-                    <div style="font-size:30px;font-weight:bold;">{exercise_name}</div>
+                    <div style="font-size:20px;font-weight:bold;">{exercise_name}</div>
                     <div style="font-size:18px;">{remaining_time}s</div>
                 </div>
             </div>
@@ -87,27 +87,21 @@ def render(session):
         </audio>
         """, unsafe_allow_html=True)
 
-    # Buttons
+    # ✅ Buttons
     col1, col2, col3 = st.columns(3)
     if col1.button("▶ Start / Continue"):
         st.session_state.running = True
     if col2.button("⏸ Stop"):
         st.session_state.running = False
     if col3.button("⬅ Back to Dashboard"):
-
-        # ✅ Save current progress before leaving
-        # Mark completed exercises
-        for i in range(st.session_state.exercise_index):
-            supabase.table("plan_session_exercises").update({"completed": True}).eq("session_id", session["session_id"]).eq("set_number", i + 1).execute()
-    
-        # If all exercises completed, mark session completed
+        # ✅ Save progress before leaving
+        for i, ex in enumerate(exercises):
+            if i < st.session_state.exercise_index:
+                supabase.table("plan_session_exercises").update({"completed": True}).eq("id", ex["id"]).execute()
         if st.session_state.exercise_index >= len(exercises):
             supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
-    
-        # Reset session state and go back
         st.session_state.selected_session = None
         st.rerun()
-
 
     # ✅ Timer loop with auto-continue
     if st.session_state.running:
@@ -123,6 +117,8 @@ def render(session):
             if st.session_state.remaining_time <= 0:
                 play_sound()
                 if st.session_state.phase == "exercise":
+                    # ✅ Mark exercise completed in Supabase
+                    supabase.table("plan_session_exercises").update({"completed": True}).eq("id", current_ex["id"]).execute()
                     # Switch to rest
                     st.session_state.phase = "rest"
                     duration = rest_duration
@@ -137,10 +133,10 @@ def render(session):
                         st.session_state.selected_session = None
                         st.rerun()
                     else:
-                        next_ex = exercises[st.session_state.exercise_index]
-                        exercise_name = next_ex["exercise_name"]
-                        exercise_duration = int(next_ex.get("duration", 30))
-                        rest_duration = int(next_ex.get("rest", 30))
+                        current_ex = exercises[st.session_state.exercise_index]
+                        exercise_name = current_ex["exercise_name"]
+                        exercise_duration = int(current_ex.get("duration", 30))
+                        rest_duration = int(current_ex.get("rest", 30))
                         st.session_state.phase = "exercise"
                         duration = exercise_duration
                         st.session_state.remaining_time = exercise_duration
