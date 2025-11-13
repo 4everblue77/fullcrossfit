@@ -97,7 +97,7 @@ if st.session_state.selected_session is None:
 
             
             card_html = (
-                f"?session_id={session_content["
+                f"?session_id={session_content['session_id']}"
                 f"<div class='session-btn'>"
                 f"<div class='session-left'>"
                 f"<span class='session-icon'>{icon}</span>"
