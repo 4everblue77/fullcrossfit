@@ -111,18 +111,23 @@ def render(session):
     if col2.button("⏸ Pause"):
         st.session_state.running = False
 
-    if col3.button("⬅ Back to Dashboard"):
 
-        # Ensure session_completed exists
-        if "session_completed" not in st.session_state:
-            st.session_state.session_completed = session.get("completed", False)
+    if col3.button("⬅ Back to Dashboard"):
+        # Stop autorefresh
+        st.session_state.running = False
     
-        # ✅ Save session completion
+        # Debug: show what will be saved
+        st.write("Saving to Supabase:", {
+            "session_completed": st.session_state.session_completed,
+            "exercise_completion": st.session_state.exercise_completion
+        })
+    
+        # Update session
         supabase.table("plan_sessions").update({
             "completed": st.session_state.session_completed
         }).eq("id", session["session_id"]).execute()
     
-        # ✅ Save exercise completion (from timer logic)
+        # Update exercises
         for ex_id, completed in st.session_state.exercise_completion.items():
             supabase.table("plan_session_exercises").update({
                 "completed": completed
