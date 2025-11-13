@@ -11,6 +11,9 @@ def render(session):
     st.title("🔥 Warmup")
     st.markdown(f"**Week:** {session['week']} | **Day:** {session['day']}")
 
+    warmup_header = current_ex.get("notes", "").strip() or "General Warmup"
+    st.subheader(f"Warmup Type: {warmup_header}")
+
     # ✅ Detect session change and reset state
     if "current_session_id" not in st.session_state or st.session_state.current_session_id != session["session_id"]:
         st.session_state.current_session_id = session["session_id"]
