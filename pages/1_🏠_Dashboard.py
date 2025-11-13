@@ -74,7 +74,7 @@ if st.session_state.selected_session is None:
                     "day": selected_day,
                     "week": week_label
                 }
-                st.experimental_rerun()  # ✅ Instant switch to detail view
+                st.rerun()  # ✅ Instant switch to detail view
 
 # Session detail view
 if st.session_state.selected_session:
@@ -88,4 +88,4 @@ if st.session_state.selected_session:
 
     if st.button("⬅ Back to Dashboard", use_container_width=True):
         st.session_state.selected_session = None
-        st.experimental_rerun()  # ✅ Instant switch back
+        st.rerun()  # ✅ Instant switch back
