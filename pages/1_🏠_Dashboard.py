@@ -14,9 +14,13 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 if "selected_session" not in st.session_state:
     st.session_state.selected_session = None
 
-# ✅ CSS for full-width link buttons styled as cards
+# ✅ CSS for full-width clickable cards
 st.markdown("""
 <style>
+.link-card {
+    width: 100%;
+    margin-bottom: 12px;
+}
 .link-card a {
     display: flex;
     flex-direction: column;
@@ -24,7 +28,6 @@ st.markdown("""
     width: 100%;
     text-align: left;
     padding: 16px;
-    margin-bottom: 12px;
     border: 2px solid #ccc;
     border-radius: 12px;
     background-color: #f9f9f9;
