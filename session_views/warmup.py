@@ -150,7 +150,6 @@ def render(session):
                 ex_id = ex["id"]
                 ex_name = ex["exercise_name"]
                 disabled = st.session_state.session_completed
-                # ✅ Always reflect latest state dynamically
                 st.session_state.exercise_completion[ex_id] = st.checkbox(
                     ex_name,
                     value=st.session_state.exercise_completion[ex_id],
