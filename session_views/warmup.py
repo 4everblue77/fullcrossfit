@@ -24,8 +24,20 @@ def render(session):
 
     # ✅ Initialize state
     
-    # Always reset when entering a new session
-    st.session_state.exercise_index = 0
+    # ✅ Determine starting point based on completed exercises
+    first_incomplete_index = 0
+    for i, ex in enumerate(exercises):
+        if not ex.get("completed", False):
+            first_incomplete_index = i
+            break
+    else:
+        # All exercises completed
+        st.success("Warmup already completed!")
+        st.session_state.selected_session = None
+        return
+    
+    # ✅ Initialize state
+    st.session_state.exercise_index = first_incomplete_index
     st.session_state.phase = "exercise"
     st.session_state.running = False
     st.session_state.remaining_time = None
