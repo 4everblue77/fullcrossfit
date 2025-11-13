@@ -127,7 +127,7 @@ def render(session):
         st.rerun()
 
     # ✅ Dynamic HTML Summary
-      with st.expander("Exercise Summary"):
+    with st.expander("Exercise Summary"):
         st.markdown("**Progress:**")
         summary_html = "<ul style='list-style:none;padding-left:0;'>"
         for ex in exercises:
