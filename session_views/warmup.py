@@ -90,15 +90,18 @@ def render(session):
         st.session_state.running = False
 
     if col3.button("⬅ Back to Dashboard"):
-        # Save progress before leaving
-        for ex in exercises:
-            supabase.table("plan_session_exercises").update({
-                "completed": st.session_state.exercise_completion[ex["id"]]
-            }).eq("id", ex["id"]).execute()
-    
-        # If all exercises completed, mark session complete
-        if all(st.session_state.exercise_completion.values()):
+        if st.session_state.session_completed:
+            # Mark session and all exercises as completed
             supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
+            for ex in exercises:
+                supabase.table("plan_session_exercises").update({"completed": True}).eq("id", ex["id"]).execute()
+        else:
+            # Unmark session and save individual exercise states
+            supabase.table("plan_sessions").update({"completed": False}).eq("id", session["session_id"]).execute()
+            for ex in exercises:
+                supabase.table("plan_session_exercises").update({
+                    "completed": st.session_state.exercise_completion[ex["id"]]
+                }).eq("id", ex["id"]).execute()
     
         st.session_state.selected_session = None
         st.rerun()
@@ -108,6 +111,17 @@ def render(session):
     with st.expander("Exercise Summary"):
         st.markdown("**Adjust completion status manually if needed:**")
     
+        # Session-level toggle
+        if "session_completed" not in st.session_state:
+            st.session_state.session_completed = session.get("completed", False)
+    
+        st.session_state.session_completed = st.checkbox(
+            "Mark entire session as completed",
+            value=st.session_state.session_completed,
+            key="session_completed_toggle"
+        )
+    
+        # Exercise-level toggles
         if "exercise_completion" not in st.session_state:
             st.session_state.exercise_completion = {
                 ex["id"]: ex.get("completed", False) for ex in exercises
@@ -116,10 +130,12 @@ def render(session):
         for ex in exercises:
             ex_id = ex["id"]
             ex_name = ex["exercise_name"]
+            disabled = st.session_state.session_completed  # Disable if session is marked complete
             st.session_state.exercise_completion[ex_id] = st.checkbox(
                 ex_name,
                 value=st.session_state.exercise_completion[ex_id],
-                key=f"chk_{ex_id}"
+                key=f"chk_{ex_id}",
+                disabled=disabled
             )
 
 
