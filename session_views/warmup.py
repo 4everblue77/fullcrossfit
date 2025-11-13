@@ -134,16 +134,19 @@ def render(session):
             key="session_completed_toggle"
         )
     
-        # Exercise-level toggles
+        # Ensure exercise_completion exists and is synced
         if "exercise_completion" not in st.session_state:
-            st.session_state.exercise_completion = {
-                ex["id"]: ex.get("completed", False) for ex in exercises
-            }
+            st.session_state.exercise_completion = {}
     
+        for ex in exercises:
+            if ex["id"] not in st.session_state.exercise_completion:
+                st.session_state.exercise_completion[ex["id"]] = ex.get("completed", False)
+    
+        # Render checkboxes
         for ex in exercises:
             ex_id = ex["id"]
             ex_name = ex["exercise_name"]
-            disabled = st.session_state.session_completed  # Disable if session is marked complete
+            disabled = st.session_state.session_completed
             st.session_state.exercise_completion[ex_id] = st.checkbox(
                 ex_name,
                 value=st.session_state.exercise_completion[ex_id],
