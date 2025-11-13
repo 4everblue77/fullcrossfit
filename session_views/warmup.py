@@ -127,7 +127,7 @@ def render(session):
         st.rerun()
 
     # ✅ Dynamic HTML Summary
-    with st.expander("Exercise Summary"):
+      with st.expander("Exercise Summary"):
         st.markdown("**Progress:**")
         summary_html = "<ul style='list-style:none;padding-left:0;'>"
         for ex in exercises:
@@ -137,18 +137,14 @@ def render(session):
             summary_html += f"<li style='font-size:16px;'>{checked} {ex_name}</li>"
         summary_html += "</ul>"
         st.markdown(summary_html, unsafe_allow_html=True)
-
-        # ✅ Manual adjustment checkboxes
-        st.markdown("**Manually adjust completion:**")
+    
+        st.markdown("**Manual Adjustments:**")
         for ex in exercises:
             ex_id = ex["id"]
             ex_name = ex["exercise_name"]
-            st.session_state.exercise_completion[ex_id] = st.checkbox(
-                ex_name,
-                value=st.session_state.exercise_completion[ex_id],
-                key=f"manual_{ex_id}"
-            )
-
+            if st.button(f"Toggle {ex_name}", key=f"toggle_{ex_id}"):
+                st.session_state.exercise_completion[ex_id] = not st.session_state.exercise_completion[ex_id]
+    
         # ✅ Reset All button
         if st.button("🔄 Reset All"):
             for ex_id in st.session_state.exercise_completion.keys():
