@@ -85,18 +85,20 @@ if st.session_state.selected_session is None:
             details = session_content.get("details", "No details available")
 
             # ✅ Safe HTML concatenation
+
             card_html = (
-                f'?session_id={session_content['
-                f'<div class="session-btn">'
-                f'<div class="session-left">'
-                f'<span class="session-icon">{icon}</span>'
-                f'<div class="session-text">'
-                f'<div class="session-title">{session_type}</div>'
-                f'<div class="session-details">{details}</div>'
-                f'</div></div>'
-                f'<div class="session-indicator">{indicator}</div>'
-                f'</div></a>'
+                f"?session_id={session_content["
+                f"<div class='session-btn'>"
+                f"<div class='session-left'>"
+                f"<span class='session-icon'>{icon}</span>"
+                f"<div class='session-text'>"
+                f"<div class='session-title'>{session_type}</div>"
+                f"<div class='session-details'>{details}</div>"
+                f"</div></div>"
+                f"<div class='session-indicator'>{indicator}</div>"
+                f"</div></a>"
             )
+
             st.markdown(card_html, unsafe_allow_html=True)
 
 # Detect query params
