@@ -54,9 +54,6 @@ st.markdown("""
     .session-indicator {
         font-size: 32px;
     }
-    .hidden-btn {
-        display: none;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -73,9 +70,14 @@ def render_session_button(session_type, details, icon, indicator, key):
         </div>
         <div class="session-indicator">{indicator}</div>
     </div>
+    <style>
+        button[data-testid="stButton"][id="{key}"] {{
+            display: none !important;
+        }}
+    </style>
     """
     st.markdown(button_html, unsafe_allow_html=True)
-    return st.button("click", key=key)
+    return st.button("", key=key)
 
 # ✅ Dashboard View
 if st.session_state.selected_session is None:
