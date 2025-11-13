@@ -18,21 +18,28 @@ def render(session):
         st.session_state.phase = "exercise"
         st.session_state.running = False
         st.session_state.remaining_time = None
-
+        st.session_state.exercise_completion = {}
+        st.session_state.completed_count = 0
+    
     # ✅ Fetch exercises ordered by exercise_order
     exercises = supabase.table("plan_session_exercises") \
         .select("*") \
         .eq("session_id", session["session_id"]) \
         .order("exercise_order") \
         .execute().data
-
+    
     if not exercises:
         st.warning("No exercises found for this warmup.")
         return
-
-    # ✅ Initialize manual completion state
-    if "exercise_completion" not in st.session_state:
-        st.session_state.exercise_completion = {}
+    
+    # ✅ Sync exercise_completion with DB
+    for ex in exercises:
+        if ex["id"] not in st.session_state.exercise_completion:
+            st.session_state.exercise_completion[ex["id"]] = ex.get("completed", False)
+    
+    # ✅ Initialize completed_count if missing
+    if "completed_count" not in st.session_state:
+        st.session_state.completed_count = sum(1 for val in st.session_state.exercise_completion.values() if val)
 
     for ex in exercises:
         if ex["id"] not in st.session_state.exercise_completion:
