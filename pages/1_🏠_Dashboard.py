@@ -54,30 +54,12 @@ st.markdown("""
     .session-indicator {
         font-size: 32px;
     }
+    a.card-link {
+        text-decoration: none;
+        color: inherit;
+    }
 </style>
 """, unsafe_allow_html=True)
-
-# ✅ Helper function for clickable session card
-def render_session_button(session_type, details, icon, indicator, key):
-    button_html = f"""
-    <div class="session-btn" onclick="document.getElementById('{key}').click()">
-        <div class="session-left">
-            <span class="session-icon">{icon}</span>
-            <div class="session-text">
-                <div class="session-title">{session_type}</div>
-                <div class="session-details">{details}</div>
-            </div>
-        </div>
-        <div class="session-indicator">{indicator}</div>
-    </div>
-    <style>
-        button[data-testid="stButton"][id="{key}"] {{
-            display: none !important;
-        }}
-    </style>
-    """
-    st.markdown(button_html, unsafe_allow_html=True)
-    return st.button("", key=key)
 
 # ✅ Dashboard View
 if st.session_state.selected_session is None:
@@ -141,17 +123,33 @@ if st.session_state.selected_session is None:
             indicator = "✅" if session_content.get("completed") else "⚫"
             details = session_content.get("details", "No details available")
 
-            if render_session_button(session_type, details, icon, indicator, key=f"view_{session_type}"):
-                st.session_state.selected_session = {
-                    "type": session_type,
-                    "session_id": session_content["session_id"],
-                    "details": details,
-                    "day": selected_day,
-                    "week": week_label
-                }
+            # ✅ Render clickable card using query params
+            card_html = f"""
+            <a class="card-link" href="?session_id={session_content['session_id']}&type={session_type}&details={details}&day={selected                     <span class="session-icon">{icon}</span>
+                        <div class="session-text">
+                            <div class="session-title">{session_type}</div>
+                            <div class="session-details">{details}</div>
+                        </div>
+                    </div>
+                    <div class="session-indicator">{indicator}</div>
+                </div>
+            </a>
+            """
+            st.markdown(card_html, unsafe_allow_html=True)
+
+# ✅ Detect query params for navigation
+params = st.experimental_get_query_params()
+if "session_id" in params and st.session_state.selected_session is None:
+    st.session_state.selected_session = {
+        "session_id": params["session_id"][0],
+        "type": params["type"][0],
+        "details": params["details"][0],
+        "day": params["day"][0],
+        "week": params["week"][0]
+    }
 
 # ✅ Session Detail View
-else:
+if st.session_state.selected_session:
     session = st.session_state.selected_session
     st.title(f"📄 Session Detail: {session['type']}")
     st.markdown(f"**Week:** {session['week']} | **Day:** {session['day']}")
@@ -165,3 +163,4 @@ else:
     # Back button
     if st.button("⬅ Back to Dashboard"):
         st.session_state.selected_session = None
+        st.experimental_set_query_params()  # Clear params
