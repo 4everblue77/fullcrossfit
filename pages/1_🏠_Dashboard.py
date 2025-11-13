@@ -22,21 +22,22 @@ st.markdown("""
     margin-bottom: 12px;
 }
 .link-card a {
+    display: block;
+    width: 100%;
+    text-decoration: none;
+    color: inherit;
+}
+.card-content {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    width: 100%;
-    text-align: left;
     padding: 16px;
     border: 2px solid #ccc;
     border-radius: 12px;
     background-color: #f9f9f9;
-    font-size: 18px;
-    text-decoration: none;
-    color: inherit;
     transition: background-color 0.3s ease;
 }
-.link-card a:hover {
+.card-content:hover {
     background-color: #e6f0ff;
 }
 .card-header {
@@ -121,11 +122,13 @@ if st.session_state.selected_session is None:
             card_html = f"""
             <div class="link-card">
                 {url}
-                    <div class="card-header">
-                        <span>{icon} {session_type}</span>
-                        <span>{indicator}</span>
+                    <div class="card-content">
+                        <div class="card-header">
+                            <span>{icon} {session_type}</span>
+                            <span>{indicator}</span>
+                        </div>
+                        <div class="card-details">{details}</div>
                     </div>
-                    <div class="card-details">{details}</div>
                 </a>
             </div>
             """
