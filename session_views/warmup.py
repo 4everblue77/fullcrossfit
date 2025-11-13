@@ -32,6 +32,11 @@ def render(session):
     exercise_name = current_ex["exercise_name"]
     duration = int(current_ex.get("rest", 30)) if st.session_state.phase == "rest" else 30
 
+    # ✅ Overall progress bar
+    overall_progress = st.progress(0)
+    overall_percent = int((st.session_state.exercise_index / len(exercises)) * 100)
+    overall_progress.progress(overall_percent)
+
     st.markdown(f"### Exercise {st.session_state.exercise_index + 1} of {len(exercises)}")
     st.markdown(f"**{exercise_name}**")
     st.markdown(f"Phase: {st.session_state.phase.capitalize()}")
@@ -51,6 +56,14 @@ def render(session):
         """
         progress_placeholder.markdown(circle_html, unsafe_allow_html=True)
 
+    # ✅ Sound alert (HTML audio)
+    def play_sound():
+        st.markdown("""
+        <audio autoplay>
+            <source src="https://actions.google1/alarms/beep_short.ogg
+        </audio>
+        """, unsafe_allow_html=True)
+
     # Buttons
     col1, col2, col3 = st.columns(3)
     if col1.button("▶ Start"):
@@ -68,12 +81,19 @@ def render(session):
             render_circle(percent, t)
             time.sleep(1)
 
+        # ✅ Play sound when phase ends
+        play_sound()
+
         # Switch phase or move to next exercise
         if st.session_state.phase == "exercise":
             st.session_state.phase = "rest"
         else:
             st.session_state.phase = "exercise"
             st.session_state.exercise_index += 1
+
+        # ✅ Update overall progress
+        overall_percent = int((st.session_state.exercise_index / len(exercises)) * 100)
+        overall_progress.progress(overall_percent)
 
         # If all exercises done
         if st.session_state.exercise_index >= len(exercises):
