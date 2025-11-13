@@ -58,7 +58,7 @@ def render(session):
 
     # ✅ Overall progress bar (includes previously completed exercises)
     overall_progress = st.progress(0)
-    overall_percent = int(((completed_count + st.session_state.exercise_index) / len(exercises)) * 100)
+    overall_percent = int((completed_count / len(exercises)) * 100)
     overall_progress.progress(overall_percent)
 
     # ✅ Responsive circular timer
@@ -110,6 +110,7 @@ def render(session):
         while st.session_state.running:
             color = "#f00" if st.session_state.phase == "exercise" else "#00f"
             percent = (st.session_state.remaining_time / duration) * 100
+            # ✅ Correct numbering: absolute position
             render_circle(percent, st.session_state.remaining_time, exercise_name,
                           st.session_state.exercise_index + 1, len(exercises), color)
             time.sleep(1)
@@ -120,6 +121,7 @@ def render(session):
                 if st.session_state.phase == "exercise":
                     # ✅ Mark exercise completed immediately
                     supabase.table("plan_session_exercises").update({"completed": True}).eq("id", current_ex["id"]).execute()
+                    completed_count += 1
                     st.session_state.phase = "rest"
                     duration = rest_duration
                     st.session_state.remaining_time = rest_duration
@@ -140,8 +142,7 @@ def render(session):
                         st.session_state.remaining_time = exercise_duration
 
                 # ✅ Update overall progress
-                completed_count += 1
-                overall_percent = int(((completed_count + st.session_state.exercise_index) / len(exercises)) * 100)
+                overall_percent = int((completed_count / len(exercises)) * 100)
                 overall_progress.progress(overall_percent)
 
             render_circle(percent, st.session_state.remaining_time, exercise_name,
