@@ -168,6 +168,7 @@ def render(session):
         # Decrement timer
         st.session_state.remaining_time -= 1
 
+
         if st.session_state.remaining_time <= 0:
             play_sound()
             if st.session_state.phase == "exercise":
@@ -184,10 +185,8 @@ def render(session):
                     st.session_state.selected_session = None
                     st.rerun()
                 else:
-                    current_ex = exercises[st.session_state.exercise_index]
-                    exercise_name = current_ex["exercise_name"]
-                    exercise_duration = int(current_ex.get("duration", 30))
-                    rest_duration = int(current_ex.get("rest", 30))
                     st.session_state.phase = "exercise"
-                    st.session_state.remaining_time = exercise_duration
+                    next_ex = exercises[st.session_state.exercise_index]
+                    st.session_state.remaining_time = int(next_ex.get("duration", 30))
                     st.rerun()
+
