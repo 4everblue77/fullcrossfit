@@ -2,7 +2,6 @@ import streamlit as st
 import time
 from supabase import create_client
 
-# Supabase setup
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -11,18 +10,17 @@ def render(session):
     st.title("🔥 Warmup")
     st.markdown(f"**Week:** {session['week']} | **Day:** {session['day']}")
 
-    # Fetch exercises
     exercises = supabase.table("plan_session_exercises") \
         .select("*") \
         .eq("session_id", session["session_id"]) \
         .order("set_number") \
         .execute().data
 
-    if not exercises or len(exercises) == 0:
+    if not exercises:
         st.warning("No exercises found for this warmup.")
         return
 
-    # ✅ Determine starting point based on completed exercises
+    # ✅ Find first incomplete exercise and count completed
     first_incomplete_index = None
     completed_count = 0
     for i, ex in enumerate(exercises):
@@ -37,9 +35,9 @@ def render(session):
         st.session_state.selected_session = None
         return
 
-    # ✅ Initialize state only if not already set
+    # ✅ Initialize state only if not set
     if "exercise_index" not in st.session_state:
-        st.session_state.exercise_index = first_incomplete_index
+        st.session_state.exercise_index = first_incomplete_index  # absolute index
     if "phase" not in st.session_state:
         st.session_state.phase = "exercise"
     if "running" not in st.session_state:
@@ -56,12 +54,11 @@ def render(session):
     if st.session_state.remaining_time is None:
         st.session_state.remaining_time = duration
 
-    # ✅ Overall progress bar (includes previously completed exercises)
+    # ✅ Progress bar includes previously completed exercises
     overall_progress = st.progress(0)
     overall_percent = int((completed_count / len(exercises)) * 100)
     overall_progress.progress(overall_percent)
 
-    # ✅ Responsive circular timer
     placeholder = st.empty()
 
     def render_circle(percent, remaining_time, exercise_name, index, total, color):
@@ -89,14 +86,12 @@ def render(session):
         </audio>
         """, unsafe_allow_html=True)
 
-    # ✅ Buttons
     col1, col2, col3 = st.columns(3)
     if col1.button("▶ Start / Resume"):
         st.session_state.running = True
     if col2.button("⏸ Pause"):
         st.session_state.running = False
     if col3.button("⬅ Back to Dashboard"):
-        # Save progress before leaving
         for i, ex in enumerate(exercises):
             if ex.get("completed", False) or i < st.session_state.exercise_index:
                 supabase.table("plan_session_exercises").update({"completed": True}).eq("id", ex["id"]).execute()
@@ -105,12 +100,10 @@ def render(session):
         st.session_state.selected_session = None
         st.rerun()
 
-    # ✅ Timer loop with pause/resume and auto-continue
     if st.session_state.running:
         while st.session_state.running:
             color = "#f00" if st.session_state.phase == "exercise" else "#00f"
             percent = (st.session_state.remaining_time / duration) * 100
-            # ✅ Correct numbering: absolute position
             render_circle(percent, st.session_state.remaining_time, exercise_name,
                           st.session_state.exercise_index + 1, len(exercises), color)
             time.sleep(1)
@@ -119,7 +112,6 @@ def render(session):
             if st.session_state.remaining_time <= 0:
                 play_sound()
                 if st.session_state.phase == "exercise":
-                    # ✅ Mark exercise completed immediately
                     supabase.table("plan_session_exercises").update({"completed": True}).eq("id", current_ex["id"]).execute()
                     completed_count += 1
                     st.session_state.phase = "rest"
@@ -141,7 +133,6 @@ def render(session):
                         duration = exercise_duration
                         st.session_state.remaining_time = exercise_duration
 
-                # ✅ Update overall progress
                 overall_percent = int((completed_count / len(exercises)) * 100)
                 overall_progress.progress(overall_percent)
 
