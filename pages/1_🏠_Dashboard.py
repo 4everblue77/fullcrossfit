@@ -86,6 +86,7 @@ if st.session_state.selected_session is None:
 
             # ✅ Safe HTML concatenation
 
+
             card_html = (
                 f"?session_id={session_content["
                 f"<div class='session-btn'>"
@@ -98,6 +99,7 @@ if st.session_state.selected_session is None:
                 f"<div class='session-indicator'>{indicator}</div>"
                 f"</div></a>"
             )
+
 
             st.markdown(card_html, unsafe_allow_html=True)
 
