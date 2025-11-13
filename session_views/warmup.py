@@ -50,7 +50,9 @@ def render(session):
         st.info("Warmup marked as completed, but you can adjust below.")
         st.session_state.exercise_index = len(exercises) - 1
     else:
-        st.session_state.exercise_index = first_incomplete_index
+        if st.session_state.exercise_index is None:
+            st.session_state.exercise_index = first_incomplete_index
+
 
     # ✅ Safe assignment of current exercise
     current_ex = exercises[st.session_state.exercise_index]
