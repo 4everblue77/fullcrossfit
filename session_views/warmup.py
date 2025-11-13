@@ -1,6 +1,5 @@
 from streamlit_autorefresh import st_autorefresh
 import streamlit as st
-import time
 from supabase import create_client
 
 # Supabase setup
@@ -33,28 +32,27 @@ def render(session):
         st.warning("No exercises found for this warmup.")
         return
 
-    # ✅ Sync exercise_completion with DB
+    # ✅ Sync exercise_completion without overwriting True values
     for ex in exercises:
         if ex["id"] not in st.session_state.exercise_completion:
             st.session_state.exercise_completion[ex["id"]] = ex.get("completed", False)
 
-    # ✅ Initialize completed_count
+    # ✅ Count completed exercises
     completed_count = sum(1 for val in st.session_state.exercise_completion.values() if val)
 
     # ✅ Determine first incomplete exercise
     first_incomplete_index = next((i for i, ex in enumerate(exercises)
                                    if not st.session_state.exercise_completion.get(ex["id"], False)), None)
 
-    # ✅ Always set exercise_index to first incomplete exercise
-    if first_incomplete_index is None:
-        st.info("Warmup marked as completed, but you can adjust below.")
-        st.session_state.exercise_index = len(exercises) - 1
-    else:
-        if st.session_state.exercise_index is None:
+    # ✅ Only set exercise_index if None
+    if st.session_state.exercise_index is None:
+        if first_incomplete_index is None:
+            st.info("Warmup marked as completed, but you can adjust below.")
+            st.session_state.exercise_index = len(exercises) - 1
+        else:
             st.session_state.exercise_index = first_incomplete_index
 
-
-    # ✅ Safe assignment of current exercise
+    # ✅ Current exercise details
     current_ex = exercises[st.session_state.exercise_index]
     exercise_name = current_ex["exercise_name"]
     exercise_duration = int(current_ex.get("duration", 30))
@@ -110,33 +108,27 @@ def render(session):
         st.session_state.running = True
     if col2.button("⏸ Pause"):
         st.session_state.running = False
-
-
     if col3.button("⬅ Back to Dashboard"):
-        # Ensure session_completed is initialized
-        if "session_completed" not in st.session_state:
-            st.session_state.session_completed = session.get("completed", False)
-    
-        # Sync exercise completion states
-        for ex in exercises:
-            st.session_state.exercise_completion[ex["id"]] = st.session_state.exercise_completion.get(ex["id"], False)
-    
-        # ✅ Update session completion in Supabase
+        st.session_state.running = False  # Stop autorefresh
+        st.write("Saving to Supabase:", {
+            "session_completed": st.session_state.session_completed,
+            "exercise_completion": st.session_state.exercise_completion
+        })
+
+        # ✅ Save session completion
         supabase.table("plan_sessions").update({
             "completed": st.session_state.session_completed
         }).eq("id", session["session_id"]).execute()
-    
-        # ✅ Update each exercise completion in Supabase
-        for ex in exercises:
+
+        # ✅ Save exercises completion
+        for ex_id, completed in st.session_state.exercise_completion.items():
             supabase.table("plan_session_exercises").update({
-                "completed": st.session_state.exercise_completion[ex["id"]]
-            }).eq("id", ex["id"]).execute()
-    
+                "completed": completed
+            }).eq("id", ex_id).execute()
+
         st.success("✅ Progress saved to Supabase")
         st.session_state.selected_session = None
         st.rerun()
-
-
 
     # ✅ Collapsible summary
     with st.expander("Exercise Summary"):
@@ -181,16 +173,17 @@ def render(session):
         # Decrement timer
         st.session_state.remaining_time -= 1
 
-
         if st.session_state.remaining_time <= 0:
             play_sound()
             if st.session_state.phase == "exercise":
+                # ✅ Mark exercise complete and update DB immediately
                 st.session_state.exercise_completion[current_ex["id"]] = True
                 completed_count += 1
                 supabase.table("plan_session_exercises").update({"completed": True}).eq("id", current_ex["id"]).execute()
                 st.session_state.phase = "rest"
                 st.session_state.remaining_time = rest_duration
             else:
+                # ✅ Move to next exercise
                 st.session_state.exercise_index += 1
                 if st.session_state.exercise_index >= len(exercises):
                     supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
@@ -202,4 +195,3 @@ def render(session):
                     next_ex = exercises[st.session_state.exercise_index]
                     st.session_state.remaining_time = int(next_ex.get("duration", 30))
                     st.rerun()
-
