@@ -25,11 +25,10 @@ def render(session):
         st.session_state.exercise_index = 0
     if "phase" not in st.session_state:
         st.session_state.phase = "exercise"
-    # Always reset running state when entering Warmup view
-    st.session_state.running = False
+    if "running" not in st.session_state:
+        st.session_state.running = False
     if "remaining_time" not in st.session_state:
         st.session_state.remaining_time = None
-    
 
     current_ex = exercises[st.session_state.exercise_index]
     exercise_name = current_ex["exercise_name"]
@@ -92,7 +91,7 @@ def render(session):
             render_circle(percent, st.session_state.remaining_time)
             time.sleep(1)
             st.session_state.remaining_time -= 1
-            st.rerun()  # Refresh UI each second
+            st.experimental_rerun()  # Refresh UI each second
 
         # ✅ If timer finished and still running
         if st.session_state.remaining_time <= 0 and st.session_state.running:
@@ -112,4 +111,4 @@ def render(session):
                     supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
                     st.success("Warmup completed!")
                     st.session_state.selected_session = None
-            st.rerun()
+            st.experimental_rerun()
