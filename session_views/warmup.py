@@ -154,18 +154,26 @@ def render(session):
         color = "#f00" if st.session_state.phase == "exercise" else "#00f"
         percent = ((duration - st.session_state.remaining_time) / duration) * 100
         progress_position = completed_count + (1 if st.session_state.phase == "exercise" else 0)
+    
+        # ✅ Render circle
         render_circle(percent, st.session_state.remaining_time, exercise_name,
                       progress_position, len(exercises), color)
-
+    
+        # ✅ Update overall progress dynamically
+        completed_count = sum(1 for ex_id, val in st.session_state.exercise_completion.items() if val)
+        overall_fraction = (completed_count + (1 if st.session_state.phase == "exercise" else 0)) / len(exercises)
+        overall_fraction = min(overall_fraction, 1.0)
+        overall_progress.progress(overall_fraction)
+    
         time.sleep(1)
         st.session_state.remaining_time -= 1
-
+    
         if st.session_state.remaining_time <= 0:
             play_sound()
             if st.session_state.phase == "exercise":
-                supabase.table("plan_session_exercises").update({"completed": True}).eq("id", current_ex["id"]).execute()
+                # ✅ Mark current exercise complete in session state and DB
                 st.session_state.exercise_completion[current_ex["id"]] = True
-                completed_count += 1
+                supabase.table("plan_session_exercises").update({"completed": True}).eq("id", current_ex["id"]).execute()
                 st.session_state.phase = "rest"
                 duration = rest_duration
                 st.session_state.remaining_time = rest_duration
@@ -184,5 +192,5 @@ def render(session):
                     st.session_state.phase = "exercise"
                     duration = exercise_duration
                     st.session_state.remaining_time = exercise_duration
-
+    
         st.rerun()
