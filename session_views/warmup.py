@@ -141,5 +141,14 @@ def render(session):
                 overall_progress.progress(overall_percent)
 
             # ✅ Refresh UI without breaking loop
-            render_circle(percent, st.session_state.remaining_time, color)
+            
+            render_circle(
+                percent,
+                st.session_state.remaining_time,
+                exercise_name,
+                st.session_state.exercise_index + 1,
+                len(exercises),
+                color
+            )
+
         
