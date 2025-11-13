@@ -37,7 +37,7 @@ def render(session):
         if ex["id"] not in st.session_state.exercise_completion:
             st.session_state.exercise_completion[ex["id"]] = ex.get("completed", False)
 
-    # ✅ Count completed exercises
+    # ✅ Count completed exercises from session state
     completed_count = sum(1 for val in st.session_state.exercise_completion.values() if val)
 
     # ✅ Determine first incomplete exercise
@@ -120,7 +120,7 @@ def render(session):
             "completed": st.session_state.session_completed
         }).eq("id", session["session_id"]).execute()
 
-        # ✅ Save exercises completion
+        # ✅ Save exercises completion from session state
         for ex_id, completed in st.session_state.exercise_completion.items():
             supabase.table("plan_session_exercises").update({
                 "completed": completed
@@ -178,8 +178,8 @@ def render(session):
             if st.session_state.phase == "exercise":
                 # ✅ Mark exercise complete and update DB immediately
                 st.session_state.exercise_completion[current_ex["id"]] = True
-                completed_count += 1
                 supabase.table("plan_session_exercises").update({"completed": True}).eq("id", current_ex["id"]).execute()
+                st.session_state.completed_count = sum(1 for val in st.session_state.exercise_completion.values() if val)
                 st.session_state.phase = "rest"
                 st.session_state.remaining_time = rest_duration
             else:
@@ -194,4 +194,4 @@ def render(session):
                     st.session_state.phase = "exercise"
                     next_ex = exercises[st.session_state.exercise_index]
                     st.session_state.remaining_time = int(next_ex.get("duration", 30))
-                    st.rerun()
+        
