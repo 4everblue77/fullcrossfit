@@ -50,6 +50,7 @@ def render(session):
         if st.session_state.exercise_index is None or st.session_state.exercise_index >= len(exercises):
             st.session_state.exercise_index = first_incomplete_index
 
+    # ✅ Safe assignment of current_ex
     current_ex = exercises[st.session_state.exercise_index]
     exercise_name = current_ex["exercise_name"]
     exercise_duration = int(current_ex.get("duration", 30))
