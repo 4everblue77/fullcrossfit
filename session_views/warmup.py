@@ -33,10 +33,12 @@ def render(session):
     completed_count = sum(1 for ex in exercises if ex.get("completed", False))
     first_incomplete_index = next((i for i, ex in enumerate(exercises) if not ex.get("completed", False)), None)
 
+
     if first_incomplete_index is None:
-        st.success("Warmup already completed!")
-        st.session_state.selected_session = None
-        return
+        st.info("Warmup marked as completed, but you can adjust below.")
+        # Do NOT return — allow manual adjustments
+        st.session_state.exercise_index = len(exercises) - 
+
 
     if st.session_state.exercise_index is None:
         st.session_state.exercise_index = first_incomplete_index
