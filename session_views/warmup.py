@@ -54,17 +54,23 @@ def render(session):
     # Placeholder for circular countdown
     placeholder = st.empty()
 
-    def render_circle(percent, remaining_time, color):
+    def render_circle(percent, remaining_time, exercise_name, index, total, color):
         circle_html = f"""
-        <div style="display:flex;justify-content:center;align-items:center;position:relative;">
-            <svg width="150" height="150" viewBox="0 0 36 36">
-                <path stroke="#eee" stroke-width="3" fill="none" d="M18 2a16 16 0 1 1 0 32 16 16 0 1 1 0-32"/>
-                <path stroke="{color}" stroke-width="3" fill="none" stroke-dasharray="{percent},100" d="M18 2a16 16 0 1 1 0 32 16 16 0 1 1 0-32"/>
-            </svg>
-            <div style="position:absolute;font-size:24px;">{remaining_time}s</div>
+        <div style="display:flex;justify-content:center;align-items:center;width:100%;">
+            <div style="position:relative;width:100%;max-width:400px;">
+                <svg width="100%" height="100%" viewBox="0 0 36 36">
+                    <path stroke="#eee" stroke-width="3" fill="none" d="M18 2a16 16 0 1 1 0 32 16 16 0 1 1 0-32"/>
+                    <path stroke="{color}" stroke-width="3" fill="none" stroke-dasharray="{percent},100" d="M18 2a16 16 0 1 1 0 32 16 16 0 1 1 0-32"/>
+                </svg>
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+                    <div style="font-size:18px;">Exercise {index} of {total}</div>
+                    <div style="font-size:20px;font-weight:bold;">{exercise_name}</div>
+                    <div style="font-size:18px;">{remaining_time}s</div>
+                </div>
+            </div>
         </div>
         """
-        placeholder.markdown(circle_html, unsafe_allow_html=True)
+        st.markdown(circle_html, unsafe_allow_html=True)
 
     # ✅ Sound alert
     def play_sound():
