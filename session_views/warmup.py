@@ -1,3 +1,4 @@
+from streamlit_autorefresh import st_autorefresh
 import streamlit as st
 import time
 from supabase import create_client
@@ -47,7 +48,7 @@ def render(session):
     # ✅ Always set exercise_index to first incomplete exercise
     if first_incomplete_index is None:
         st.info("Warmup marked as completed, but you can adjust below.")
-        st.session_state.exercise_index = len(exercises) - 1  # Last exercise for display
+        st.session_state.exercise_index = len(exercises) - 1
     else:
         st.session_state.exercise_index = first_incomplete_index
 
@@ -65,7 +66,7 @@ def render(session):
     warmup_header = current_ex.get("notes", "").strip() or "General Warmup"
     st.subheader(f"Warmup Type: {warmup_header}")
 
-    # ✅ Overall progress bar (completed only)
+    # ✅ Overall progress bar
     overall_progress = st.progress(0)
     overall_fraction = completed_count / len(exercises)
     overall_progress.progress(min(overall_fraction, 1.0))
@@ -108,16 +109,13 @@ def render(session):
     if col2.button("⏸ Pause"):
         st.session_state.running = False
     if col3.button("⬅ Back to Dashboard"):
-        # Sync completion states
         for ex in exercises:
             st.session_state.exercise_completion[ex["id"]] = st.session_state.exercise_completion.get(ex["id"], False)
 
-        # Update session completion
         supabase.table("plan_sessions").update({
             "completed": st.session_state.session_completed
         }).eq("id", session["session_id"]).execute()
 
-        # Update exercises completion
         for ex in exercises:
             supabase.table("plan_session_exercises").update({
                 "completed": st.session_state.exercise_completion[ex["id"]]
@@ -154,33 +152,31 @@ def render(session):
                     disabled=disabled
                 )
 
-    # ✅ Timer loop without blocking
+    # ✅ Autorefresh timer logic
     if st.session_state.running:
+        st_autorefresh(interval=1000, limit=None, key="timer_refresh")
+
         color = "#f00" if st.session_state.phase == "exercise" else "#00f"
         percent = ((duration - st.session_state.remaining_time) / duration) * 100
-        progress_position = st.session_state.exercise_index + 1  # Show actual exercise number
+        progress_position = st.session_state.exercise_index + 1
         render_circle(percent, st.session_state.remaining_time, exercise_name,
                       progress_position, len(exercises), color)
 
-        # Update overall progress dynamically
         overall_fraction = (completed_count + (1 if st.session_state.phase == "exercise" else 0)) / len(exercises)
         overall_progress.progress(min(overall_fraction, 1.0))
 
-        time.sleep(1)
+        # Decrement timer
         st.session_state.remaining_time -= 1
 
         if st.session_state.remaining_time <= 0:
             play_sound()
             if st.session_state.phase == "exercise":
-                # Mark exercise complete
                 st.session_state.exercise_completion[current_ex["id"]] = True
                 completed_count += 1
                 supabase.table("plan_session_exercises").update({"completed": True}).eq("id", current_ex["id"]).execute()
-                # Switch to rest
                 st.session_state.phase = "rest"
                 st.session_state.remaining_time = rest_duration
             else:
-                # Move to next exercise
                 st.session_state.exercise_index += 1
                 if st.session_state.exercise_index >= len(exercises):
                     supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
