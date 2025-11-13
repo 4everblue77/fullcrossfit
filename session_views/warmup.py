@@ -138,18 +138,19 @@ def render(session):
             value=st.session_state.session_completed,
             key="session_completed_toggle"
         )
-
+    
         grouped_exercises = {}
         for ex in exercises:
             group = ex.get("notes", "").strip() or "General Warmup"
             grouped_exercises.setdefault(group, []).append(ex)
-
+    
         for group_name, group_items in grouped_exercises.items():
             st.markdown(f"### {group_name}")
             for ex in group_items:
                 ex_id = ex["id"]
                 ex_name = ex["exercise_name"]
                 disabled = st.session_state.session_completed
+                # ✅ Always reflect latest state
                 st.session_state.exercise_completion[ex_id] = st.checkbox(
                     ex_name,
                     value=st.session_state.exercise_completion[ex_id],
