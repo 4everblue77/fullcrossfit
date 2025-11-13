@@ -45,10 +45,22 @@ if st.session_state.selected_session is None:
             } for s in day_sessions}
             full_plan[week_label][day_label] = {"plan": plan}
 
-    # Display week and day selector
-    st.subheader(week_label)
-    days_list = list(full_plan[week_label].keys())
-    selected_day = st.radio("Select Day", days_list, horizontal=True)
+    # ✅ Build day labels with completion status
+    days_list = []
+    for day_label, day_info in full_plan[week_label].items():
+        if day_info.get("Rest"):
+            status = "💤"
+        else:
+            sessions_for_day = day_info["plan"].values()
+            if all(s["completed"] for s in sessions_for_day):
+                status = "✅"
+            else:
+                status = "⚫"
+        days_list.append(f"{day_label} {status}")
+
+    # Show radio with updated labels
+    selected_day_label = st.radio("Select Day", days_list, horizontal=True)
+    selected_day = selected_day_label.split()[0]  # Extract actual day name
     day_data = full_plan[week_label][selected_day]
 
     # Render sessions
