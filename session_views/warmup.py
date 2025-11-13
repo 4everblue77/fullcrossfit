@@ -88,14 +88,40 @@ def render(session):
         st.session_state.running = True
     if col2.button("⏸ Pause"):
         st.session_state.running = False
+
     if col3.button("⬅ Back to Dashboard"):
-        for i, ex in enumerate(exercises):
-            if ex.get("completed", False) or i < st.session_state.exercise_index:
-                supabase.table("plan_session_exercises").update({"completed": True}).eq("id", ex["id"]).execute()
-        if st.session_state.exercise_index >= len(exercises):
+        # Save progress before leaving
+        for ex in exercises:
+            supabase.table("plan_session_exercises").update({
+                "completed": st.session_state.exercise_completion[ex["id"]]
+            }).eq("id", ex["id"]).execute()
+    
+        # If all exercises completed, mark session complete
+        if all(st.session_state.exercise_completion.values()):
             supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
+    
         st.session_state.selected_session = None
         st.rerun()
+
+
+    # ✅ Collapsible summary section
+    with st.expander("Exercise Summary"):
+        st.markdown("**Adjust completion status manually if needed:**")
+    
+        if "exercise_completion" not in st.session_state:
+            st.session_state.exercise_completion = {
+                ex["id"]: ex.get("completed", False) for ex in exercises
+            }
+    
+        for ex in exercises:
+            ex_id = ex["id"]
+            ex_name = ex["exercise_name"]
+            st.session_state.exercise_completion[ex_id] = st.checkbox(
+                ex_name,
+                value=st.session_state.exercise_completion[ex_id],
+                key=f"chk_{ex_id}"
+            )
+
 
     # ✅ Timer loop without blocking
     if st.session_state.running:
