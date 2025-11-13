@@ -18,19 +18,18 @@ def render(session):
         .order("set_number") \
         .execute().data
 
-    if not exercises:
+    if not exercises or len(exercises) == 0:
         st.warning("No exercises found for this warmup.")
         return
 
     # ✅ Initialize state
-    if "exercise_index" not in st.session_state:
-        st.session_state.exercise_index = 0
-    if "phase" not in st.session_state:
-        st.session_state.phase = "exercise"
-    if "running" not in st.session_state:
-        st.session_state.running = False
-    if "remaining_time" not in st.session_state:
-        st.session_state.remaining_time = None
+    
+    # Always reset when entering a new session
+    st.session_state.exercise_index = 0
+    st.session_state.phase = "exercise"
+    st.session_state.running = False
+    st.session_state.remaining_time = None
+    
 
     current_ex = exercises[st.session_state.exercise_index]
     exercise_name = current_ex["exercise_name"]
@@ -83,8 +82,20 @@ def render(session):
     if col2.button("⏸ Stop"):
         st.session_state.running = False
     if col3.button("⬅ Back to Dashboard"):
+
+        # ✅ Save current progress before leaving
+        # Mark completed exercises
+        for i in range(st.session_state.exercise_index):
+            supabase.table("plan_session_exercises").update({"completed": True}).eq("session_id", session["session_id"]).eq("set_number", i + 1).execute()
+    
+        # If all exercises completed, mark session completed
+        if st.session_state.exercise_index >= len(exercises):
+            supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
+    
+        # Reset session state and go back
         st.session_state.selected_session = None
         st.rerun()
+
 
     # ✅ Timer loop with auto-continue
     if st.session_state.running:
