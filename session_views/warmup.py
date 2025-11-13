@@ -19,18 +19,17 @@ def render(session):
         st.session_state.running = False
         st.session_state.remaining_time = None
 
-    # ✅ Fetch exercises for this session
+    # ✅ Fetch exercises
     exercises = supabase.table("plan_session_exercises") \
         .select("*") \
         .eq("session_id", session["session_id"]) \
         .order("set_number") \
         .execute().data
 
-    if not exercises or len(exercises) == 0:
+    if not exercises:
         st.warning("No exercises found for this warmup.")
         return
 
-    # ✅ Determine starting point and completed count
     completed_count = sum(1 for ex in exercises if ex.get("completed", False))
     first_incomplete_index = next((i for i, ex in enumerate(exercises) if not ex.get("completed", False)), None)
 
@@ -39,11 +38,9 @@ def render(session):
         st.session_state.selected_session = None
         return
 
-    # ✅ Initialize exercise index if not set
     if st.session_state.exercise_index is None:
         st.session_state.exercise_index = first_incomplete_index
 
-    # ✅ Current exercise details
     current_ex = exercises[st.session_state.exercise_index]
     exercise_name = current_ex["exercise_name"]
     exercise_duration = int(current_ex.get("duration", 30))
@@ -53,12 +50,11 @@ def render(session):
     if st.session_state.remaining_time is None:
         st.session_state.remaining_time = duration
 
-    # ✅ Overall progress bar
+    # ✅ Overall progress bar (include current exercise)
     overall_progress = st.progress(0)
-    overall_percent = int((completed_count / len(exercises)) * 100)
+    overall_percent = int(((completed_count + (1 if st.session_state.phase == "exercise" else 0)) / len(exercises)) * 100)
     overall_progress.progress(overall_percent)
 
-    # ✅ Timer placeholder
     placeholder = st.empty()
 
     def render_circle(percent, remaining_time, exercise_name, index, total, color):
@@ -82,7 +78,7 @@ def render(session):
     def play_sound():
         st.markdown("""
         <audio autoplay>
-            https://actions.google.com/sounds/v1/alarms/beep_short.ogg
+            <source src="https://actions.google.com/sounds/v_short.ogg
         </audio>
         """, unsafe_allow_html=True)
 
@@ -93,7 +89,6 @@ def render(session):
     if col2.button("⏸ Pause"):
         st.session_state.running = False
     if col3.button("⬅ Back to Dashboard"):
-        # Save progress before leaving
         for i, ex in enumerate(exercises):
             if ex.get("completed", False) or i < st.session_state.exercise_index:
                 supabase.table("plan_session_exercises").update({"completed": True}).eq("id", ex["id"]).execute()
@@ -102,43 +97,38 @@ def render(session):
         st.session_state.selected_session = None
         st.rerun()
 
-    # ✅ Timer loop with pause/resume and auto-continue
+    # ✅ Timer loop without blocking
     if st.session_state.running:
-        while st.session_state.running:
-            color = "#f00" if st.session_state.phase == "exercise" else "#00f"
-            percent = (st.session_state.remaining_time / duration) * 100
-            render_circle(percent, st.session_state.remaining_time, exercise_name,
-                          st.session_state.exercise_index + 1, len(exercises), color)
-            time.sleep(1)
-            st.session_state.remaining_time -= 1
+        color = "#f00" if st.session_state.phase == "exercise" else "#00f"
+        percent = (st.session_state.remaining_time / duration) * 100
+        render_circle(percent, st.session_state.remaining_time, exercise_name,
+                      st.session_state.exercise_index + 1, len(exercises), color)
 
-            if st.session_state.remaining_time <= 0:
-                play_sound()
-                if st.session_state.phase == "exercise":
-                    # ✅ Mark exercise completed immediately
-                    supabase.table("plan_session_exercises").update({"completed": True}).eq("id", current_ex["id"]).execute()
-                    completed_count += 1
-                    st.session_state.phase = "rest"
-                    duration = rest_duration
-                    st.session_state.remaining_time = rest_duration
+        time.sleep(1)
+        st.session_state.remaining_time -= 1
+
+        if st.session_state.remaining_time <= 0:
+            play_sound()
+            if st.session_state.phase == "exercise":
+                supabase.table("plan_session_exercises").update({"completed": True}).eq("id", current_ex["id"]).execute()
+                completed_count += 1
+                st.session_state.phase = "rest"
+                duration = rest_duration
+                st.session_state.remaining_time = rest_duration
+            else:
+                st.session_state.exercise_index += 1
+                if st.session_state.exercise_index >= len(exercises):
+                    supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
+                    st.success("Warmup completed!")
+                    st.session_state.selected_session = None
+                    st.rerun()
                 else:
-                    st.session_state.exercise_index += 1
-                    if st.session_state.exercise_index >= len(exercises):
-                        supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
-                        st.success("Warmup completed!")
-                        st.session_state.selected_session = None
-                        st.rerun()
-                    else:
-                        current_ex = exercises[st.session_state.exercise_index]
-                        exercise_name = current_ex["exercise_name"]
-                        exercise_duration = int(current_ex.get("duration", 30))
-                        rest_duration = int(current_ex.get("rest", 30))
-                        st.session_state.phase = "exercise"
-                        duration = exercise_duration
-                        st.session_state.remaining_time = exercise_duration
+                    current_ex = exercises[st.session_state.exercise_index]
+                    exercise_name = current_ex["exercise_name"]
+                    exercise_duration = int(current_ex.get("duration", 30))
+                    rest_duration = int(current_ex.get("rest", 30))
+                    st.session_state.phase = "exercise"
+                    duration = exercise_duration
+                    st.session_state.remaining_time = exercise_duration
 
-                overall_percent = int((completed_count / len(exercises)) * 100)
-                overall_progress.progress(overall_percent)
-
-            render_circle(percent, st.session_state.remaining_time, exercise_name,
-                          st.session_state.exercise_index + 1, len(exercises), color)
+        st.rerun()
