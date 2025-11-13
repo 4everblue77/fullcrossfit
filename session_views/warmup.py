@@ -47,17 +47,13 @@ def render(session):
     overall_percent = int((st.session_state.exercise_index / len(exercises)) * 100)
     overall_progress.progress(overall_percent)
 
-    st.markdown(f"### Exercise {st.session_state.exercise_index + 1} of {len(exercises)}")
-    st.markdown(f"**{exercise_name}**")
-    st.markdown(f"Phase: {st.session_state.phase.capitalize()}")
-
-    # Placeholder for circular countdown
+    # ✅ Responsive circular timer with text inside
     placeholder = st.empty()
 
     def render_circle(percent, remaining_time, exercise_name, index, total, color):
         circle_html = f"""
         <div style="display:flex;justify-content:center;align-items:center;width:100%;">
-            <div style="position:relative;width:100%;max-width:400px;">
+            <div style="position:relative;width:100%;max-width:500px;">
                 <svg width="100%" height="100%" viewBox="0 0 36 36">
                     <path stroke="#eee" stroke-width="3" fill="none" d="M18 2a16 16 0 1 1 0 32 16 16 0 1 1 0-32"/>
                     <path stroke="{color}" stroke-width="3" fill="none" stroke-dasharray="{percent},100" d="M18 2a16 16 0 1 1 0 32 16 16 0 1 1 0-32"/>
@@ -70,7 +66,7 @@ def render(session):
             </div>
         </div>
         """
-        st.markdown(circle_html, unsafe_allow_html=True)
+        placeholder.markdown(circle_html, unsafe_allow_html=True)
 
     # ✅ Sound alert
     def play_sound():
@@ -93,23 +89,14 @@ def render(session):
     # ✅ Timer loop with auto-continue
     if st.session_state.running:
         while st.session_state.running:
-            # Render countdown
             color = "#f00" if st.session_state.phase == "exercise" else "#00f"
             percent = (st.session_state.remaining_time / duration) * 100
-            
-            render_circle(
-                percent,
-                st.session_state.remaining_time,
-                exercise_name,
-                st.session_state.exercise_index + 1,
-                len(exercises),
-                color
-            )
-
+            render_circle(percent, st.session_state.remaining_time, exercise_name,
+                          st.session_state.exercise_index + 1, len(exercises), color)
             time.sleep(1)
             st.session_state.remaining_time -= 1
 
-            # If current phase finished
+            # Phase finished
             if st.session_state.remaining_time <= 0:
                 play_sound()
                 if st.session_state.phase == "exercise":
@@ -127,7 +114,6 @@ def render(session):
                         st.session_state.selected_session = None
                         st.rerun()
                     else:
-                        # Next exercise
                         next_ex = exercises[st.session_state.exercise_index]
                         exercise_name = next_ex["exercise_name"]
                         exercise_duration = int(next_ex.get("duration", 30))
@@ -140,15 +126,6 @@ def render(session):
                 overall_percent = int((st.session_state.exercise_index / len(exercises)) * 100)
                 overall_progress.progress(overall_percent)
 
-            # ✅ Refresh UI without breaking loop
-            
-            render_circle(
-                percent,
-                st.session_state.remaining_time,
-                exercise_name,
-                st.session_state.exercise_index + 1,
-                len(exercises),
-                color
-            )
-
-        
+            # Refresh UI
+            render_circle(percent, st.session_state.remaining_time, exercise_name,
+                          st.session_state.exercise_index + 1, len(exercises), color)
