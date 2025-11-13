@@ -1,40 +1,46 @@
 import streamlit as st
 from supabase import create_client
-from urllib.parse import quote
 
-
+# Page config
 st.set_page_config(page_title="FullCrossFit Dashboard", page_icon="🏠")
 
+# Supabase setup
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# Session state
 if "selected_session" not in st.session_state:
     st.session_state.selected_session = None
 
-# CSS for cards
+# CSS for big buttons
 st.markdown("""
 <style>
-.session-btn {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 2px solid #ccc;
-    border-radius: 12px;
+.big-button button {
+    width: 100%;
+    height: auto;
     padding: 16px;
-    margin-bottom: 12px;
+    font-size: 18px;
+    text-align: left;
+    border-radius: 12px;
     background-color: #f9f9f9;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+    border: 2px solid #ccc;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
 }
-.session-btn:hover { background-color: #e6f0ff; }
-.session-left { display: flex; align-items: center; }
-.session-icon { font-size: 32px; margin-right: 12px; }
-.session-text { display: flex; flex-direction: column; }
-.session-title { font-size: 22px; font-weight: bold; }
-.session-details { font-size: 14px; color: #555; }
-.session-indicator { font-size: 32px; }
-a.card-link { text-decoration: none; color: inherit; }
+.big-button button:hover {
+    background-color: #e6f0ff;
+}
+.session-title {
+    font-weight: bold;
+    font-size: 22px;
+}
+.session-details {
+    font-size: 14px;
+    color: #555;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -42,6 +48,7 @@ a.card-link { text-decoration: none; color: inherit; }
 if st.session_state.selected_session is None:
     st.title("🏠 Weekly Dashboard")
 
+    # Fetch weeks
     weeks = supabase.table("plan_weeks").select("*").order("number").execute().data
     if not weeks:
         st.warning("No plan found in Supabase.")
@@ -50,10 +57,12 @@ if st.session_state.selected_session is None:
     current_week = weeks[0]
     week_label = f"Week {current_week['number']}"
 
+    # Fetch days and sessions
     days = supabase.table("plan_days").select("*").eq("week_id", current_week["id"]).execute().data
     day_ids = [d["id"] for d in days]
     sessions = supabase.table("plan_sessions").select("*").in_("day_id", day_ids).execute().data
 
+    # Build plan structure
     full_plan = {week_label: {}}
     for day in days:
         day_label = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][day["day_number"]-1]
@@ -68,11 +77,13 @@ if st.session_state.selected_session is None:
             } for s in day_sessions}
             full_plan[week_label][day_label] = {"plan": plan}
 
+    # Display week and day selector
     st.subheader(week_label)
     days_list = list(full_plan[week_label].keys())
     selected_day = st.radio("Select Day", days_list, horizontal=True)
     day_data = full_plan[week_label][selected_day]
 
+    # Render sessions
     if day_data.get("Rest"):
         st.markdown("**Rest Day 💤**")
     else:
@@ -83,50 +94,22 @@ if st.session_state.selected_session is None:
                 "WOD": "📦", "Benchmark": "⭐", "Light": "💡", "Skill": "🎯", "Cooldown": "❄️"
             }
             icon = icon_map.get(session_type, "📋")
-            indicator = "✅" if session_content.get("completed") else "⚫"
             details = session_content.get("details", "No details available")
+            indicator = "✅" if session_content.get("completed") else "⚫"
 
+            # Button text
+            button_text = f"{icon} {session_type}\n{details}\nStatus: {indicator}"
 
-            # ✅ Safe HTML concatenation
-
-            details_encoded = quote(details)
-            session_type_encoded = quote(session_type)
-            selected_day_encoded = quote(selected_day)
-            week_label_encoded = quote(week_label)
-
-
-            
-            
-            card_html = (
-                f"?session_id={session_content["
-                f"<div class='session-btn'>"
-                f"<div class='session-left'>"
-                f"<span class='session-icon'>{icon}</span>"
-                f"<div class='session-text'>"
-                f"<div class='session-title'>{session_type}</div>"
-                f"<div class='session-details'>{details}</div>"
-                f"</div></div>"
-                f"<div class='session-indicator'>{indicator}</div>"
-                f"</div></a>"
-            )
-            st.markdown(card_html, unsafe_allow_html=True)
-            
-
-
-            
-            st.markdown(card_html, unsafe_allow_html=True)
-
-
-# Detect query params
-params = st.experimental_get_query_params()
-if "session_id" in params and st.session_state.selected_session is None:
-    st.session_state.selected_session = {
-        "session_id": params["session_id"][0],
-        "type": params["type"][0],
-        "details": params["details"][0],
-        "day": params["day"][0],
-        "week": params["week"][0]
-    }
+            st.markdown('<div class="big-button">', unsafe_allow_html=True)
+            if st.button(button_text, key=session_content["session_id"]):
+                st.session_state.selected_session = {
+                    "session_id": session_content["session_id"],
+                    "type": session_type,
+                    "details": details,
+                    "day": selected_day,
+                    "week": week_label
+                }
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # Session detail view
 if st.session_state.selected_session:
@@ -141,4 +124,3 @@ if st.session_state.selected_session:
 
     if st.button("⬅ Back to Dashboard"):
         st.session_state.selected_session = None
-        st.experimental_set_query_params()  # Clear params
