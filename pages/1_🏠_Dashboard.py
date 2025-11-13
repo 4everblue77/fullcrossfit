@@ -92,7 +92,7 @@ if st.session_state.selected_session is None:
             details_encoded = quote(details)
             session_type_encoded = quote(session_type)
             selected_day_encoded = quote(selected_day)
-            week_label_encoded = quote(week_label
+            week_label_encoded = quote(week_label)
 
 
             card_html = (
