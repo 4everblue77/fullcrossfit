@@ -121,7 +121,8 @@ if st.session_state.selected_session is None:
             # ✅ Render clickable card without showing URL text
             st.markdown(f"""
             <div class="link-card">
-                {url}
+                <a>
+                    {url}
                     <div class="card-content">
                         <div class="card-header">
                             <span>{icon} {session_type}</span>
