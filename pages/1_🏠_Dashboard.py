@@ -20,26 +20,18 @@ st.markdown("""
     width: 100%;
     height: auto;
     padding: 16px;
-    font-size: 18px;
+    font-size: 22px;
     text-align: left;
     border-radius: 12px;
     background-color: #f9f9f9;
     border: 2px solid #ccc;
     margin-bottom: 12px;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    justify-content: space-between;
+    align-items: center;
 }
 .big-button button:hover {
     background-color: #e6f0ff;
-}
-.session-title {
-    font-weight: bold;
-    font-size: 22px;
-}
-.session-details {
-    font-size: 14px;
-    color: #555;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -71,7 +63,6 @@ if st.session_state.selected_session is None:
         else:
             day_sessions = [s for s in sessions if s["day_id"] == day["id"]]
             plan = {s["type"]: {
-                "details": s.get("details", ""),
                 "completed": s.get("completed", False),
                 "session_id": s["id"]
             } for s in day_sessions}
@@ -94,18 +85,16 @@ if st.session_state.selected_session is None:
                 "WOD": "📦", "Benchmark": "⭐", "Light": "💡", "Skill": "🎯", "Cooldown": "❄️"
             }
             icon = icon_map.get(session_type, "📋")
-            details = session_content.get("details", "No details available")
             indicator = "✅" if session_content.get("completed") else "⚫"
 
-            # Button text
-            button_text = f"{icon} {session_type}\n{details}\nStatus: {indicator}"
+            # Button text: icon + session type + status
+            button_text = f"{icon} {session_type}    {indicator}"
 
             st.markdown('<div class="big-button">', unsafe_allow_html=True)
             if st.button(button_text, key=session_content["session_id"]):
                 st.session_state.selected_session = {
                     "session_id": session_content["session_id"],
                     "type": session_type,
-                    "details": details,
                     "day": selected_day,
                     "week": week_label
                 }
@@ -116,7 +105,6 @@ if st.session_state.selected_session:
     session = st.session_state.selected_session
     st.title(f"📄 Session Detail: {session['type']}")
     st.markdown(f"**Week:** {session['week']} | **Day:** {session['day']}")
-    st.markdown(f"**Details:** {session['details']}")
 
     if st.button("✅ Mark as Completed"):
         supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
