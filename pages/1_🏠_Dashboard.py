@@ -13,29 +13,6 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 if "selected_session" not in st.session_state:
     st.session_state.selected_session = None
 
-# ✅ CSS for big buttons
-st.markdown("""
-<style>
-.big-button button {
-    width: 100%;
-    height: auto;
-    padding: 16px;
-    font-size: 22px;
-    text-align: left;
-    border-radius: 12px;
-    background-color: #f9f9f9;
-    border: 2px solid #ccc;
-    margin-bottom: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.big-button button:hover {
-    background-color: #e6f0ff;
-}
-</style>
-""", unsafe_allow_html=True)
-
 # Dashboard view
 if st.session_state.selected_session is None:
     st.title("🏠 Weekly Dashboard")
@@ -86,10 +63,10 @@ if st.session_state.selected_session is None:
             }
             icon = icon_map.get(session_type, "📋")
             indicator = "✅" if session_content.get("completed") else "⚫"
-        
+
+            # Button text: icon + session type + status
             button_text = f"{icon} {session_type}    {indicator}"
-        
-            # Full-width button
+
             if st.button(button_text, key=session_content["session_id"], use_container_width=True):
                 st.session_state.selected_session = {
                     "session_id": session_content["session_id"],
@@ -97,9 +74,7 @@ if st.session_state.selected_session is None:
                     "day": selected_day,
                     "week": week_label
                 }
-
-
-            st.markdown('</div>', unsafe_allow_html=True)
+                st.experimental_rerun()  # ✅ Instant switch to detail view
 
 # Session detail view
 if st.session_state.selected_session:
@@ -107,9 +82,10 @@ if st.session_state.selected_session:
     st.title(f"📄 Session Detail: {session['type']}")
     st.markdown(f"**Week:** {session['week']} | **Day:** {session['day']}")
 
-    if st.button("✅ Mark as Completed"):
+    if st.button("✅ Mark as Completed", use_container_width=True):
         supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
         st.success("Session marked as completed!")
 
-    if st.button("⬅ Back to Dashboard"):
+    if st.button("⬅ Back to Dashboard", use_container_width=True):
         st.session_state.selected_session = None
+        st.experimental_rerun()  # ✅ Instant switch back
