@@ -112,26 +112,17 @@ def render(session):
         st.session_state.running = False
 
     if col3.button("⬅ Back to Dashboard"):
-        # Ensure session_completed is initialized
+
+        # Ensure session_completed exists
         if "session_completed" not in st.session_state:
             st.session_state.session_completed = session.get("completed", False)
     
-        # ✅ Force sync from DB before saving
-        exercises_db = supabase.table("plan_session_exercises") \
-            .select("id, completed") \
-            .eq("session_id", session["session_id"]) \
-            .execute().data
-    
-        for ex in exercises_db:
-            # Merge DB state with session state
-            st.session_state.exercise_completion[ex["id"]] = st.session_state.exercise_completion.get(ex["id"], ex["completed"])
-    
-        # ✅ Update session completion
+        # ✅ Save session completion
         supabase.table("plan_sessions").update({
             "completed": st.session_state.session_completed
         }).eq("id", session["session_id"]).execute()
     
-        # ✅ Update exercises completion
+        # ✅ Save exercise completion (from timer logic)
         for ex_id, completed in st.session_state.exercise_completion.items():
             supabase.table("plan_session_exercises").update({
                 "completed": completed
@@ -140,6 +131,7 @@ def render(session):
         st.success("✅ Progress saved to Supabase")
         st.session_state.selected_session = None
         st.rerun()
+
 
 
     # ✅ Collapsible summary
