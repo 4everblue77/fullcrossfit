@@ -20,17 +20,27 @@ def render(session):
         st.warning("No exercises found for this warmup.")
         return
 
-    # Initialize state
+    # ✅ Initialize state
     if "exercise_index" not in st.session_state:
         st.session_state.exercise_index = 0
     if "phase" not in st.session_state:
         st.session_state.phase = "exercise"
     if "running" not in st.session_state:
         st.session_state.running = False
+    if "remaining_time" not in st.session_state:
+        st.session_state.remaining_time = None
 
     current_ex = exercises[st.session_state.exercise_index]
     exercise_name = current_ex["exercise_name"]
-    duration = int(current_ex.get("rest", 30)) if st.session_state.phase == "rest" else 30
+
+    # ✅ Custom durations from DB
+    exercise_duration = int(current_ex.get("duration", 30))  # Default 30 if missing
+    rest_duration = int(current_ex.get("rest", 30))          # Default 30 if missing
+    duration = exercise_duration if st.session_state.phase == "exercise" else rest_duration
+
+    # ✅ If first time or phase changed, reset remaining_time
+    if st.session_state.remaining_time is None:
+        st.session_state.remaining_time = duration
 
     # ✅ Overall progress bar
     overall_progress = st.progress(0)
@@ -56,17 +66,17 @@ def render(session):
         """
         progress_placeholder.markdown(circle_html, unsafe_allow_html=True)
 
-    # ✅ Sound alert (HTML audio)
+    # ✅ Sound alert
     def play_sound():
         st.markdown("""
         <audio autoplay>
-            <source src="https://actions.google1/alarms/beep_short.ogg
+            <source src="https://actions.google.com/soundsep_short.ogg
         </audio>
         """, unsafe_allow_html=True)
 
     # Buttons
     col1, col2, col3 = st.columns(3)
-    if col1.button("▶ Start"):
+    if col1.button("▶ Start / Continue"):
         st.session_state.running = True
     if col2.button("⏸ Stop"):
         st.session_state.running = False
@@ -74,31 +84,31 @@ def render(session):
         st.session_state.selected_session = None
         st.rerun()
 
-    # Timer loop
+    # ✅ Timer loop with pause/resume
     if st.session_state.running:
-        for t in range(duration, 0, -1):
-            percent = (t / duration) * 100
-            render_circle(percent, t)
+        while st.session_state.remaining_time > 0 and st.session_state.running:
+            percent = (st.session_state.remaining_time / duration) * 100
+            render_circle(percent, st.session_state.remaining_time)
             time.sleep(1)
+            st.session_state.remaining_time -= 1
+            st.experimental_rerun()  # Refresh UI each second
 
-        # ✅ Play sound when phase ends
-        play_sound()
-
-        # Switch phase or move to next exercise
-        if st.session_state.phase == "exercise":
-            st.session_state.phase = "rest"
-        else:
-            st.session_state.phase = "exercise"
-            st.session_state.exercise_index += 1
-
-        # ✅ Update overall progress
-        overall_percent = int((st.session_state.exercise_index / len(exercises)) * 100)
-        overall_progress.progress(overall_percent)
-
-        # If all exercises done
-        if st.session_state.exercise_index >= len(exercises):
-            supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
-            st.success("Warmup completed!")
-            st.session_state.selected_session = None
-
-        st.rerun()
+        # ✅ If timer finished and still running
+        if st.session_state.remaining_time <= 0 and st.session_state.running:
+            play_sound()
+            # Switch phase or move to next exercise
+            if st.session_state.phase == "exercise":
+                st.session_state.phase = "rest"
+                st.session_state.remaining_time = rest_duration
+            else:
+                st.session_state.phase = "exercise"
+                st.session_state.exercise_index += 1
+                if st.session_state.exercise_index < len(exercises):
+                    next_ex = exercises[st.session_state.exercise_index]
+                    st.session_state.remaining_time = int(next_ex.get("duration", 30))
+                else:
+                    # ✅ All exercises done
+                    supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
+                    st.success("Warmup completed!")
+                    st.session_state.selected_session = None
+            st.experimental_rerun()
