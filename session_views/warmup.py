@@ -71,7 +71,7 @@ def render(session):
     overall_progress.progress(overall_fraction)
 
     warmup_header = current_ex.get("notes", "").strip() or "General Warmup"
-    st.subheader(f"Warmup Type: {warmup_header}"
+    st.subheader(f"Warmup Type: {warmup_header}")
 
     placeholder = st.empty()
 
