@@ -91,7 +91,7 @@ def render(session):
             render_circle(percent, st.session_state.remaining_time)
             time.sleep(1)
             st.session_state.remaining_time -= 1
-            st.experimental_rerun()  # Refresh UI each second
+            st.rerun()  # Refresh UI each second
 
         # ✅ If timer finished and still running
         if st.session_state.remaining_time <= 0 and st.session_state.running:
@@ -111,4 +111,4 @@ def render(session):
                     supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
                     st.success("Warmup completed!")
                     st.session_state.selected_session = None
-            st.experimental_rerun()
+            st.rerun()
