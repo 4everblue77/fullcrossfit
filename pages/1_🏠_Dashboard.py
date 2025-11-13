@@ -86,9 +86,17 @@ if st.session_state.selected_session is None:
             }
             icon = icon_map.get(session_type, "📋")
             indicator = "✅" if session_content.get("completed") else "⚫"
-
-            # Button text: icon + session type + status
+        
             button_text = f"{icon} {session_type}    {indicator}"
+        
+            # Full-width button
+            if st.button(button_text, key=session_content["session_id"], use_container_width=True):
+                st.session_state.selected_session = {
+                    "session_id": session_content["session_id"],
+                    "type": session_type,
+                    "day": selected_day,
+                    "week": week_label
+                }
 
             st.markdown('<div class="big-button">', unsafe_allow_html=True)
             if st.button(button_text, key=session_content["session_id"]):
