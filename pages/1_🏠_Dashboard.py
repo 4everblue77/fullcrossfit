@@ -1,6 +1,5 @@
 import streamlit as st
 from supabase import create_client
-from urllib.parse import quote
 
 # Page config
 st.set_page_config(page_title="FullCrossFit Dashboard", page_icon="🏠")
@@ -14,41 +13,31 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 if "selected_session" not in st.session_state:
     st.session_state.selected_session = None
 
-# ✅ CSS for full-width clickable cards
+# ✅ CSS for big buttons
 st.markdown("""
 <style>
-.link-card {
+.big-button button {
     width: 100%;
-    margin-bottom: 12px;
-}
-.link-card a {
-    display: block;
-    width: 100%;
-    text-decoration: none;
-    color: inherit;
-}
-.card-content {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    height: auto;
     padding: 16px;
-    border: 2px solid #ccc;
+    font-size: 18px;
+    text-align: left;
     border-radius: 12px;
     background-color: #f9f9f9;
-    transition: background-color 0.3s ease;
+    border: 2px solid #ccc;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
 }
-.card-content:hover {
+.big-button button:hover {
     background-color: #e6f0ff;
 }
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.session-title {
     font-weight: bold;
     font-size: 22px;
 }
-.card-details {
-    margin-top: 8px;
+.session-details {
     font-size: 14px;
     color: #555;
 }
@@ -108,45 +97,19 @@ if st.session_state.selected_session is None:
             details = session_content.get("details", "No details available")
             indicator = "✅" if session_content.get("completed") else "⚫"
 
-            # Encode params for safe URL
-            session_id = session_content["session_id"]
-            url = (
-                f"?session_id={session_id}"
-                f"&type={quote(session_type)}"
-                f"&details={quote(details)}"
-                f"&day={quote(selected_day)}"
-                f"&week={quote(week_label)}"
-            )
+            # Button text
+            button_text = f"{icon} {session_type}\n{details}\nStatus: {indicator}"
 
-            # ✅ Render clickable card without showing URL text
-
-
-            st.markdown(f"""
-            <div class="link-card">
-                {url}
-                    <div class="card-content">
-                        <div class="card-header">
-                            <span>{icon} {session_type}</span>
-                            <span>{indicator}</span>
-                        </div>
-                        <div class="card-details">{details}</div>
-                    </div>
-                </a>
-            </div>
-            """, unsafe_allow_html=True)
-
-
-
-# Detect query params
-params = st.experimental_get_query_params()
-if "session_id" in params and st.session_state.selected_session is None:
-    st.session_state.selected_session = {
-        "session_id": params["session_id"][0],
-        "type": params["type"][0],
-        "details": params["details"][0],
-        "day": params["day"][0],
-        "week": params["week"][0]
-    }
+            st.markdown('<div class="big-button">', unsafe_allow_html=True)
+            if st.button(button_text, key=session_content["session_id"]):
+                st.session_state.selected_session = {
+                    "session_id": session_content["session_id"],
+                    "type": session_type,
+                    "details": details,
+                    "day": selected_day,
+                    "week": week_label
+                }
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # Session detail view
 if st.session_state.selected_session:
@@ -161,4 +124,3 @@ if st.session_state.selected_session:
 
     if st.button("⬅ Back to Dashboard"):
         st.session_state.selected_session = None
-        st.experimental_set_query_params()  # Clear params
