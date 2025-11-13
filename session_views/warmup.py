@@ -71,7 +71,7 @@ def render(session):
                 </svg>
                 <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
                     <div style="font-size:18px;">Exercise {index} of {total}</div>
-                    <div style="font-size:20px;font-weight:bold;">{exercise_name}</div>
+                    <div style="font-size:30px;font-weight:bold;">{exercise_name}</div>
                     <div style="font-size:18px;">{remaining_time}s</div>
                 </div>
             </div>
