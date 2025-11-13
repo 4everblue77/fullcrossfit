@@ -1,5 +1,6 @@
 import streamlit as st
 from supabase import create_client
+from urllib.parse import quote
 
 # Page config
 st.set_page_config(page_title="FullCrossFit Dashboard", page_icon="🏠")
@@ -12,37 +13,6 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # Session state
 if "selected_session" not in st.session_state:
     st.session_state.selected_session = None
-
-# CSS for big buttons
-st.markdown("""
-<style>
-.big-button button {
-    width: 100%;
-    height: auto;
-    padding: 16px;
-    font-size: 18px;
-    text-align: left;
-    border-radius: 12px;
-    background-color: #f9f9f9;
-    border: 2px solid #ccc;
-    margin-bottom: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-.big-button button:hover {
-    background-color: #e6f0ff;
-}
-.session-title {
-    font-weight: bold;
-    font-size: 22px;
-}
-.session-details {
-    font-size: 14px;
-    color: #555;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # Dashboard view
 if st.session_state.selected_session is None:
@@ -97,19 +67,32 @@ if st.session_state.selected_session is None:
             details = session_content.get("details", "No details available")
             indicator = "✅" if session_content.get("completed") else "⚫"
 
-            # Button text
-            button_text = f"{icon} {session_type}\n{details}\nStatus: {indicator}"
+            # Encode params for safe URL
+            session_id = session_content["session_id"]
+            url = (
+                f"?session_id={session_id}"
+                f"&type={quote(session_type)}"
+                f"&details={quote(details)}"
+                f"&day={quote(selected_day)}"
+                f"&week={quote(week_label)}"
+            )
 
-            st.markdown('<div class="big-button">', unsafe_allow_html=True)
-            if st.button(button_text, key=session_content["session_id"]):
-                st.session_state.selected_session = {
-                    "session_id": session_content["session_id"],
-                    "type": session_type,
-                    "details": details,
-                    "day": selected_day,
-                    "week": week_label
-                }
-            st.markdown('</div>', unsafe_allow_html=True)
+            # Render link button
+            st.link_button(
+                label=f"{icon} {session_type}\n{details}\nStatus: {indicator}",
+                url=url
+            )
+
+# Detect query params
+params = st.experimental_get_query_params()
+if "session_id" in params and st.session_state.selected_session is None:
+    st.session_state.selected_session = {
+        "session_id": params["session_id"][0],
+        "type": params["type"][0],
+        "details": params["details"][0],
+        "day": params["day"][0],
+        "week": params["week"][0]
+    }
 
 # Session detail view
 if st.session_state.selected_session:
@@ -124,3 +107,4 @@ if st.session_state.selected_session:
 
     if st.button("⬅ Back to Dashboard"):
         st.session_state.selected_session = None
+        st.experimental_set_query_params()  # Clear params
