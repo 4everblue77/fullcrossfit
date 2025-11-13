@@ -23,7 +23,7 @@ def render(session):
     exercises = supabase.table("plan_session_exercises") \
         .select("*") \
         .eq("session_id", session["session_id"]) \
-        .order("set_number") \
+        .order("exercise_order") \
         .execute().data
 
     if not exercises:
@@ -120,7 +120,6 @@ def render(session):
         st.rerun()
 
 
-    # ✅ Collapsible summary section
     with st.expander("Exercise Summary"):
         st.markdown("**Adjust completion status manually if needed:**")
     
@@ -134,7 +133,7 @@ def render(session):
             key="session_completed_toggle"
         )
     
-        # Ensure exercise_completion exists and is synced
+        # Ensure exercise_completion exists and sync keys
         if "exercise_completion" not in st.session_state:
             st.session_state.exercise_completion = {}
     
@@ -142,17 +141,25 @@ def render(session):
             if ex["id"] not in st.session_state.exercise_completion:
                 st.session_state.exercise_completion[ex["id"]] = ex.get("completed", False)
     
-        # Render checkboxes
+        # ✅ Group exercises by notes
+        grouped_exercises = {}
         for ex in exercises:
-            ex_id = ex["id"]
-            ex_name = ex["exercise_name"]
-            disabled = st.session_state.session_completed
-            st.session_state.exercise_completion[ex_id] = st.checkbox(
-                ex_name,
-                value=st.session_state.exercise_completion[ex_id],
-                key=f"chk_{ex_id}",
-                disabled=disabled
-            )
+            group = ex.get("notes", "").strip() or "General Warmup"
+            grouped_exercises.setdefault(group, []).append(ex)
+    
+        # ✅ Render grouped sections
+        for group_name, group_items in grouped_exercises.items():
+            st.markdown(f"### {group_name}")
+            for ex in group_items:
+                ex_id = ex["id"]
+                ex_name = ex["exercise_name"]
+                disabled = st.session_state.session_completed
+                st.session_state.exercise_completion[ex_id] = st.checkbox(
+                    ex_name,
+                    value=st.session_state.exercise_completion[ex_id],
+                    key=f"chk_{ex_id}",
+                    disabled=disabled
+                )
 
 
     # ✅ Timer loop without blocking
@@ -161,6 +168,9 @@ def render(session):
         percent = (st.session_state.remaining_time / duration) * 100
         progress_position = completed_count + (1 if st.session_state.phase == "exercise" else 0)
 
+        warmup_header = current_ex.get("notes", "").strip() or "General Warmup"
+        st.subheader(f"Warmup Type: {warmup_header}")
+        
         render_circle(percent, st.session_state.remaining_time, exercise_name,
                       progress_position, len(exercises), color)
 
