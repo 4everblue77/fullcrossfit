@@ -124,7 +124,7 @@ if st.session_state.selected_session:
         st.error("Unknown session type.")
 
 
-"""
+_ = """
 # ✅ Session detail view
 if st.session_state.selected_session:
     session = st.session_state.selected_session
