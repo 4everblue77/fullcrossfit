@@ -120,6 +120,7 @@ if st.session_state.selected_session is None:
 
             # ✅ Render clickable card without showing URL text
 
+
             st.markdown(f"""
             <div class="link-card">
                 {url}
@@ -133,6 +134,7 @@ if st.session_state.selected_session is None:
                 </a>
             </div>
             """, unsafe_allow_html=True)
+
 
 
 # Detect query params
