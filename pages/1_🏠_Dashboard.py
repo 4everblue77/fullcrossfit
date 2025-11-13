@@ -1,5 +1,6 @@
 import streamlit as st
 from supabase import create_client
+from urllib.parse import quote
 
 
 st.set_page_config(page_title="FullCrossFit Dashboard", page_icon="🏠")
@@ -88,24 +89,26 @@ if st.session_state.selected_session is None:
 
             # ✅ Safe HTML concatenation
 
+            details_encoded = quote(details)
+            session_type_encoded = quote(session_type)
+            selected_day_encoded = quote(selected_day)
+            week_label_encoded = quote(week_label
 
 
             card_html = (
                 f"<a class='card-link' href='?session_id={session_content['session_id']}"
-                f"&type={session_type}"
-                f"&details={details}"
-                f"&day={selected_day}"
-                f"&weeksession-text'>"
-                f"<div class='session-title'>{session_type}</div>"
+                f"&type={session_type_encoded}"
+                f"&details={details_encoded}"
+                f"&day={selected_day_encoded}"
+                f"&week={week_label_encodedtle'>{session_type}</div>"
                 f"<div class='session-details'>{details}</div>"
                 f"</div></div>"
                 f"<div class='session-indicator'>{indicator}</div>"
                 f"</div></a>"
             )
-
-
-
+            
             st.markdown(card_html, unsafe_allow_html=True)
+
 
 # Detect query params
 params = st.experimental_get_query_params()
