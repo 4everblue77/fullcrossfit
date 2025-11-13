@@ -95,17 +95,21 @@ if st.session_state.selected_session is None:
             week_label_encoded = quote(week_label)
 
 
+
+
             card_html = (
                 f"<a class='card-link' href='?session_id={session_content['session_id']}"
                 f"&type={session_type_encoded}"
                 f"&details={details_encoded}"
-                f"&day={selected_day_encoded}"
-                f"&week={week_label_encodedtle'>{session_type}</div>"
+                f"&day={iv class='session-text'>"
+                f"<div class='session-title'>{session_type}</div>"
                 f"<div class='session-details'>{details}</div>"
                 f"</div></div>"
                 f"<div class='session-indicator'>{indicator}</div>"
                 f"</div></a>"
             )
+
+
             
             st.markdown(card_html, unsafe_allow_html=True)
 
