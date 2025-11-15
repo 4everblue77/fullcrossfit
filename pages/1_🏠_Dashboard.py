@@ -92,7 +92,7 @@ if st.session_state.selected_session is None:
         # Render sessions in fixed order
         ordered_sessions = sorted(day_data["plan"].items(), key=lambda x: session_order.index(x[0]) if x[0] in session_order else len(session_order))
 
-        for session_type, session_content in day_data["plan"].items():
+        for session_type, session_content in ordered_sessions:
             icon_map = {
                 "Warmup": "🔥", "Heavy": "🏋️", "Olympic": "🏅", "Run": "🏃",
                 "WOD": "📦", "Benchmark": "⭐", "Light": "💡", "Skill": "🎯", "Cooldown": "❄️"
