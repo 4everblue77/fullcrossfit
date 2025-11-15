@@ -75,8 +75,18 @@ if st.session_state.selected_session is None:
             sessions_for_day = day_info["plan"].values()
             completed_count = sum(1 for s in sessions_for_day if s.get("completed") is True)
             total_count = len(sessions_for_day)
-            status = f"✅ {completed_count}/{total_count}" if total_count else "⚫"
-        days_list.append(f"{day_label} {status}")
+            
+            if day_info.get("Rest"):
+                status_icon = "💤"
+            elif completed_count == 0:
+                status_icon = "⚫"
+            elif completed_count == total_count:
+                status_icon = "✅"
+            else:
+                status_icon = "🟡"
+
+        days_list.append(f"{status_icon} {day_label} {completed_count}/{total_count}")
+
 
     # Show radio with updated labels
     selected_day_label = st.radio("Select Day", days_list, horizontal=True)
