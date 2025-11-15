@@ -113,10 +113,10 @@ def render(session):
         st.session_state.running = False
     if col3.button("⬅ Back to Dashboard"):
         st.session_state.running = False  # Stop autorefresh
-        st.write("Saving to Supabase:", {
-            "session_completed": st.session_state.session_completed,
-            "exercise_completion": st.session_state.exercise_completion
-        })
+        #st.write("Saving to Supabase:", {
+        #    "session_completed": st.session_state.session_completed,
+        #    "exercise_completion": st.session_state.exercise_completion
+        #})
 
         # ✅ Save session completion
         supabase.table("plan_sessions").update({
