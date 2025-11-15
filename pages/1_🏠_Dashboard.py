@@ -73,7 +73,7 @@ if st.session_state.selected_session is None:
             status = "💤"
         else:
             sessions_for_day = day_info["plan"].values()
-            completed_count = sum(s["completed"] for s in sessions_for_day)
+            completed_count = sum(1 for s in sessions_for_day if s.get("completed") is True)
             total_count = len(sessions_for_day)
             status = f"✅ {completed_count}/{total_count}" if total_count else "⚫"
         days_list.append(f"{day_label} {status}")
