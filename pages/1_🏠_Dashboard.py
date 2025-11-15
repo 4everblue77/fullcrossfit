@@ -52,10 +52,10 @@ if st.session_state.selected_session is None:
     day_ids = [d["id"] for d in days]
     sessions = fetch_sessions(day_ids)
 
-    # ✅ Ensure all 7 days are included in full_plan
+    # ✅ Build plan structure ensuring all 7 days
     expected_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    full_plan[selected_week_label] = {}
-    
+    full_plan = {selected_week_label: {}}
+
     for i, label in enumerate(expected_labels, start=1):
         day = next((d for d in days if d["day_number"] == i), None)
         if day:
@@ -71,7 +71,7 @@ if st.session_state.selected_session is None:
         else:
             # Inject missing day as rest
             full_plan[selected_week_label][label] = {"Rest": True}
-    
+
     # ✅ Build day labels with completion status
     days_list = []
     for day_label, day_info in full_plan[selected_week_label].items():
@@ -82,39 +82,31 @@ if st.session_state.selected_session is None:
             sessions_for_day = day_info["plan"].values()
             completed_count = sum(1 for s in sessions_for_day if s.get("completed") is True)
             total_count = len(sessions_for_day)
-    
+
             if completed_count == 0:
                 status_icon = "⚫"
             elif completed_count == total_count:
                 status_icon = "✅"
             else:
                 status_icon = "🟡"
-    
+
             days_list.append(f"{status_icon} {day_label} {completed_count}/{total_count}")
-            
-
-
 
     # Show radio with updated labels
     selected_day_label = st.radio("Select Day", days_list, horizontal=True)
-    selected_day = selected_day_label.split()[1]  # Get actual day name
+    selected_day = selected_day_label.split()[1]  # Always second element is day name
     day_data = full_plan[selected_week_label][selected_day]
-    
 
     # Render sessions
     if day_data.get("Rest"):
         st.markdown("**Rest Day 💤**")
     else:
         st.markdown(f"### Sessions for {selected_day}")
-        
-        # Render sessions in fixed order
-        
-        # Define desired session order globally or before rendering
-        session_order = [
-            "Warmup", "Heavy", "Olympic", "Run", "WOD", "Benchmark", "Light", "Skill", "Cooldown"
-        ]
 
-        ordered_sessions = sorted(day_data["plan"].items(), key=lambda x: session_order.index(x[0]) if x[0] in session_order else len(session_order))
+        # ✅ Enforce session order
+        session_order = ["Warmup", "Heavy", "Olympic", "Run", "WOD", "Benchmark", "Light", "Skill", "Cooldown"]
+        ordered_sessions = sorted(day_data["plan"].items(),
+                                  key=lambda x: session_order.index(x[0]) if x[0] in session_order else len(session_order))
 
         for session_type, session_content in ordered_sessions:
             icon_map = {
@@ -134,8 +126,7 @@ if st.session_state.selected_session is None:
                 }
                 st.rerun()
 
-
-# Routing to session detail
+# ✅ Routing to session detail
 if st.session_state.selected_session:
     session = st.session_state.selected_session
     session_type = session["type"]
@@ -152,6 +143,3 @@ if st.session_state.selected_session:
         cooldown.render(session)
     else:
         st.error("Unknown session type.")
-
-
-
