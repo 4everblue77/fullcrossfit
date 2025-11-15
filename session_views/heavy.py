@@ -1,6 +1,7 @@
 
 import streamlit as st
 from supabase import create_client
+from collections import defaultdict
 
 # Supabase setup
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -11,85 +12,107 @@ def render(session):
     st.title("🏋 Heavy Session")
     st.markdown(f"**Week:** {session['week']}  /n**Day:** {session['day']}")
 
-    # ✅ Detect session change and reset state
+    # Reset state if new session
     if "current_session_id" not in st.session_state or st.session_state.current_session_id != session["session_id"]:
         st.session_state.current_session_id = session["session_id"]
-        st.session_state.exercise_completion = {}
         st.session_state.set_completion = {}
+        st.session_state.actual_values = {}  # {row_id: {weight, reps}}
         st.session_state.session_completed = session.get("completed", False)
 
-    # ✅ Fetch exercises ordered by exercise_order
-    exercises = supabase.table("plan_session_exercises")         .select("*")         .eq("session_id", session["session_id"])         .order("exercise_order")         .execute().data
+    # Fetch all sets for this session
+    sets_data = supabase.table("plan_session_exercises")         .select("*")         .eq("session_id", session["session_id"])         .order("exercise_order")         .execute().data
 
-    if not exercises:
-        st.warning("No exercises found for this heavy session.")
+    if not sets_data:
+        st.warning("No sets found for this heavy session.")
         return
 
-    # ✅ Split into Warmup and Working blocks based on notes
-    warmup_block = [ex for ex in exercises if ex.get("notes", "").lower().startswith("warmup")]
-    working_block = [ex for ex in exercises if ex.get("notes", "").lower().startswith("working") or ex not in warmup_block]
+    # Group by exercise_name
+    grouped_exercises = defaultdict(list)
+    for row in sets_data:
+        grouped_exercises[row["exercise_name"]].append(row)
 
-    # ✅ Initialize completion states
-    for ex in exercises:
-        ex_id = ex["id"]
-        if ex_id not in st.session_state.exercise_completion:
-            st.session_state.exercise_completion[ex_id] = ex.get("completed", False)
-        if ex_id not in st.session_state.set_completion:
-            total_sets = int(ex.get("sets", 1))
-            st.session_state.set_completion[ex_id] = [False] * total_sets
+    # Sort sets within each exercise by set_number
+    for ex_name in grouped_exercises:
+        grouped_exercises[ex_name].sort(key=lambda r: r.get("set_number", 1))
 
-    # ✅ Overall progress
-    total_sets = sum(len(sets) for sets in st.session_state.set_completion.values())
-    completed_sets = sum(sum(1 for s in sets if s) for sets in st.session_state.set_completion.values())
-    overall_fraction = completed_sets / total_sets if total_sets > 0 else 0
-    st.progress(min(overall_fraction, 1.0))
+    # Initialize state for each row
+    for row in sets_data:
+        row_id = row["id"]
+        if row_id not in st.session_state.set_completion:
+            st.session_state.set_completion[row_id] = row.get("completed", False)
+        if row_id not in st.session_state.actual_values:
+            st.session_state.actual_values[row_id] = {
+                "weight": row.get("actual_weight", ""),
+                "reps": row.get("actual_reps", row.get("reps", ""))
+            }
+
+    # Overall progress
+    total_sets = len(sets_data)
+    completed_sets = sum(1 for v in st.session_state.set_completion.values() if v)
+    st.progress(completed_sets / total_sets if total_sets else 0)
     st.markdown(f"**Progress:** {completed_sets}/{total_sets} sets completed")
 
-    def render_block(block_name, block_exercises):
-        st.subheader(block_name)
-        for ex in block_exercises:
-            ex_id = ex["id"]
-            name = ex.get("exercise_name", "Unnamed Exercise")
-            sets = int(ex.get("sets", 1))
-            reps = ex.get("reps", "-")
-            intensity = ex.get("intensity", 0)  # %RM
-            weight_display = f"{intensity}% RM" if intensity else "Bodyweight"
-            notes = ex.get("notes", "")
+    # Render each exercise
+    for ex_name, sets in grouped_exercises.items():
+        st.subheader(ex_name)
 
-            st.markdown(f"**{name}**")
-            st.markdown(f"Sets: {sets} | Reps: {reps} | Weight: {weight_display}")
-            if notes:
-                st.caption(notes)
+        # Split warmup vs working based on notes or intensity
+        warmup_sets = [s for s in sets if str(s.get("notes", "")).lower().startswith("warmup")]
+        working_sets = [s for s in sets if s not in warmup_sets]
 
-            # ✅ Render set checkboxes
-            cols = st.columns(sets)
-            for i in range(sets):
-                checked = st.session_state.set_completion[ex_id][i]
-                if cols[i].checkbox(f"Set {i+1}", value=checked, key=f"{ex_id}_set_{i}"):
-                    st.session_state.set_completion[ex_id][i] = True
+        def render_block(block_name, block_sets):
+            if not block_sets:
+                return
+            st.markdown(f"**{block_name}**")
+            header_cols = st.columns([1,1,1,1,1])
+            header_cols[0].markdown("**Set**")
+            header_cols[1].markdown("**%RM**")
+            header_cols[2].markdown("**Weight**")
+            header_cols[3].markdown("**Reps**")
+            header_cols[4].markdown("**Done**")
+
+            for row in block_sets:
+                row_id = row["id"]
+                cols = st.columns([1,1,1,1,1])
+                set_num = row.get("set_number", "?")
+                intensity = row.get("intensity", "")
+                cols[0].write(set_num)
+                cols[1].write(intensity)
+
+                # Editable weight and reps
+                weight_key = f"weight_{row_id}"
+                reps_key = f"reps_{row_id}"
+                st.session_state.actual_values[row_id]["weight"] = cols[2].text_input("", value=str(st.session_state.actual_values[row_id]["weight"]), key=weight_key)
+                st.session_state.actual_values[row_id]["reps"] = cols[3].text_input("", value=str(st.session_state.actual_values[row_id]["reps"]), key=reps_key)
+
+                # Checkbox for completion
+                done_key = f"done_{row_id}"
+                checked = st.session_state.set_completion[row_id]
+                if cols[4].checkbox("", value=checked, key=done_key):
+                    st.session_state.set_completion[row_id] = True
                 else:
-                    st.session_state.set_completion[ex_id][i] = False
+                    st.session_state.set_completion[row_id] = False
 
-            # ✅ Mark exercise complete if all sets done
-            st.session_state.exercise_completion[ex_id] = all(st.session_state.set_completion[ex_id])
+        if warmup_sets:
+            render_block("🔥 Warmup Sets", warmup_sets)
+        if working_sets:
+            render_block("💪 Working Sets", working_sets)
 
-    # ✅ Render Warmup and Working blocks
-    if warmup_block:
-        render_block("🔥 Warmup Sets", warmup_block)
-    if working_block:
-        render_block("💪 Working Sets", working_block)
-
-    # ✅ Buttons
+    # Buttons
     col1, col2 = st.columns(2)
     if col1.button("✅ Save Progress"):
-        # Save session completion if all exercises done
-        all_done = all(st.session_state.exercise_completion.values())
+        # Update DB for each set
+        for row_id in st.session_state.set_completion.keys():
+            supabase.table("plan_session_exercises").update({
+                "completed": st.session_state.set_completion[row_id],
+                "actual_weight": st.session_state.actual_values[row_id]["weight"],
+                "actual_reps": st.session_state.actual_values[row_id]["reps"]
+            }).eq("id", row_id).execute()
+
+        # Update session completion if all sets done
+        all_done = all(st.session_state.set_completion.values())
         st.session_state.session_completed = all_done
-
-        supabase.table("plan_sessions").update({"completed": st.session_state.session_completed}).eq("id", session["session_id"]).execute()
-
-        for ex_id, completed in st.session_state.exercise_completion.items():
-            supabase.table("plan_session_exercises").update({"completed": completed}).eq("id", ex_id).execute()
+        supabase.table("plan_sessions").update({"completed": all_done}).eq("id", session["session_id"]).execute()
 
         st.success("Progress saved to Supabase")
 
@@ -97,16 +120,11 @@ def render(session):
         st.session_state.selected_session = None
         st.rerun()
 
-    # ✅ Manual adjustments
+    # Manual reset
     with st.expander("Manual Adjustments"):
-        for ex in exercises:
-            ex_id = ex["id"]
-            ex_name = ex["exercise_name"]
-            if st.button(f"Toggle {ex_name}", key=f"toggle_{ex_id}"):
-                st.session_state.exercise_completion[ex_id] = not st.session_state.exercise_completion[ex_id]
-
         if st.button("🔄 Reset All"):
-            for ex_id in st.session_state.exercise_completion.keys():
-                st.session_state.exercise_completion[ex_id] = False
-                st.session_state.set_completion[ex_id] = [False] * len(st.session_state.set_completion[ex_id])
+            for row_id in st.session_state.set_completion.keys():
+                st.session_state.set_completion[row_id] = False
+                st.session_state.actual_values[row_id]["weight"] = ""
+                st.session_state.actual_values[row_id]["reps"] = ""
             st.success("All sets reset!")
