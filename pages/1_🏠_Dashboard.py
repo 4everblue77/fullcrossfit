@@ -88,10 +88,12 @@ if st.session_state.selected_session is None:
             days_list.append(f"{status_icon} {day_label} {completed_count}/{total_count}")
 
 
+
     # Show radio with updated labels
     selected_day_label = st.radio("Select Day", days_list, horizontal=True)
-    selected_day = selected_day_label.split()[0]
+    selected_day = selected_day_label.split()[1]  # Get actual day name
     day_data = full_plan[selected_week_label][selected_day]
+    
 
     # Render sessions
     if day_data.get("Rest"):
