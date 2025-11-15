@@ -39,16 +39,14 @@ def render(session):
     for ex_name in grouped_exercises:
         grouped_exercises[ex_name].sort(key=lambda r: r.get("set_number", 1))
 
-    # ✅ Initialize state for each row
+    # ✅ Initialize state for each row (use DB completed state, reps from plan)
     for row in sets_data:
         row_id = row["id"]
-        if row_id not in st.session_state.set_completion:
-            st.session_state.set_completion[row_id] = row.get("completed", False)
-        if row_id not in st.session_state.actual_values:
-            st.session_state.actual_values[row_id] = {
-                "weight": row.get("actual_weight", ""),
-                "reps": row.get("actual_reps", row.get("reps", ""))
-            }
+        st.session_state.set_completion[row_id] = row.get("completed", False)
+        st.session_state.actual_values[row_id] = {
+            "weight": row.get("actual_weight", ""),
+            "reps": row.get("actual_reps", row.get("reps", ""))
+        }
 
     # ✅ Overall progress
     total_sets = len(sets_data)
@@ -68,31 +66,35 @@ def render(session):
             if not block_sets:
                 return
             st.markdown(f"**{block_name}**")
-            header_cols = st.columns([1,1,1,1,1])
-            header_cols[0].markdown("**Set**")
-            header_cols[1].markdown("**%RM**")
-            header_cols[2].markdown("**Weight**")
-            header_cols[3].markdown("**Reps**")
-            header_cols[4].markdown("**Done**")
 
+            # Header row
+            header = st.container()
+            hcols = header.columns([1,1,1,1,1])
+            hcols[0].markdown("**Set**")
+            hcols[1].markdown("**%RM**")
+            hcols[2].markdown("**Weight**")
+            hcols[3].markdown("**Reps**")
+            hcols[4].markdown("**Done**")
+
+            # Rows
             for row in block_sets:
                 row_id = row["id"]
-                cols = st.columns([1,1,1,1,1])
+                rcols = st.container().columns([1,1,1,1,1])
                 set_num = row.get("set_number", "?")
                 intensity = row.get("intensity", "")
-                cols[0].write(set_num)
-                cols[1].write(intensity)
+                rcols[0].write(set_num)
+                rcols[1].write(intensity)
 
                 # Editable weight and reps
                 weight_key = f"weight_{row_id}"
                 reps_key = f"reps_{row_id}"
-                st.session_state.actual_values[row_id]["weight"] = cols[2].text_input("", value=str(st.session_state.actual_values[row_id]["weight"]), key=weight_key)
-                st.session_state.actual_values[row_id]["reps"] = cols[3].text_input("", value=str(st.session_state.actual_values[row_id]["reps"]), key=reps_key)
+                st.session_state.actual_values[row_id]["weight"] = rcols[2].text_input("", value=str(st.session_state.actual_values[row_id]["weight"]), key=weight_key)
+                st.session_state.actual_values[row_id]["reps"] = rcols[3].text_input("", value=str(st.session_state.actual_values[row_id]["reps"]), key=reps_key)
 
                 # Checkbox for completion
                 done_key = f"done_{row_id}"
                 checked = st.session_state.set_completion[row_id]
-                if cols[4].checkbox("", value=checked, key=done_key):
+                if rcols[4].checkbox("", value=checked, key=done_key):
                     st.session_state.set_completion[row_id] = True
                 else:
                     st.session_state.set_completion[row_id] = False
@@ -130,5 +132,5 @@ def render(session):
             for row_id in st.session_state.set_completion.keys():
                 st.session_state.set_completion[row_id] = False
                 st.session_state.actual_values[row_id]["weight"] = ""
-                st.session_state.actual_values[row_id]["reps"] = ""
+                st.session_state.actual_values[row_id]["reps"] = sets_data[[r["id"] for r in sets_data].index(row_id)]["reps"]
             st.success("All sets reset!")
