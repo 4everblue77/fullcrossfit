@@ -90,6 +90,12 @@ if st.session_state.selected_session is None:
         st.markdown(f"### Sessions for {selected_day}")
         
         # Render sessions in fixed order
+        
+        # Define desired session order globally or before rendering
+        session_order = [
+            "Warmup", "Heavy", "Olympic", "Run", "WOD", "Benchmark", "Light", "Skill", "Cooldown"
+        ]
+
         ordered_sessions = sorted(day_data["plan"].items(), key=lambda x: session_order.index(x[0]) if x[0] in session_order else len(session_order))
 
         for session_type, session_content in ordered_sessions:
