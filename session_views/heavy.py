@@ -9,8 +9,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def render(session):
     st.title("🏋 Heavy Session")
-    st.markdown(f"**Week:** {session['week']}  
-**Day:** {session['day']}")
+    st.markdown(f"**Week:** {session['week']}  /n**Day:** {session['day']}")
 
     # ✅ Detect session change and reset state
     if "current_session_id" not in st.session_state or st.session_state.current_session_id != session["session_id"]:
