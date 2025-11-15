@@ -126,40 +126,4 @@ if st.session_state.selected_session:
         st.error("Unknown session type.")
 
 
-_ = """
-# ✅ Session detail view
-if st.session_state.selected_session:
-    session = st.session_state.selected_session
-    st.title(f"📄 Session Detail: {session['type']}")
-    st.markdown(f"**Week:** {session['week']} | **Day:** {session['day']}")
 
-    # Toggle session completion
-    if st.button("✅ Mark Session Completed", use_container_width=True):
-        supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
-        st.success("Session marked as completed!")
-        st.rerun()
-
-    # Back button
-    if st.button("⬅ Back to Dashboard", use_container_width=True):
-        st.session_state.selected_session = None
-        st.rerun()
-
-    # Fetch exercises
-    exercises = fetch_exercises(session["session_id"])
-    st.markdown("### Exercises")
-    if not exercises:
-        st.info("No exercises found for this session.")
-    else:
-        for ex in exercises:
-            completed_icon = "✅" if ex.get("completed") else "⚫"
-            st.markdown(f"**{ex['exercise_name']}** {completed_icon}")
-            st.write(f"- Set: {ex['set_number']} | Reps: {ex['reps']} | Intensity: {ex.get('intensity', 'N/A')} | Rest: {ex.get('rest', 'N/A')} sec")
-            if ex.get("notes"):
-                st.write(f"- Notes: {ex['notes']}")
-
-            # Toggle completion for each exercise
-            if st.button(f"Mark Set {ex['set_number']} Completed", key=f"ex_{ex['id']}"):
-                supabase.table("plan_session_exercises").update({"completed": True}).eq("id", ex["id"]).execute()
-                st.success(f"Set {ex['set_number']} marked as completed!")
-                st.rerun()
-"""
