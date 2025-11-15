@@ -12,21 +12,25 @@ def render(session):
     st.title("🏋 Heavy Session")
     st.markdown(f"**Week:** {session['week']}  /n**Day:** {session['day']}")
 
-    # Reset state if new session
+    # ✅ Initialize session_state keys
+    if "actual_values" not in st.session_state:
+        st.session_state.actual_values = {}
+    if "set_completion" not in st.session_state:
+        st.session_state.set_completion = {}
     if "current_session_id" not in st.session_state or st.session_state.current_session_id != session["session_id"]:
         st.session_state.current_session_id = session["session_id"]
-        st.session_state.set_completion = {}
-        st.session_state.actual_values = {}  # {row_id: {weight, reps}}
+        st.session_state.actual_values.clear()
+        st.session_state.set_completion.clear()
         st.session_state.session_completed = session.get("completed", False)
 
-    # Fetch all sets for this session
+    # ✅ Fetch all sets for this session
     sets_data = supabase.table("plan_session_exercises")         .select("*")         .eq("session_id", session["session_id"])         .order("exercise_order")         .execute().data
 
     if not sets_data:
         st.warning("No sets found for this heavy session.")
         return
 
-    # Group by exercise_name
+    # ✅ Group by exercise_name
     grouped_exercises = defaultdict(list)
     for row in sets_data:
         grouped_exercises[row["exercise_name"]].append(row)
@@ -35,7 +39,7 @@ def render(session):
     for ex_name in grouped_exercises:
         grouped_exercises[ex_name].sort(key=lambda r: r.get("set_number", 1))
 
-    # Initialize state for each row
+    # ✅ Initialize state for each row
     for row in sets_data:
         row_id = row["id"]
         if row_id not in st.session_state.set_completion:
@@ -46,13 +50,13 @@ def render(session):
                 "reps": row.get("actual_reps", row.get("reps", ""))
             }
 
-    # Overall progress
+    # ✅ Overall progress
     total_sets = len(sets_data)
     completed_sets = sum(1 for v in st.session_state.set_completion.values() if v)
     st.progress(completed_sets / total_sets if total_sets else 0)
     st.markdown(f"**Progress:** {completed_sets}/{total_sets} sets completed")
 
-    # Render each exercise
+    # ✅ Render each exercise
     for ex_name, sets in grouped_exercises.items():
         st.subheader(ex_name)
 
@@ -98,7 +102,7 @@ def render(session):
         if working_sets:
             render_block("💪 Working Sets", working_sets)
 
-    # Buttons
+    # ✅ Buttons
     col1, col2 = st.columns(2)
     if col1.button("✅ Save Progress"):
         # Update DB for each set
@@ -120,7 +124,7 @@ def render(session):
         st.session_state.selected_session = None
         st.rerun()
 
-    # Manual reset
+    # ✅ Manual reset
     with st.expander("Manual Adjustments"):
         if st.button("🔄 Reset All"):
             for row_id in st.session_state.set_completion.keys():
