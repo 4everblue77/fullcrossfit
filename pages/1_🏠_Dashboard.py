@@ -52,46 +52,45 @@ if st.session_state.selected_session is None:
     day_ids = [d["id"] for d in days]
     sessions = fetch_sessions(day_ids)
 
-    # Build plan structure
-    full_plan = {selected_week_label: {}}
-    for day in days:
-        day_label = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][day["day_number"]-1]
-        if day["is_rest_day"]:
-            full_plan[selected_week_label][day_label] = {"Rest": True}
+    # ✅ Ensure all 7 days are included in full_plan
+    expected_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    full_plan[selected_week_label] = {}
+    
+    for i, label in enumerate(expected_labels, start=1):
+        day = next((d for d in days if d["day_number"] == i), None)
+        if day:
+            if day.get("is_rest_day"):
+                full_plan[selected_week_label][label] = {"Rest": True}
+            else:
+                day_sessions = [s for s in sessions if s["day_id"] == day["id"]]
+                plan = {s["type"]: {
+                    "completed": s.get("completed", False),
+                    "session_id": s["id"]
+                } for s in day_sessions}
+                full_plan[selected_week_label][label] = {"plan": plan}
         else:
-            day_sessions = [s for s in sessions if s["day_id"] == day["id"]]
-            plan = {s["type"]: {
-                "completed": s.get("completed", False),
-                "session_id": s["id"]
-            } for s in day_sessions}
-            full_plan[selected_week_label][day_label] = {"plan": plan}
-
+            # Inject missing day as rest
+            full_plan[selected_week_label][label] = {"Rest": True}
+    
     # ✅ Build day labels with completion status
     days_list = []
     for day_label, day_info in full_plan[selected_week_label].items():
         if day_info.get("Rest"):
-            status = "💤"
+            status_icon = "💤"
+            days_list.append(f"{status_icon} {day_label}")
         else:
             sessions_for_day = day_info["plan"].values()
             completed_count = sum(1 for s in sessions_for_day if s.get("completed") is True)
             total_count = len(sessions_for_day)
-            
-
-            if day_info.get("Rest"):
-                status_icon = "💤"
-                days_list.append(f"{status_icon} {day_label}")  # No count for rest day
+    
+            if completed_count == 0:
+                status_icon = "⚫"
+            elif completed_count == total_count:
+                status_icon = "✅"
             else:
-                completed_count = sum(1 for s in sessions_for_day if s.get("completed") is True)
-                total_count = len(sessions_for_day)
-            
-                if completed_count == 0:
-                    status_icon = "⚫"
-                elif completed_count == total_count:
-                    status_icon = "✅"
-                else:
-                    status_icon = "🟡"
-            
-                days_list.append(f"{status_icon} {day_label} {completed_count}/{total_count}")
+                status_icon = "🟡"
+    
+            days_list.append(f"{status_icon} {day_label} {completed_count}/{total_count}")
             
 
 
