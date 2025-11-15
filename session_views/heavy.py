@@ -74,19 +74,19 @@ def render(session):
                 return
             st.markdown(f"**{block_name}**")
 
-            # Header row
+            # Header row with fixed column widths
             header = st.container()
-            hcols = header.columns([1,1,1,1,1])
+            hcols = header.columns([1.2, 1.2, 1.5, 1.5, 0.8])
             hcols[0].markdown("**Set**")
             hcols[1].markdown("**%RM**")
             hcols[2].markdown("**Weight**")
             hcols[3].markdown("**Reps**")
             hcols[4].markdown("**Done**")
 
-            # Rows
+            # Rows with same column widths for alignment
             for row in block_sets:
                 row_id = row["id"]
-                rcols = st.container().columns([1,1,1,1,1])
+                rcols = st.container().columns([1.2, 1.2, 1.5, 1.5, 0.8])
                 set_num = row.get("set_number", "?")
                 intensity = row.get("intensity", "")
                 rcols[0].write(set_num)
