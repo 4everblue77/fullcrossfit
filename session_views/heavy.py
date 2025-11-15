@@ -39,13 +39,20 @@ def render(session):
     for ex_name in grouped_exercises:
         grouped_exercises[ex_name].sort(key=lambda r: r.get("set_number", 1))
 
-    # ✅ Initialize state for each row (use DB completed state, reps from plan)
+    # ✅ Initialize state for each row
     for row in sets_data:
         row_id = row["id"]
-        st.session_state.set_completion[row_id] = row.get("completed", False)
+        completed = row.get("completed", False)
+        st.session_state.set_completion[row_id] = completed
+
+        # Logic for reps fallback
+        planned_reps = row.get("reps", "")
+        actual_reps = row.get("actual_reps", "")
+        reps_value = actual_reps if completed and actual_reps else planned_reps
+
         st.session_state.actual_values[row_id] = {
             "weight": row.get("actual_weight", ""),
-            "reps": row.get("actual_reps", row.get("reps", ""))
+            "reps": reps_value
         }
 
     # ✅ Overall progress
