@@ -76,16 +76,23 @@ if st.session_state.selected_session is None:
             completed_count = sum(1 for s in sessions_for_day if s.get("completed") is True)
             total_count = len(sessions_for_day)
             
+
             if day_info.get("Rest"):
                 status_icon = "💤"
-            elif completed_count == 0:
-                status_icon = "⚫"
-            elif completed_count == total_count:
-                status_icon = "✅"
+                days_list.append(f"{status_icon} {day_label}")  # No count for rest day
             else:
-                status_icon = "🟡"
-
-            days_list.append(f"{status_icon} {day_label} {completed_count}/{total_count}")
+                completed_count = sum(1 for s in sessions_for_day if s.get("completed") is True)
+                total_count = len(sessions_for_day)
+            
+                if completed_count == 0:
+                    status_icon = "⚫"
+                elif completed_count == total_count:
+                    status_icon = "✅"
+                else:
+                    status_icon = "🟡"
+            
+                days_list.append(f"{status_icon} {day_label} {completed_count}/{total_count}")
+            
 
 
 
