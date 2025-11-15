@@ -85,7 +85,7 @@ if st.session_state.selected_session is None:
             else:
                 status_icon = "🟡"
 
-        days_list.append(f"{status_icon} {day_label} {completed_count}/{total_count}")
+            days_list.append(f"{status_icon} {day_label} {completed_count}/{total_count}")
 
 
     # Show radio with updated labels
