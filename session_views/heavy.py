@@ -137,7 +137,7 @@ def render(session):
         edited_df = st.data_editor(
             df.drop(columns=["ID", "Rest"]),
             num_rows="fixed",
-            use_container_width=True,
+            width= 'stretch',
             hide_index=True,
             column_config={
                 "Set": st.column_config.NumberColumn("Set", disabled=True),
