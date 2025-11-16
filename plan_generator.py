@@ -162,7 +162,7 @@ class PlanGenerator:
                     "week_id": week_id,
                     "day_number": day_number,
                     "is_rest_day": day_data.get("Rest", False),
-                    "total_time": day_data.get("estimated_time", 0)
+                    "total_time": int(day_data.get("estimated_time", 0))
                 }).execute()
                 day_id = day_resp.data[0]["id"]
     
@@ -182,7 +182,7 @@ class PlanGenerator:
                         "day_id": day_id,
                         "type": session_type,
                         "target_muscle": ", ".join(day_data.get("muscles", [])),
-                        "duration": session_data.get("time", 0),
+                        "duration": int(session_data.get("time", 0)),
                         "details": session_data.get("details", ""),
                         "performance_targets": session_data.get("Performance Targets", {}
                     }).execute()
