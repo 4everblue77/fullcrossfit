@@ -132,24 +132,31 @@ def run_interval(work, rest, total, timer_placeholder, progress_placeholder, sto
         if stop_placeholder.button("⏹ Stop Timer", key=f"stop_timer_{time.time()}"):
             st.session_state[stop_key] = True
 
-def run_tabata(timer_placeholder, progress_placeholder, stop_placeholder):
+def run_tabata(exercises, timer_placeholder, progress_placeholder, stop_placeholder):
     stop_key = "stop_timer"
     st.session_state[stop_key] = False
     rounds = 8
-    for r in range(1, rounds + 1):
-        # Work 20s
-        for remaining in range(20, 0, -1):
-            if st.session_state.get(stop_key, False): break
-            timer_placeholder.markdown(f"<h3 style='color:#28a745;'>Round {r} Work: {remaining}s</h3>", unsafe_allow_html=True)
-            time.sleep(1)
-        # Rest 10s
-        for remaining in range(10, 0, -1):
-            if st.session_state.get(stop_key, False): break
-            timer_placeholder.markdown(f"<h3 style='color:#ffc107;'>Round {r} Rest: {remaining}s</h3>", unsafe_allow_html=True)
-            time.sleep(1)
-        if stop_placeholder.button("⏹ Stop Timer", key=f"stop_timer_{time.time()}"):
-            st.session_state[stop_key] = True
+    for ex in exercises:
+        timer_placeholder.markdown(f"<h3 style='color:#007bff;'>Starting {ex}</h3>", unsafe_allow_html=True)
+        for r in range(1, rounds + 1):
+            # Work 20s
+            for remaining in range(20, 0, -1):
+                if st.session_state.get(stop_key, False): break
+                timer_placeholder.markdown(f"<h3 style='color:#28a745;'>Round {r} Work: {remaining}s</h3>", unsafe_allow_html=True)
+                time.sleep(1)
+            # Rest 10s
+            for remaining in range(10, 0, -1):
+                if st.session_state.get(stop_key, False): break
+                timer_placeholder.markdown(f"<h3 style='color:#ffc107;'>Round {r} Rest: {remaining}s</h3>", unsafe_allow_html=True)
+                time.sleep(1)
+            if stop_placeholder.button("⏹ Stop Timer", key=f"stop_{ex}_{r}"):
+                st.session_state[stop_key] = True
+                break
+        if st.session_state.get(stop_key, False):
             break
+        # Short break between exercises
+        timer_placeholder.markdown("<h3 style='color:#6c757d;'>Break before next exercise...</h3>", unsafe_allow_html=True)
+        time.sleep(30)
     timer_placeholder.markdown("<h3 style='color:#28a745;'>✅ Tabata Complete!</h3>", unsafe_allow_html=True)
 
 def run_emom(minutes, timer_placeholder, progress_placeholder, stop_placeholder, death_by=False):
