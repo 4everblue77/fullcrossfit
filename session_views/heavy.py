@@ -12,17 +12,13 @@ def render(session):
     st.title("🏋 Heavy Session")
     st.markdown(f"**Week:** {session['week']}  /n**Day:** {session['day']}")
 
-    # ✅ Inject CSS for responsive table
+    # ✅ Inject CSS for horizontal scroll
     st.markdown("""
     <style>
-    .responsive-table {width:100%; border-collapse:collapse;}
-    .responsive-table th, .responsive-table td {border:1px solid #ddd; padding:8px; text-align:center;}
-    .responsive-table th {background-color:#f4f4f4; font-weight:bold;}
-    @media (max-width:768px) {
-        .responsive-table thead {display:none;}
-        .responsive-table tr {display:block; margin-bottom:10px;}
-        .responsive-table td {display:flex; justify-content:space-between; padding:10px;}
-    }
+    .scroll-table {overflow-x:auto;}
+    table {border-collapse:collapse;width:100%;min-width:600px;}
+    th, td {border:1px solid #ddd;padding:8px;text-align:center;}
+    th {background-color:#f4f4f4;font-weight:bold;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -56,43 +52,50 @@ def render(session):
 
         def render_block(block_name, block_sets):
             if not block_sets:
-                return [], []
+                return []
             st.markdown(f"**{block_name}**")
 
-            html = "<table class='responsive-table'><thead><tr><th>Set</th><th>%RM</th><th>Weight</th><th>Reps</th><th>Done</th></tr></thead><tbody>"
+            # Table header
+            st.markdown("<div class='scroll-table'><table><thead><tr><th>Set</th><th>%RM</th><th>Weight</th><th>Reps</th><th>Done</th></tr></thead><tbody>", unsafe_allow_html=True)
+
             ids = []
-            for row in block_sets:
-                row_id = row["id"]
-                ids.append(row_id)
+            for idx, row in enumerate(block_sets):
+                ids.append(row["id"])
                 completed = row.get("completed", False)
                 planned_reps = row.get("reps", "")
                 actual_reps = row.get("actual_reps", "")
                 reps_value = actual_reps if completed and actual_reps else planned_reps
 
-                # Render inputs using Streamlit placeholders
-                weight_ph = st.empty()
-                reps_ph = st.empty()
-                done_ph = st.empty()
+                # Editable fields
+                weight_val = st.text_input("", value=str(row.get("actual_weight", "")), key=f"weight_{block_name}_{idx}")
+                reps_val = st.text_input("", value=str(reps_value), key=f"reps_{block_name}_{idx}")
+                done_val = st.checkbox("", value=completed, key=f"done_{block_name}_{idx}")
 
-                weight_val = weight_ph.text_input(f"Weight for {row_id}", value=str(row.get("actual_weight", "")), key=f"weight_{row_id}")
-                reps_val = reps_ph.text_input(f"Reps for {row_id}", value=str(reps_value), key=f"reps_{row_id}")
-                done_val = done_ph.checkbox(f"Done {row_id}", value=completed, key=f"done_{row_id}")
+                # Render row visually
+                st.markdown(f"<tr><td>{row.get('set_number','')}</td><td>{row.get('intensity','')}</td><td>{weight_val}</td><td>{reps_val}</td><td>{'✅' if done_val else '⬜'}</td></tr>", unsafe_allow_html=True)
 
-                html += f"<tr><td>{row.get('set_number','')}</td><td>{row.get('intensity','')}</td><td>{weight_val}</td><td>{reps_val}</td><td>{'✅' if done_val else '⬜'}</td></tr>"
-            html += "</tbody></table>"
-            st.markdown(html, unsafe_allow_html=True)
+            st.markdown("</tbody></table></div>", unsafe_allow_html=True)
             return ids
 
-        warmup_ids = render_block("🔥 Warmup Sets", warmup_sets)
-        working_ids = render_block("💪 Working Sets", working_sets)
+        warmup_ids = render_block("Warmup", warmup_sets)
+        working_ids = render_block("Working", working_sets)
 
         if st.button(f"✅ Save Progress for {ex_name}"):
-            for row_id in warmup_ids + working_ids:
+            # Update DB for all sets
+            for idx, row_id in enumerate(warmup_ids):
                 supabase.table("plan_session_exercises").update({
-                    "completed": st.session_state.get(f"done_{row_id}"),
-                    "actual_weight": st.session_state.get(f"weight_{row_id}"),
-                    "actual_reps": st.session_state.get(f"reps_{row_id}")
+                    "completed": st.session_state.get(f"done_Warmup_{idx}"),
+                    "actual_weight": st.session_state.get(f"weight_Warmup_{idx}"),
+                    "actual_reps": st.session_state.get(f"reps_Warmup_{idx}")
                 }).eq("id", row_id).execute()
+
+            for idx, row_id in enumerate(working_ids):
+                supabase.table("plan_session_exercises").update({
+                    "completed": st.session_state.get(f"done_Working_{idx}"),
+                    "actual_weight": st.session_state.get(f"weight_Working_{idx}"),
+                    "actual_reps": st.session_state.get(f"reps_Working_{idx}")
+                }).eq("id", row_id).execute()
+
             st.success(f"Progress for {ex_name} saved to Supabase")
 
     if st.button("⬅ Back to Dashboard"):
