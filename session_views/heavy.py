@@ -89,29 +89,28 @@ def render(session):
         warmup_df, warmup_ids = render_block("🔥 Warmup", warmup_sets)
         working_df, working_ids = render_block("💪 Working", working_sets)
 
-        # Save button
-        if st.button(f"✅ Save Progress for {ex_name}"):
-            # Update DB for warmup sets
-            if warmup_df is not None:
-                for i, row_id in enumerate(warmup_ids):
-                    supabase.table("plan_session_exercises").update({
-                        "completed": bool(warmup_df.loc[i, "Done"]),
-                        "actual_weight": str(warmup_df.loc[i, "Weight"]),
-                        "actual_reps": str(warmup_df.loc[i, "Reps"])
-                    }).eq("id", row_id).execute()
 
-            # Update DB for working sets
-            if working_df is not None:
-                for i, row_id in enumerate(working_ids):
-                    supabase.table("plan_session_exercises").update({
-                        "completed": bool(working_df.loc[i, "Done"]),
-                        "actual_weight": str(working_df.loc[i, "Weight"]),
-                        "actual_reps": str(working_df.loc[i, "Reps"])
-                    }).eq("id", row_id).execute()
-
-            st.success(f"Progress for {ex_name} saved to Supabase")
 
     # Back to Dashboard button
     if st.button("⬅ Back to Dashboard"):
+        # Update DB for warmup sets
+        if warmup_df is not None:
+            for i, row_id in enumerate(warmup_ids):
+                supabase.table("plan_session_exercises").update({
+                    "completed": bool(warmup_df.loc[i, "Done"]),
+                    "actual_weight": str(warmup_df.loc[i, "Weight"]),
+                    "actual_reps": str(warmup_df.loc[i, "Reps"])
+                }).eq("id", row_id).execute()
+
+        # Update DB for working sets
+        if working_df is not None:
+            for i, row_id in enumerate(working_ids):
+                supabase.table("plan_session_exercises").update({
+                    "completed": bool(working_df.loc[i, "Done"]),
+                    "actual_weight": str(working_df.loc[i, "Weight"]),
+                    "actual_reps": str(working_df.loc[i, "Reps"])
+                }).eq("id", row_id).execute()
+
+        st.success(f"Progress for {ex_name} saved to Supabase")
         st.session_state.selected_session = None
         st.rerun()
