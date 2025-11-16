@@ -16,11 +16,17 @@ def render(session):
         st.error("Session details not found.")
         return
 
-    wod_type = session_data.get('session_type', 'WOD')
-    details = session_data.get('details', 'No details provided')
+    
+    # Detect WOD type from details
+    wod_type = None
+    for t in ["AMRAP", "Chipper", "Interval", "Tabata", "For Time", "Ladder", "Death by", "EMOM", "Alternating EMOM"]:
+        if t.lower() in details.lower():
+            wod_type = t
+            break
+
 
     st.title(f"🔥 {wod_type} Session")
-    st.markdown(f"**Week:** {session_data.get('week', '')}  \n **Day:** {session_data.get('day', '')}")
+    st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
     st.write(f"**Details:** {details}")
 
     # Timer placeholders
