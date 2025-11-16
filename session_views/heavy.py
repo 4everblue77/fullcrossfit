@@ -10,6 +10,16 @@ SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
+def calculate_1rm(weight: float, reps: int) -> float:
+    """
+    Calculate estimated 1RM using Epley formula.
+    weight: actual weight lifted
+    reps: number of reps performed
+    """
+    if reps <= 1:
+        return weight
+    return round(weight * (1 + 0.0333 * reps), 2)
+
 def update_1rm_on_completion(exercise_name, completed_sets):
     for s in completed_sets:
         if s.get("completed") and s.get("actual_weight") and s.get("actual_reps"):
