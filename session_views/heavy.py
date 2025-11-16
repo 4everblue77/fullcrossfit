@@ -9,6 +9,8 @@ SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+beep_url = "https://github.com/4everblue77/fullcrossfit/raw/refs/heads/main/assets/beep.mp3"
+
 def render(session):
     st.title("🏋 Heavy Session")
     st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
