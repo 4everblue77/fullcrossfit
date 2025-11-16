@@ -11,7 +11,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def render(session):
     st.title("🏋 Heavy Session")
-    st.markdown(f"**Week:** {session['week']}  /n**Day:** {session['day']}")
+    st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
 
     # Fetch sets from DB
     sets_data = supabase.table("plan_session_exercises")         .select("*")         .eq("session_id", session["session_id"])         .order("exercise_order")         .execute().data
@@ -63,6 +63,12 @@ def render(session):
                 })
 
             df = pd.DataFrame(data)
+
+            # Highlight completed rows
+            def highlight_completed(row):
+                return ['background-color: #d4edda' if row['Done'] else '' for _ in row]
+
+            styled_df = df.style.apply(highlight_completed, axis=1)
 
             edited_df = st.data_editor(
                 df.drop(columns=["ID"]),
