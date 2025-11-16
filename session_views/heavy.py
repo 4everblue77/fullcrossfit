@@ -98,6 +98,17 @@ def render(session):
                         f"<h1 style='text-align:center; color:#28a745; font-size:48px;'>⏳ {mins:02d}:{secs:02d}</h1>",
                         unsafe_allow_html=True
                     )
+                    
+                    if i <= 3:  # Last 3 seconds
+                        st.markdown(
+                            f"""
+                            <audio autoplay>
+                                {beep_url}
+                            </audio>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
                     time.sleep(1)
                 else:
                     if not skip:
