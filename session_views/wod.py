@@ -23,6 +23,8 @@ def render(session):
         if t.lower() in details.lower():
             wod_type = t
             break
+    if not wod_type:
+        wod_type = "WOD"
 
 
     st.title(f"🔥 {wod_type} Session")
