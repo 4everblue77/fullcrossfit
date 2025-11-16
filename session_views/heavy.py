@@ -123,7 +123,7 @@ def render(session):
                 skip_state_key = f"skip_state_{block_name}_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
         
                 
-                skip = skip_placeholder.button(f"⏭ Skip Rest for Set {edited_df.loc[i, 'Set']}", key=skip_button_key
+                skip = skip_placeholder.button(f"⏭ Skip Rest for Set {edited_df.loc[i, 'Set']}", key=skip_button_key)
                 if skip:
                     st.session_state[skip_state_key] = True
         
