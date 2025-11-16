@@ -16,6 +16,7 @@ def render(session):
         st.error("Session details not found.")
         return
 
+    details = session_data.get('details', 'No details provided')
     
     # Detect WOD type from details
     wod_type = None
