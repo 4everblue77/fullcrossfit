@@ -65,7 +65,7 @@ def render(session):
         elif wod_type == "Interval" and work_minutes and rest_minutes:
             run_interval(work_minutes, rest_minutes, duration_minutes, timer_placeholder, progress_placeholder, stop_placeholder)
         elif wod_type == "Tabata":
-            run_tabata(timer_placeholder, progress_placeholder, stop_placeholder)
+            run_tabata(exercises, timer_placeholder, progress_placeholder, stop_placeholder)
         elif wod_type == "Ladder":
             run_stopwatch(timer_placeholder, progress_placeholder, stop_placeholder)
         elif wod_type == "Death by":
