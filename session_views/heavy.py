@@ -113,7 +113,7 @@ def render(session):
         for i, done in enumerate(edited_df["Done"]):
             if done and not df.loc[i, "Done"]:  # Newly marked complete
                 rest_seconds = int(df.loc[i, "Rest"])
-                st.write(f"✅ Set {edited_df.loc[i, 'Set']} completed! Rest timer:")
+                #st.write(f"✅ Set {edited_df.loc[i, 'Set']} completed! Rest timer:")
 
                 # Create placeholders for dynamic elements
                 status_placeholder = st.empty()      # For "Set X completed" or "Timer skipped"
