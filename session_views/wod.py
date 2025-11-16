@@ -55,7 +55,7 @@ def render(session):
             rest_minutes = int(rest_match.group(1))
 
     # Timer logic based on WOD type
-    if st.button("▶ Start Timer"):
+    if st.button("▶ Start Timer", key="start_timer"):
         if wod_type == "AMRAP" and duration_minutes:
             run_countdown(duration_minutes * 60, timer_placeholder, progress_placeholder, stop_placeholder)
         elif wod_type == "For Time":
@@ -90,7 +90,7 @@ def run_countdown(total_seconds, timer_placeholder, progress_placeholder, stop_p
         mins, secs = divmod(remaining, 60)
         timer_placeholder.markdown(f"<h1 style='text-align:center; color:#28a745;'>⏳ {mins:02d}:{secs:02d}</h1>", unsafe_allow_html=True)
         progress_placeholder.progress((total_seconds - remaining) / total_seconds)
-        if stop_placeholder.button("⏹ Stop Timer"):
+        if stop_placeholder.button("⏹ Stop Timer", key=f"stop_timer_{time.time()}"):
             st.session_state[stop_key] = True
         time.sleep(1)
     else:
@@ -104,7 +104,7 @@ def run_stopwatch(timer_placeholder, progress_placeholder, stop_placeholder):
         mins, secs = divmod(elapsed, 60)
         timer_placeholder.markdown(f"<h1 style='text-align:center; color:#007bff;'>⏱ {mins:02d}:{secs:02d}</h1>", unsafe_allow_html=True)
         progress_placeholder.progress(min(elapsed / 1800, 1.0))  # Cap at 30 min
-        if stop_placeholder.button("⏹ Stop Timer"):
+        if stop_placeholder.button("⏹ Stop Timer", key=f"stop_timer_{time.time()}"):
             st.session_state[stop_key] = True
         time.sleep(1)
         elapsed += 1
@@ -129,7 +129,7 @@ def run_interval(work, rest, total, timer_placeholder, progress_placeholder, sto
             timer_placeholder.markdown(f"<h3 style='color:#ffc107;'>Rest: {mins:02d}:{secs:02d}</h3>", unsafe_allow_html=True)
             time.sleep(1)
             elapsed += 1
-        if stop_placeholder.button("⏹ Stop Timer"):
+        if stop_placeholder.button("⏹ Stop Timer", key=f"stop_timer_{time.time()}"):
             st.session_state[stop_key] = True
 
 def run_tabata(timer_placeholder, progress_placeholder, stop_placeholder):
@@ -147,7 +147,7 @@ def run_tabata(timer_placeholder, progress_placeholder, stop_placeholder):
             if st.session_state.get(stop_key, False): break
             timer_placeholder.markdown(f"<h3 style='color:#ffc107;'>Round {r} Rest: {remaining}s</h3>", unsafe_allow_html=True)
             time.sleep(1)
-        if stop_placeholder.button("⏹ Stop Timer"):
+        if stop_placeholder.button("⏹ Stop Timer", key=f"stop_timer_{time.time()}"):
             st.session_state[stop_key] = True
             break
     timer_placeholder.markdown("<h3 style='color:#28a745;'>✅ Tabata Complete!</h3>", unsafe_allow_html=True)
@@ -164,7 +164,7 @@ def run_emom(minutes, timer_placeholder, progress_placeholder, stop_placeholder,
             mins, secs = divmod(remaining, 60)
             progress_placeholder.progress((60 - remaining) / 60)
             time.sleep(1)
-        if stop_placeholder.button("⏹ Stop Timer"):
+        if stop_placeholder.button("⏹ Stop Timer", key=f"stop_timer_{time.time()}"):
             st.session_state[stop_key] = True
             break
     timer_placeholder.markdown("<h3 style='color:#28a745;'>✅ EMOM Complete!</h3>", unsafe_allow_html=True)
