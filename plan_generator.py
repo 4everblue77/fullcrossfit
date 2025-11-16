@@ -183,7 +183,7 @@ class PlanGenerator:
                         "type": session_type,
                         "target_muscle": ", ".join(day_data.get("muscles", [])),
                         "duration": session_data.get("time", 0),
-                        "details": session_data.get("details", "")
+                        "details": session_data.get("details", ""),
                         "performance_targets": session_data.get("Performance Targets", {}
                     }).execute()
                     session_id = session_resp.data[0]["id"]
