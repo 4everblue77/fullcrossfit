@@ -114,9 +114,15 @@ def render(session):
             if done and not df.loc[i, "Done"]:  # Newly marked complete
                 rest_seconds = int(df.loc[i, "Rest"])
                 st.write(f"✅ Set {edited_df.loc[i, 'Set']} completed! Rest timer:")
-                timer_placeholder = st.empty()
-                progress_placeholder = st.empty()
-                skip_placeholder = st.empty()
+
+                # Create placeholders for dynamic elements
+                status_placeholder = st.empty()      # For "Set X completed" or "Timer skipped"
+                timer_placeholder = st.empty()       # For countdown
+                progress_placeholder = st.empty()    # For progress bar
+                skip_placeholder = st.empty()        # For skip button
+                
+                # Show initial status
+                status_placeholder.markdown(f"<h4>✅ Set {edited_df.loc[i, 'Set']} completed! Rest timer:</h4>", unsafe_allow_html=True)
 
                 # Unique keys include block_name
                 skip_button_key = f"skip_btn_{block_name}_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
@@ -145,8 +151,13 @@ def render(session):
                     if not st.session_state.get(skip_state_key, False):
                         timer_placeholder.markdown("<h3 style='color:#28a745;'>🔥 Ready for next set!</h3>", unsafe_allow_html=True)
 
-                # ✅ Clear skip button after timer ends or skip
+                # ✅ Clear all placeholders after timer ends or skip
+                time.sleep(1)  # Small delay so user sees final message
+                status_placeholder.empty()
+                timer_placeholder.empty()
+                progress_placeholder.empty()
                 skip_placeholder.empty()
+
 
 
         return edited_df, df["ID"].tolist()
