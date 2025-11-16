@@ -18,7 +18,7 @@ def render(session):
     st.title(f"🔥 {session_data.get('session_type', 'WOD')} Session")
 
     # Show Week and Day
-    st.markdown(f"**Week:** {session_data.get('week', '')}  \n **Day:** {session_data.get('day', '')}")
+    st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
 
     # Show Details prominently
     st.write(f"**Details:** {session_data.get('details', 'No details provided')}")
