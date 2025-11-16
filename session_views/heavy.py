@@ -1,5 +1,6 @@
 
 import streamlit as st
+import pandas as pd
 from supabase import create_client
 from collections import defaultdict
 
@@ -11,16 +12,6 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 def render(session):
     st.title("🏋 Heavy Session")
     st.markdown(f"**Week:** {session['week']}  /n**Day:** {session['day']}")
-
-    # ✅ Inject CSS for horizontal scroll
-    st.markdown("""
-    <style>
-    .scroll-table {overflow-x:auto;}
-    table {border-collapse:collapse;width:100%;min-width:700px;}
-    th, td {border:1px solid #ddd;padding:8px;text-align:center;}
-    th {background-color:#f4f4f4;font-weight:bold;}
-    </style>
-    """, unsafe_allow_html=True)
 
     # Fetch sets from DB
     sets_data = supabase.table("plan_session_exercises")         .select("*")         .eq("session_id", session["session_id"])         .order("exercise_order")         .execute().data
@@ -43,7 +34,7 @@ def render(session):
     st.progress(completed_sets / total_sets if total_sets else 0)
     st.markdown(f"**Progress:** {completed_sets}/{total_sets} sets completed")
 
-    # Render each exercise
+    # Render each exercise using st.data_editor
     for ex_name, sets in grouped_exercises.items():
         st.subheader(ex_name)
 
@@ -52,52 +43,69 @@ def render(session):
 
         def render_block(block_name, block_sets):
             if not block_sets:
-                return []
-            st.markdown(f"**{block_name}**")
+                return None, []
+            st.markdown(f"**{block_name} Sets**")
 
-            # Table header
-            st.markdown("<div class='scroll-table'><table><thead><tr><th>Set</th><th>%RM</th><th>Weight</th><th>Reps</th><th>Done</th></tr></thead><tbody>", unsafe_allow_html=True)
-
-            ids = []
-            for idx, row in enumerate(block_sets):
-                ids.append(row["id"])
+            # Prepare DataFrame for editable table
+            data = []
+            for row in block_sets:
                 completed = row.get("completed", False)
                 planned_reps = row.get("reps", "")
                 actual_reps = row.get("actual_reps", "")
                 reps_value = actual_reps if completed and actual_reps else planned_reps
+                data.append({
+                    "ID": row["id"],
+                    "Set": row.get("set_number", ""),
+                    "%RM": row.get("intensity", ""),
+                    "Weight": row.get("actual_weight", ""),
+                    "Reps": reps_value,
+                    "Done": completed
+                })
 
-                # Embed Streamlit widgets inside table cells
-                col_weight = st.text_input("", value=str(row.get("actual_weight", "")), key=f"weight_{block_name}_{idx}")
-                col_reps = st.text_input("", value=str(reps_value), key=f"reps_{block_name}_{idx}")
-                col_done = st.checkbox("", value=completed, key=f"done_{block_name}_{idx}")
+            df = pd.DataFrame(data)
 
-                # Render row visually with placeholders replaced by widget values
-                st.markdown(f"<tr><td>{row.get('set_number','')}</td><td>{row.get('intensity','')}</td><td>{col_weight}</td><td>{col_reps}</td><td>{'✅' if col_done else '⬜'}</td></tr>", unsafe_allow_html=True)
+            edited_df = st.data_editor(
+                df.drop(columns=["ID"]),
+                num_rows="fixed",
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Set": st.column_config.NumberColumn("Set", disabled=True),
+                    "%RM": st.column_config.TextColumn("%RM", disabled=True),
+                    "Weight": st.column_config.TextColumn("Weight"),
+                    "Reps": st.column_config.TextColumn("Reps"),
+                    "Done": st.column_config.CheckboxColumn("Done")
+                }
+            )
 
-            st.markdown("</tbody></table></div>", unsafe_allow_html=True)
-            return ids
+            return edited_df, df["ID"].tolist()
 
-        warmup_ids = render_block("Warmup", warmup_sets)
-        working_ids = render_block("Working", working_sets)
+        warmup_df, warmup_ids = render_block("🔥 Warmup", warmup_sets)
+        working_df, working_ids = render_block("💪 Working", working_sets)
 
+        # Save button
         if st.button(f"✅ Save Progress for {ex_name}"):
-            # Update DB for all sets
-            for idx, row_id in enumerate(warmup_ids):
-                supabase.table("plan_session_exercises").update({
-                    "completed": st.session_state.get(f"done_Warmup_{idx}"),
-                    "actual_weight": st.session_state.get(f"weight_Warmup_{idx}"),
-                    "actual_reps": st.session_state.get(f"reps_Warmup_{idx}")
-                }).eq("id", row_id).execute()
+            # Update DB for warmup sets
+            if warmup_df is not None:
+                for i, row_id in enumerate(warmup_ids):
+                    supabase.table("plan_session_exercises").update({
+                        "completed": bool(warmup_df.loc[i, "Done"]),
+                        "actual_weight": str(warmup_df.loc[i, "Weight"]),
+                        "actual_reps": str(warmup_df.loc[i, "Reps"])
+                    }).eq("id", row_id).execute()
 
-            for idx, row_id in enumerate(working_ids):
-                supabase.table("plan_session_exercises").update({
-                    "completed": st.session_state.get(f"done_Working_{idx}"),
-                    "actual_weight": st.session_state.get(f"weight_Working_{idx}"),
-                    "actual_reps": st.session_state.get(f"reps_Working_{idx}")
-                }).eq("id", row_id).execute()
+            # Update DB for working sets
+            if working_df is not None:
+                for i, row_id in enumerate(working_ids):
+                    supabase.table("plan_session_exercises").update({
+                        "completed": bool(working_df.loc[i, "Done"]),
+                        "actual_weight": str(working_df.loc[i, "Weight"]),
+                        "actual_reps": str(working_df.loc[i, "Reps"])
+                    }).eq("id", row_id).execute()
 
             st.success(f"Progress for {ex_name} saved to Supabase")
 
+    # Back to Dashboard button
     if st.button("⬅ Back to Dashboard"):
         st.session_state.selected_session = None
         st.rerun()
