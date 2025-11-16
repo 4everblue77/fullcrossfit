@@ -8,6 +8,7 @@ from generators.benchmark_generator import BenchmarkGenerator
 from generators.light_generator import LightGenerator
 from generators.cooldown_generator import CooldownGenerator
 from generators.skillsession_generator import SkillSessionGenerator
+from supabase_sync_function import sync_plan_to_supabase
 
 class CrossFitPlanGenerator:
     def __init__(self, supabase, debug=False):
@@ -109,6 +110,73 @@ class CrossFitPlanGenerator:
                 }
         return full_plan
 
+
     def sync_plan_to_supabase(self, full_plan):
-        # Your existing sync logic here (unchanged)
-        pass
+        from supabase_sync_function import sync_plan_to_supabase
+        return sync_plan_to_supabase(self.supabase, full_plan, self.data)
+        # Clear previous plan safely (requires WHERE clause)
+        self.supabase.table("plan_session_exercises").delete().gt("id", 0).execute()
+        self.supabase.table("plan_sessions").delete().gt("id", 0).execute()
+        self.supabase.table("plan_days").delete().gt("id", 0).execute()
+        self.supabase.table("plan_weeks").delete().gt("id", 0).execute()
+    
+        for week_number, (week_label, week_data) in enumerate(full_plan.items(), start=1):
+            # Insert week
+            week_resp = self.supabase.table("plan_weeks").insert({
+                "number": week_number,
+                "notes": week_label
+            }).execute()
+            week_id = week_resp.data[0]["id"]
+    
+            for day_number, (day_label, day_data) in enumerate(week_data.items(), start=1):
+                # Insert day
+                day_resp = self.supabase.table("plan_days").insert({
+                    "week_id": week_id,
+                    "day_number": day_number,
+                    "is_rest_day": day_data.get("Rest", False),
+                    "total_time": day_data.get("estimated_time", 0)
+                }).execute()
+                day_id = day_resp.data[0]["id"]
+    
+                # Skip if it's a rest day
+                if day_data.get("Rest") or "plan" not in day_data:
+                    continue
+    
+                for session_type, session_data in day_data["plan"].items():
+                    # Skip non-session entries
+                    if session_type in ["Debug", "Total Time"]:
+                        continue
+                    if not isinstance(session_data, dict):
+                        continue
+    
+                    # Insert session
+                    session_resp = self.supabase.table("plan_sessions").insert({
+                        "day_id": day_id,
+                        "type": session_type,
+                        "target_muscle": ", ".join(day_data.get("muscles", [])),
+                        "duration": session_data.get("time", 0),
+                        "details": session_data.get("details", "")
+                    }).execute()
+                    session_id = session_resp.data[0]["id"]
+    
+                    # Insert exercises if present
+                    if "exercises" in session_data and isinstance(session_data["exercises"], list):
+                        for i, ex in enumerate(session_data["exercises"], start=1):
+                            exercise_id = next((e["id"] for e in self.data["exercises"] if e["name"] == ex["name"]), None)
+                            self.supabase.table("plan_session_exercises").insert({
+                                "session_id": session_id,
+                                "exercise_name": ex["name"],
+                                "exercise_id": exercise_id,
+                                "set_number": ex.get("set", 1),
+                                "reps": ex.get("reps", ""),
+                                "intensity": ex.get("intensity", ""),
+                                "rest": ex.get("rest", 0),
+                                "notes": ex.get("notes", ""),
+                                "exercise_order": i,  # ✅ Now i is defined
+                                "completed": False,
+                                "actual_reps": "",
+                                "actual_weight": "",
+                                "tempo": ex.get("tempo", ""),
+                                "expected_weight": ex.get("expected_weight", ""),
+                                "equipment": ex.get("equipment", "")
+                            }).execute()
