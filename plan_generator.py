@@ -115,7 +115,7 @@ class PlanGenerator:
             plan["Cooldown"] = self.cooldown_gen.generate(muscles)
 
         # Total time
-        plan["Total Time"] = f"{self._estimate_total_time(plan)} min"
+        plan["Total Time"] = self._estimate_total_time(plan)  # numeric value
 
         return plan
 
