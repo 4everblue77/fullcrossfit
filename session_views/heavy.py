@@ -142,7 +142,7 @@ def render(session):
             column_config={
                 "Set": st.column_config.NumberColumn("Set", disabled=True),
                 "%RM": st.column_config.TextColumn("%RM", disabled=True),
-                "Weight": st.column_config.TextColumn("Weight"),
+                "Weight": st.column_config.NumberColumn("Weight", format="%.2f"),
                 "Reps": st.column_config.TextColumn("Reps"),
                 "Done": st.column_config.CheckboxColumn("Done")
             }
