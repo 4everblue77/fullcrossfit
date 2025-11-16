@@ -3,7 +3,7 @@ import pandas as pd
 import time
 from supabase import create_client
 from collections import defaultdict
-import datetime
+from datetime import datetime
 
 # Supabase setup
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
