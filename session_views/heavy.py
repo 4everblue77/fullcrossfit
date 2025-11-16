@@ -10,13 +10,13 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def render(session):
     st.title("🏋 Heavy Session")
-    st.markdown(f"**Week:** {session['week']}  /n**Day:** {session['day']}")
+    st.markdown(f"**Week:** {session['week']} /n **Day:** {session['day']}")
 
     # ✅ Inject CSS for horizontal scroll
     st.markdown("""
     <style>
     .scroll-table {overflow-x:auto;}
-    table {border-collapse:collapse;width:100%;min-width:600px;}
+    table {border-collapse:collapse;width:100%;min-width:700px;}
     th, td {border:1px solid #ddd;padding:8px;text-align:center;}
     th {background-color:#f4f4f4;font-weight:bold;}
     </style>
@@ -66,13 +66,13 @@ def render(session):
                 actual_reps = row.get("actual_reps", "")
                 reps_value = actual_reps if completed and actual_reps else planned_reps
 
-                # Editable fields
-                weight_val = st.text_input("", value=str(row.get("actual_weight", "")), key=f"weight_{block_name}_{idx}")
-                reps_val = st.text_input("", value=str(reps_value), key=f"reps_{block_name}_{idx}")
-                done_val = st.checkbox("", value=completed, key=f"done_{block_name}_{idx}")
+                # Embed Streamlit widgets inside table cells
+                col_weight = st.text_input("", value=str(row.get("actual_weight", "")), key=f"weight_{block_name}_{idx}")
+                col_reps = st.text_input("", value=str(reps_value), key=f"reps_{block_name}_{idx}")
+                col_done = st.checkbox("", value=completed, key=f"done_{block_name}_{idx}")
 
-                # Render row visually
-                st.markdown(f"<tr><td>{row.get('set_number','')}</td><td>{row.get('intensity','')}</td><td>{weight_val}</td><td>{reps_val}</td><td>{'✅' if done_val else '⬜'}</td></tr>", unsafe_allow_html=True)
+                # Render row visually with placeholders replaced by widget values
+                st.markdown(f"<tr><td>{row.get('set_number','')}</td><td>{row.get('intensity','')}</td><td>{col_weight}</td><td>{col_reps}</td><td>{'✅' if col_done else '⬜'}</td></tr>", unsafe_allow_html=True)
 
             st.markdown("</tbody></table></div>", unsafe_allow_html=True)
             return ids
