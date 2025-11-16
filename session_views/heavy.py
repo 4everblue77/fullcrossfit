@@ -10,7 +10,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def render(session):
     st.title("🏋 Heavy Session")
-    st.markdown(f"**Week:** {session['week']} /n **Day:** {session['day']}")
+    st.markdown(f"**Week:** {session['week']}  /n**Day:** {session['day']}")
 
     # ✅ Inject CSS for horizontal scroll
     st.markdown("""
