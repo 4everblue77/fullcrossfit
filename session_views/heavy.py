@@ -101,7 +101,7 @@ def render(session):
                         unsafe_allow_html=True
                     )
                     
-                    if i <= 3:  # Last 3 seconds
+                    if remaining <= 3:  # Last 3 seconds
                         st.markdown(
                             f"""
                             <audio autoplay>
