@@ -8,7 +8,7 @@ from generators.benchmark_generator import BenchmarkGenerator
 from generators.light_generator import LightGenerator
 from generators.cooldown_generator import CooldownGenerator
 from generators.skillsession_generator import SkillSessionGenerator
-from supabase_sync_function import sync_plan_to_supabase
+from plan_generators.supabase_sync_function import sync_plan_to_supabase
 
 class CrossFitPlanGenerator:
     def __init__(self, supabase, debug=False):
