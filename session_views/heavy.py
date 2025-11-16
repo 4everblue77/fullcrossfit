@@ -64,13 +64,11 @@ def render(session):
 
             df = pd.DataFrame(data)
 
-            # Conditional formatting for completed rows
-            row_styles = []
+            # Apply cell_styles for full-row highlight when Done == True
+            cell_styles = []
             for done in df['Done']:
-                if done:
-                    row_styles.append({"backgroundColor": "#d4edda"})  # pale green
-                else:
-                    row_styles.append({})
+                style = {"backgroundColor": "#d4edda"} if done else {}
+                cell_styles.append({col: style for col in df.drop(columns=['ID']).columns})
 
             edited_df = st.data_editor(
                 df.drop(columns=["ID"]),
