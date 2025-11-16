@@ -27,6 +27,12 @@ def render(session):
     if not wod_type:
         wod_type = "WOD"
 
+    # Extract exercises from details for Tabata
+    exercises = []
+    for line in details.split("\n"):
+        if line.strip().startswith("-"):
+            exercises.append(line.strip("- "))
+
 
     st.title(f"🔥 {wod_type} Session")
     st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
