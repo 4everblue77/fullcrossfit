@@ -110,6 +110,5 @@ class CrossFitPlanGenerator:
                 }
         return full_plan
 
-    
-      def sync_plan_to_supabase(self, full_plan):
+    def sync_plan_to_supabase(self, full_plan):
         return sync_plan_to_supabase(self.supabase, full_plan, self.data)
