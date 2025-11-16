@@ -87,6 +87,20 @@ def render(session):
             return None, []
         st.markdown(f"**{block_name} Sets**")
 
+
+        # Fetch latest 1RM for this exercise
+        latest_max = supabase.table("exercise_maxes") \
+            .select("*") \
+            .eq("exercise_name", ex_name) \
+            .order("date", desc=True) \
+            .limit(1) \
+            .execute().data
+        
+        latest_1rm = None
+        if latest_max:
+            latest_1rm = latest_max[0].get("manual_1rm") or latest_max[0].get("calculated_1rm")
+        
+                
         # Prepare DataFrame
         data = []
         for row in block_sets:
@@ -94,11 +108,25 @@ def render(session):
             planned_reps = row.get("reps", "")
             actual_reps = row.get("actual_reps", "")
             reps_value = actual_reps if completed and actual_reps else planned_reps
+
+            
+            # Calculate suggested weight if %RM and 1RM exist
+            suggested_weight = ""
+            if latest_1rm and row.get("intensity"):
+                try:
+                    percent_rm = float(row.get("intensity").replace("%", ""))
+                    suggested_weight = round(latest_1rm * (percent_rm / 100), 2)
+                except ValueError:
+                    suggested_weight = ""
+        
+            # Use actual weight if present, else suggested weight
+            weight_value = row.get("actual_weight") or suggested_weight
+
             data.append({
                 "ID": row["id"],
                 "Set": row.get("set_number", ""),
                 "%RM": row.get("intensity", ""),
-                "Weight": row.get("actual_weight", ""),
+                "Weight": weight_value,
                 "Reps": reps_value,
                 "Done": completed,
                 "Rest": row.get("rest", 90)  # Default 90s if missing
