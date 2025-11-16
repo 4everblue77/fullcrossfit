@@ -117,10 +117,12 @@ def render(session):
                 timer_placeholder = st.empty()
                 progress_placeholder = st.empty()
         
-                # Unique keys for skip button and state
-                skip_button_key = f"skip_btn_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
-                skip_state_key = f"skip_state_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
+
+                # Unique keys include block_name
+                skip_button_key = f"skip_btn_{block_name}_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
+                skip_state_key = f"skip_state_{block_name}_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
         
+                
                 skip = st.button(f"⏭ Skip Rest for Set {edited_df.loc[i, 'Set']}", key=skip_button_key)
                 if skip:
                     st.session_state[skip_state_key] = True
