@@ -182,19 +182,20 @@ def render(session):
         warmup_df, warmup_ids = render_block("🔥 Warmup", warmup_sets)
         working_df, working_ids = render_block("💪 Working", working_sets)
 
+
         if warmup_df is not None:
-            all_dfs.append((warmup_df, warmup_ids))
+            all_dfs.append((ex_name, warmup_df, warmup_ids))
         if working_df is not None:
-            all_dfs.append((working_df, working_ids))
+            all_dfs.append((ex_name, working_df, working_ids))
+        
 
     # Back to Dashboard button with save logic
     if st.button("⬅ Back to Dashboard"):
 
-        # Loop through all exercises and save progress
-        for idx, (edited_df, ids) in enumerate(all_dfs):
-            # Get exercise name from grouped_exercises keys
-            ex_name = list(grouped_exercises.keys())[idx]
+
+        for ex_name, edited_df, ids in all_dfs:
             completed_sets = []
+
     
             for i, row_id in enumerate(ids):
                 # Update DB
