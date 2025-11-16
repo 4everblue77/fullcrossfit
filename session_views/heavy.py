@@ -117,14 +117,17 @@ def render(session):
                 timer_placeholder = st.empty()
                 
 
-                skip_button_key = f"skip_btn_{edited_df.loc[i, 'Set']}_{i}"
-                skip_state_key = f"skip_state_{edited_df.loc[i, 'Set']}_{i}"
-                
-                skip = st.button(f"⏭ Skip Rest for Set {edited_df.loc[i, 'Set']}", key=skip_button_key)
+
+            skip_button_key = f"skip_btn_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
+            skip_state_key = f"skip_state_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
+            
+            skip = st.button(f"⏭ Skip Rest for Set {edited_df.loc[i, 'Set']}", key=skip_button_key)
+            
 
 
 
                 for remaining in range(rest_seconds, 0, -1):
+
 
 
                     if skip:
@@ -133,6 +136,7 @@ def render(session):
                     if st.session_state.get(skip_state_key, False):
                         timer_placeholder.markdown("<h3 style='color:#ff4b4b;'>⏭ Timer skipped! Ready for next set.</h3>", unsafe_allow_html=True)
                         break
+                    
 
                     mins, secs = divmod(remaining, 60)
                     timer_placeholder.markdown(
