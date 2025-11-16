@@ -155,31 +155,31 @@ def render(session):
     # Back to Dashboard button with save logic
     if st.button("⬅ Back to Dashboard"):
 
-    # Loop through all exercises and save progress
-    for idx, (edited_df, ids) in enumerate(all_dfs):
-        # Get exercise name from grouped_exercises keys
-        ex_name = list(grouped_exercises.keys())[idx]
-        completed_sets = []
-
-        for i, row_id in enumerate(ids):
-            # Update DB
-            supabase.table("plan_session_exercises").update({
-                "completed": bool(edited_df.loc[i, "Done"]),
-                "actual_weight": str(edited_df.loc[i, "Weight"]),
-                "actual_reps": str(edited_df.loc[i, "Reps"])
-            }).eq("id", row_id).execute()
-
-            # Collect completed sets for 1RM update
-            completed_sets.append({
-                "id": row_id,
-                "completed": bool(edited_df.loc[i, "Done"]),
-                "actual_weight": edited_df.loc[i, "Weight"],
-                "actual_reps": edited_df.loc[i, "Reps"],
-                "set_number": edited_df.loc[i, "Set"]
-            })
-
-        # ✅ Update 1RM for this exercise
-        update_1rm_on_completion(ex_name, completed_sets)
+        # Loop through all exercises and save progress
+        for idx, (edited_df, ids) in enumerate(all_dfs):
+            # Get exercise name from grouped_exercises keys
+            ex_name = list(grouped_exercises.keys())[idx]
+            completed_sets = []
+    
+            for i, row_id in enumerate(ids):
+                # Update DB
+                supabase.table("plan_session_exercises").update({
+                    "completed": bool(edited_df.loc[i, "Done"]),
+                    "actual_weight": str(edited_df.loc[i, "Weight"]),
+                    "actual_reps": str(edited_df.loc[i, "Reps"])
+                }).eq("id", row_id).execute()
+    
+                # Collect completed sets for 1RM update
+                completed_sets.append({
+                    "id": row_id,
+                    "completed": bool(edited_df.loc[i, "Done"]),
+                    "actual_weight": edited_df.loc[i, "Weight"],
+                    "actual_reps": edited_df.loc[i, "Reps"],
+                    "set_number": edited_df.loc[i, "Set"]
+                })
+    
+            # ✅ Update 1RM for this exercise
+            update_1rm_on_completion(ex_name, completed_sets)
 
 
         st.success("Progress saved. Returning to dashboard...")
