@@ -84,17 +84,21 @@ def render(session):
     else:
         user_result["score"] = st.number_input("Score", min_value=0, step=1)
 
-
-    if st.button("Submit Result"):
-        rating = calculate_rating(wod_type, user_result, performance_targets)
+    # Handle Submit Result button
+    if st.button('Submit Result'):
+        st.session_state['pending_result'] = {
+            'rating': calculate_rating(wod_type, user_result, performance_targets),
+            'user_result': user_result
+        }
+        existing_result = supabase.table('wod_results').select('id').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
+        st.session_state['existing_result'] = existing_result
+        st.rerun()
     
-        # Check if existing result exists
-        existing_result = supabase.table('wod_results') \
-            .select('id') \
-            .eq('session_id', session['session_id']) \
-            .eq('user_id', st.session_state.get('user_id', 1)) \
-            .execute().data
-    
+    # Handle overwrite confirmation or insert
+    if 'pending_result' in st.session_state:
+        rating = st.session_state['pending_result']['rating']
+        user_result = st.session_state['pending_result']['user_result']
+        existing_result = st.session_state.get('existing_result', [])
         if existing_result:
             st.warning('A previous result exists for this session.')
             col1, col2 = st.columns(2)
@@ -104,19 +108,21 @@ def render(session):
                 cancel = st.button('Cancel')
             if cancel:
                 st.warning('Submission cancelled.')
+                st.session_state.pop('pending_result')
+                st.session_state.pop('existing_result')
                 st.stop()
             if overwrite:
-                # Update existing record only if overwrite confirmed
                 supabase.table('wod_results').update({
                     'result_details': user_result,
                     'rating': rating,
                     'timestamp': datetime.utcnow().isoformat()
                 }).eq('id', existing_result[0]['id']).execute()
-            else:
-                st.stop()
-    
+                supabase.table('plan_sessions').update({'completed': True}).eq('id', session['session_id']).execute()
+                st.success(f'Result updated! Your rating: {rating}/100')
+                st.session_state.pop('pending_result')
+                st.session_state.pop('existing_result')
+                st.rerun()
         else:
-            # Insert new record
             supabase.table('wod_results').insert({
                 'session_id': session['session_id'],
                 'user_id': st.session_state.get('user_id', 1),
@@ -124,12 +130,19 @@ def render(session):
                 'rating': rating,
                 'timestamp': datetime.utcnow().isoformat()
             }).execute()
-    
-        # Mark session as complete
-        supabase.table('plan_sessions').update({'completed': True}) \
-            .eq('id', session['session_id']).execute()
-    
-        st.success(f'Result saved! Your rating: {rating}/100')
+            supabase.table('plan_sessions').update({'completed': True}).eq('id', session['session_id']).execute()
+            st.success(f'Result saved! Your rating: {rating}/100')
+            st.session_state.pop('pending_result')
+            st.rerun()
+            # Display historical performance
+            results = supabase.table("wod_results").select("rating, timestamp").eq("user_id", st.session_state.get("user_id", 1)).order("timestamp", desc=True).execute().data
+            if results:
+                st.subheader("Performance Over Time")
+                st.line_chart([r["rating"] for r in results])
+
+    if st.button("⬅ Back to Dashboard"):
+        st.session_state.selected_session = None
+        st.rerun()
 
 
         # Display historical performance
