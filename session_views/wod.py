@@ -1,3 +1,4 @@
+
 import streamlit as st
 import time
 import re
@@ -10,15 +11,12 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def render(session):
     # Fetch session details from plan_sessions using session_id
-    session_data = supabase.table("plan_sessions")         .select("*")         .eq("id", session["session_id"])         .single()         .execute().data
-
+    session_data = supabase.table("plan_sessions").select("*").eq("id", session["session_id"]).single().execute().data
     if not session_data:
         st.error("Session details not found.")
         return
 
     details = session_data.get('details', 'No details provided')
-    
-    # Detect WOD type from details
     wod_type = None
     for t in ["AMRAP", "Chipper", "Interval", "Tabata", "For Time", "Ladder", "Death by", "EMOM", "Alternating EMOM"]:
         if t.lower() in details.lower():
@@ -27,12 +25,10 @@ def render(session):
     if not wod_type:
         wod_type = "WOD"
 
-    # Extract exercises from details for Tabata
     exercises = []
     for line in details.split("\n"):
         if line.strip().startswith("-"):
             exercises.append(line.strip("- "))
-
 
     st.title(f"🔥 {wod_type} Session")
     st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
@@ -47,11 +43,9 @@ def render(session):
     duration_minutes = None
     work_minutes = None
     rest_minutes = None
-
     match_duration = re.search(r"(\d+)\s*min", details.lower())
     if match_duration:
         duration_minutes = int(match_duration.group(1))
-
     if "work" in details.lower() and "rest" in details.lower():
         work_match = re.search(r"work\s*(\d+)\s*min", details.lower())
         rest_match = re.search(r"rest\s*(\d+)\s*min", details.lower())
@@ -60,20 +54,16 @@ def render(session):
         if rest_match:
             rest_minutes = int(rest_match.group(1))
 
-    # Timer logic based on WOD type
+    # Timer logic
     if st.button("▶ Start Timer", key="start_timer"):
         if wod_type == "AMRAP" and duration_minutes:
             run_countdown(duration_minutes * 60, timer_placeholder, progress_placeholder, stop_placeholder)
-        elif wod_type == "For Time":
-            run_stopwatch(timer_placeholder, progress_placeholder, stop_placeholder)
-        elif wod_type == "Chipper":
+        elif wod_type in ["For Time", "Chipper", "Ladder"]:
             run_stopwatch(timer_placeholder, progress_placeholder, stop_placeholder)
         elif wod_type == "Interval" and work_minutes and rest_minutes:
             run_interval(work_minutes, rest_minutes, duration_minutes, timer_placeholder, progress_placeholder, stop_placeholder)
         elif wod_type == "Tabata":
             run_tabata(exercises, timer_placeholder, progress_placeholder, stop_placeholder)
-        elif wod_type == "Ladder":
-            run_stopwatch(timer_placeholder, progress_placeholder, stop_placeholder)
         elif wod_type == "Death by":
             run_emom(duration_minutes or 15, timer_placeholder, progress_placeholder, stop_placeholder, death_by=True)
         elif wod_type in ["EMOM", "Alternating EMOM"]:
@@ -81,11 +71,61 @@ def render(session):
         else:
             st.warning("No timer logic available for this WOD type.")
 
-    # Back to Dashboard button
+    # --- NEW: Performance Rating Section ---
+    st.subheader("Enter Your WOD Result")
+    performance_targets = session_data.get("performance_targets", {})
+    user_result = {}
+
+    if wod_type == "AMRAP":
+        user_result["rounds"] = st.number_input("Rounds Completed", min_value=0, step=1)
+    elif wod_type == "For Time":
+        user_result["time_min"] = st.number_input("Time Taken (minutes)", min_value=0.0, step=0.1)
+    else:
+        user_result["score"] = st.number_input("Score", min_value=0, step=1)
+
+    if st.button("Submit Result"):
+        rating = calculate_rating(wod_type, user_result, performance_targets)
+        supabase.table("wod_results").insert({
+            "session_id": session["session_id"],
+            "user_id": st.session_state.get("user_id", 1),
+            "result_details": user_result,
+            "rating": rating,
+            "timestamp": time.time()
+        }).execute()
+        st.success(f"Result saved! Your rating: {rating}/100")
+
+        # Display historical performance
+        results = supabase.table("wod_results").select("rating, timestamp").eq("user_id", st.session_state.get("user_id", 1)).order("timestamp", desc=True).execute().data
+        if results:
+            st.subheader("Performance Over Time")
+            st.line_chart([r["rating"] for r in results])
+
     if st.button("⬅ Back to Dashboard"):
         st.session_state.selected_session = None
         st.rerun()
 
+# --- Helper Functions ---
+def parse_rounds(text):
+    nums = [int(n) for n in re.findall(r"\d+", text)]
+    return sum(nums)/len(nums) if nums else 5
+
+def parse_time(text):
+    nums = [int(n) for n in re.findall(r"\d+", text)]
+    return sum(nums)/len(nums) if nums else 15
+
+def calculate_rating(wod_type, user_result, targets):
+    if wod_type == "AMRAP":
+        expected = parse_rounds(targets.get("Intermediate", "5-6 rounds"))
+        ratio = user_result.get("rounds", 0) / expected if expected else 0
+    elif wod_type == "For Time":
+        expected = parse_time(targets.get("Intermediate", "15-20 min"))
+        ratio = expected / user_result.get("time_min", 1) if user_result.get("time_min") else 0
+    else:
+        expected = parse_rounds(targets.get("Intermediate", "10 reps"))
+        ratio = user_result.get("score", 0) / expected if expected else 0
+    return min(int(ratio * 100), 100)
+
+# --- Existing Timer Functions ---
 def run_countdown(total_seconds, timer_placeholder, progress_placeholder, stop_placeholder):
     stop_key = "stop_timer"
     st.session_state[stop_key] = False
@@ -121,14 +161,12 @@ def run_interval(work, rest, total, timer_placeholder, progress_placeholder, sto
     total_seconds = total * 60 if total else (work + rest) * 60 * 5
     elapsed = 0
     while elapsed < total_seconds and not st.session_state.get(stop_key, False):
-        # Work phase
         for remaining in range(work * 60, 0, -1):
             if st.session_state.get(stop_key, False): break
             mins, secs = divmod(remaining, 60)
             timer_placeholder.markdown(f"<h3 style='color:#28a745;'>Work: {mins:02d}:{secs:02d}</h3>", unsafe_allow_html=True)
             time.sleep(1)
             elapsed += 1
-        # Rest phase
         for remaining in range(rest * 60, 0, -1):
             if st.session_state.get(stop_key, False): break
             mins, secs = divmod(remaining, 60)
@@ -145,22 +183,18 @@ def run_tabata(exercises, timer_placeholder, progress_placeholder, stop_placehol
     for ex in exercises:
         timer_placeholder.markdown(f"<h3 style='color:#007bff;'>Starting {ex}</h3>", unsafe_allow_html=True)
         for r in range(1, rounds + 1):
-            # Work 20s
             for remaining in range(20, 0, -1):
                 if st.session_state.get(stop_key, False): break
                 timer_placeholder.markdown(f"<h3 style='color:#28a745;'>Round {r} Work: {remaining}s</h3>", unsafe_allow_html=True)
                 time.sleep(1)
-            # Rest 10s
             for remaining in range(10, 0, -1):
                 if st.session_state.get(stop_key, False): break
                 timer_placeholder.markdown(f"<h3 style='color:#ffc107;'>Round {r} Rest: {remaining}s</h3>", unsafe_allow_html=True)
                 time.sleep(1)
-            if stop_placeholder.button("⏹ Stop Timer", key=f"stop_{ex}_{r}"):
+            if stop_placeholder.button(f"⏹ Stop Timer", key=f"stop_{ex}_{r}"):
                 st.session_state[stop_key] = True
                 break
-        if st.session_state.get(stop_key, False):
-            break
-        # Short break between exercises
+        if st.session_state.get(stop_key, False): break
         timer_placeholder.markdown("<h3 style='color:#6c757d;'>Break before next exercise...</h3>", unsafe_allow_html=True)
         time.sleep(30)
     timer_placeholder.markdown("<h3 style='color:#28a745;'>✅ Tabata Complete!</h3>", unsafe_allow_html=True)
@@ -174,7 +208,6 @@ def run_emom(minutes, timer_placeholder, progress_placeholder, stop_placeholder,
         timer_placeholder.markdown(f"<h3 style='color:#28a745;'>Minute {m}: {reps_info}</h3>", unsafe_allow_html=True)
         for remaining in range(60, 0, -1):
             if st.session_state.get(stop_key, False): break
-            mins, secs = divmod(remaining, 60)
             progress_placeholder.progress((60 - remaining) / 60)
             time.sleep(1)
         if stop_placeholder.button("⏹ Stop Timer", key=f"stop_timer_{time.time()}"):
