@@ -233,13 +233,6 @@ def render(session):
                     "actual_reps": str(edited_df.loc[i, "Reps"])
                 }).eq("id", row_id).execute()
 
-                
-                # Check if all sets are completed
-                
-                if completed_sets == total_sets and total_sets > 0:
-                    supabase.table("plan_sessions").update({"completed": True}) \
-                        .eq("id", session["session_id"]).execute()
-
     
                 # Collect completed sets for 1RM update
                 completed_sets.append({
@@ -252,6 +245,11 @@ def render(session):
     
             # ✅ Update 1RM for this exercise
             update_1rm_on_completion(ex_name, completed_sets)
+
+        # Check if all sets are completed
+        if completed_sets == total_sets and total_sets > 0:
+            supabase.table("plan_sessions").update({"completed": True}) \
+                .eq("id", session["session_id"]).execute()
 
 
         st.success("Progress saved. Returning to dashboard...")
