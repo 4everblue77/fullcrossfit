@@ -218,6 +218,7 @@ def render(session):
         
 
     # Back to Dashboard button with save logic
+    st.write(completed_sets, total_sets)
     if st.button("⬅ Back to Dashboard"):
 
 
@@ -235,6 +236,7 @@ def render(session):
 
                 
                 # Check if all sets are completed
+                
                 if completed_sets == total_sets and total_sets > 0:
                     supabase.table("plan_sessions").update({"completed": True}) \
                         .eq("id", session["session_id"]).execute()
