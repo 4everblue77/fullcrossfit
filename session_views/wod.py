@@ -17,6 +17,15 @@ def render(session):
         st.error("Session details not found.")
         return
 
+    
+    # Check for previously entered result
+    previous_result = supabase.table('wod_results') \
+        .select('result_details', 'rating') \
+        .eq('session_id', session['session_id']) \
+        .eq('user_id', st.session_state.get('user_id', 1)) \
+        .execute().data
+
+
     details = session_data.get('details', 'No details provided')
     wod_type = None
     for t in ["AMRAP", "Chipper", "Interval", "Tabata", "For Time", "Ladder", "Death by", "EMOM", "Alternating EMOM"]:
@@ -74,6 +83,13 @@ def render(session):
 
     # --- NEW: Performance Rating Section ---
     st.subheader("Enter Your WOD Result")
+
+    
+    # Display previous result if exists
+    if previous_result:
+        prev = previous_result[0]
+        st.info(f"Previously submitted result: {prev['result_details']} (Rating: {prev['rating']}/100)")
+
     performance_targets = session_data.get("performance_targets", {})
     user_result = {}
 
