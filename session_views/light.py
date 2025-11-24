@@ -160,51 +160,51 @@ def render(session):
         if working_df is not None:
             all_dfs.append((ex_name, working_df, working_ids))
 
-# Loop through exercises
-for ex_name, sets in grouped_exercises.items():
-    st.subheader(ex_name)
-    warmup_sets = [s for s in sets if str(s.get('notes', '')).lower().startswith('warmup')]
-    working_sets = [s for s in sets if s not in warmup_sets]
-
-    warmup_df, warmup_ids = render_block('🔥 Warmup', warmup_sets)
-    working_df, working_ids = render_block('💪 Working', working_sets)
-
-    if warmup_df is not None:
-        all_dfs.append((ex_name, warmup_df, warmup_ids))
-    if working_df is not None:
-        all_dfs.append((ex_name, working_df, working_ids))
-
-    # Back to Dashboard button with save logic
-    if st.button("⬅ Back to Dashboard"):
-        all_completed = True
-        for ex_name, edited_df, ids in all_dfs:
-            completed_sets_list = []
-            is_done = bool(edited_df.loc[i, 'Done'])
-            supabase.table('plan_session_exercises').update({
-                'completed': is_done,
-                'actual_weight': str(edited_df.loc[i, 'Weight']),
-                'actual_reps': str(edited_df.loc[i, 'Reps'])
-            }).eq('id', row_id).execute()
-
-            completed_sets_list.append({
-                'id': row_id,
-                'completed': is_done,
-                'actual_weight': edited_df.loc[i, 'Weight'],
-                'actual_reps': edited_df.loc[i, 'Reps'],
-                'set_number': edited_df.loc[i, 'Set']
-            })
-
-            if not is_done:
-                all_completed = False
-
-        # ✅ Update 1RM for this exercise
-        update_1rm_on_completion(ex_name, completed_sets_list)
-
-
-        # ✅ Mark session complete if all sets are done
-        if all_completed:
-            supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
-
-        st.success("Progress saved. Returning to dashboard...")
-        st.session_state.selected_session = None
-        st.rerun()
+    # Loop through exercises
+    for ex_name, sets in grouped_exercises.items():
+        st.subheader(ex_name)
+        warmup_sets = [s for s in sets if str(s.get('notes', '')).lower().startswith('warmup')]
+        working_sets = [s for s in sets if s not in warmup_sets]
+    
+        warmup_df, warmup_ids = render_block('🔥 Warmup', warmup_sets)
+        working_df, working_ids = render_block('💪 Working', working_sets)
+    
+        if warmup_df is not None:
+            all_dfs.append((ex_name, warmup_df, warmup_ids))
+        if working_df is not None:
+            all_dfs.append((ex_name, working_df, working_ids))
+    
+        # Back to Dashboard button with save logic
+        if st.button("⬅ Back to Dashboard"):
+            all_completed = True
+            for ex_name, edited_df, ids in all_dfs:
+                completed_sets_list = []
+                is_done = bool(edited_df.loc[i, 'Done'])
+                supabase.table('plan_session_exercises').update({
+                    'completed': is_done,
+                    'actual_weight': str(edited_df.loc[i, 'Weight']),
+                    'actual_reps': str(edited_df.loc[i, 'Reps'])
+                }).eq('id', row_id).execute()
+    
+                completed_sets_list.append({
+                    'id': row_id,
+                    'completed': is_done,
+                    'actual_weight': edited_df.loc[i, 'Weight'],
+                    'actual_reps': edited_df.loc[i, 'Reps'],
+                    'set_number': edited_df.loc[i, 'Set']
+                })
+    
+                if not is_done:
+                    all_completed = False
+    
+            # ✅ Update 1RM for this exercise
+            update_1rm_on_completion(ex_name, completed_sets_list)
+    
+    
+            # ✅ Mark session complete if all sets are done
+            if all_completed:
+                supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
+    
+            st.success("Progress saved. Returning to dashboard...")
+            st.session_state.selected_session = None
+            st.rerun()
