@@ -102,19 +102,18 @@ def render(session):
                 overwrite = st.button('Yes, Overwrite')
             with col2:
                 cancel = st.button('Cancel')
-    
             if cancel:
                 st.warning('Submission cancelled.')
                 st.stop()
-            if not overwrite:
+            if overwrite:
+                # Update existing record only if overwrite confirmed
+                supabase.table('wod_results').update({
+                    'result_details': user_result,
+                    'rating': rating,
+                    'timestamp': datetime.utcnow().isoformat()
+                }).eq('id', existing_result[0]['id']).execute()
+            else:
                 st.stop()
-    
-            # Update existing record
-            supabase.table('wod_results').update({
-                'result_details': user_result,
-                'rating': rating,
-                'timestamp': datetime.utcnow().isoformat()
-            }).eq('id', existing_result[0]['id']).execute()
     
         else:
             # Insert new record
