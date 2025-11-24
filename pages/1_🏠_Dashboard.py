@@ -111,7 +111,7 @@ if st.session_state.selected_session is None:
         for session_type, session_content in ordered_sessions:
             icon_map = {
                 "Warmup": "🔥", "Heavy": "🏋️", "Olympic": "🏅", "Run": "🏃",
-                "WOD": "📦", "Benchmark": "⭐", "Light": "💡z", "Skill": "🎯", "Cooldown": "❄️"
+                "WOD": "📦", "Benchmark": "⭐", "Light": "💡", "Skill": "🎯", "Cooldown": "❄️"
             }
             icon = icon_map.get(session_type, "📋")
             indicator = "✅" if session_content.get("completed") else "⚫"
