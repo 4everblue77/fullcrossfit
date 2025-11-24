@@ -85,7 +85,7 @@ def render(session):
         user_result["score"] = st.number_input("Score", min_value=0, step=1)
 
     # Handle Submit Result button
-    if st.button('Submit Result'):
+    if st.button("Submit Result", key="submit_result_btn"):
         st.session_state['pending_result'] = {
             'rating': calculate_rating(wod_type, user_result, performance_targets),
             'user_result': user_result
@@ -103,9 +103,9 @@ def render(session):
             st.warning('A previous result exists for this session.')
             col1, col2 = st.columns(2)
             with col1:
-                overwrite = st.button('Yes, Overwrite')
+                overwrite = st.button('Yes, Overwrite', key='overwrite_btn')
             with col2:
-                cancel = st.button('Cancel')
+                cancel = st.button('Cancel', key='cancel_btn')
             if cancel:
                 st.warning('Submission cancelled.')
                 st.session_state.pop('pending_result')
