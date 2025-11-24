@@ -197,17 +197,9 @@ for ex_name, sets in grouped_exercises.items():
             if not is_done:
                 all_completed = False
 
-            # ✅ Update 1RM for this exercise
-            update_1rm_on_completion(ex_name, completed_sets_list)
-                is_done = bool(edited_df.loc[i, "Done"])
-                supabase.table("plan_session_exercises").update({
-                    "completed": is_done,
-                    "actual_weight": str(edited_df.loc[i, "Weight"]),
-                    "actual_reps": str(edited_df.loc[i, "Reps"])
-                }).eq("id", row_id).execute()
+        # ✅ Update 1RM for this exercise
+        update_1rm_on_completion(ex_name, completed_sets_list)
 
-                if not is_done:
-                    all_completed = False
 
         # ✅ Mark session complete if all sets are done
         if all_completed:
