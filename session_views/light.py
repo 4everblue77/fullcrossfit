@@ -60,8 +60,8 @@ def render(session):
     grouped_exercises = defaultdict(list)
     for row in sets_data:
         grouped_exercises[row["exercise_name"]].append(row)
-
-        grouped_exercises[ex_name].sort(key=lambda r: r.get("set_number", 1))
+        for ex_name in grouped_exercises:
+            grouped_exercises[ex_name].sort(key=lambda r: r.get("set_number", 1))
 
     # Overall progress
     total_sets = len(sets_data)
