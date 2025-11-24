@@ -179,23 +179,23 @@ for ex_name, sets in grouped_exercises.items():
         all_completed = True
         for ex_name, edited_df, ids in all_dfs:
             completed_sets_list = []
-                is_done = bool(edited_df.loc[i, 'Done'])
-                supabase.table('plan_session_exercises').update({
-                    'completed': is_done,
-                    'actual_weight': str(edited_df.loc[i, 'Weight']),
-                    'actual_reps': str(edited_df.loc[i, 'Reps'])
-                }).eq('id', row_id).execute()
+            is_done = bool(edited_df.loc[i, 'Done'])
+            supabase.table('plan_session_exercises').update({
+                'completed': is_done,
+                'actual_weight': str(edited_df.loc[i, 'Weight']),
+                'actual_reps': str(edited_df.loc[i, 'Reps'])
+            }).eq('id', row_id).execute()
 
-                completed_sets_list.append({
-                    'id': row_id,
-                    'completed': is_done,
-                    'actual_weight': edited_df.loc[i, 'Weight'],
-                    'actual_reps': edited_df.loc[i, 'Reps'],
-                    'set_number': edited_df.loc[i, 'Set']
-                })
+            completed_sets_list.append({
+                'id': row_id,
+                'completed': is_done,
+                'actual_weight': edited_df.loc[i, 'Weight'],
+                'actual_reps': edited_df.loc[i, 'Reps'],
+                'set_number': edited_df.loc[i, 'Set']
+            })
 
-                if not is_done:
-                    all_completed = False
+            if not is_done:
+                all_completed = False
 
             # ✅ Update 1RM for this exercise
             update_1rm_on_completion(ex_name, completed_sets_list)
