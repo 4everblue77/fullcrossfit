@@ -218,7 +218,6 @@ def render(session):
         
 
     # Back to Dashboard button with save logic
-    st.write(completed_sets, total_sets)
     if st.button("⬅ Back to Dashboard"):
 
 
