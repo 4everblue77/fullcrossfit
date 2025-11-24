@@ -149,7 +149,6 @@ def render(session):
         return edited_df, df["ID"].tolist()
 
     # Loop through exercises
-        st.subheader(ex_name)
         warmup_sets = [s for s in sets if str(s.get("notes", "")).lower().startswith("warmup")]
         working_sets = [s for s in sets if s not in warmup_sets]
 
@@ -161,12 +160,25 @@ def render(session):
         if working_df is not None:
             all_dfs.append((ex_name, working_df, working_ids))
 
+# Loop through exercises
+for ex_name, sets in grouped_exercises.items():
+    st.subheader(ex_name)
+    warmup_sets = [s for s in sets if str(s.get('notes', '')).lower().startswith('warmup')]
+    working_sets = [s for s in sets if s not in warmup_sets]
+
+    warmup_df, warmup_ids = render_block('🔥 Warmup', warmup_sets)
+    working_df, working_ids = render_block('💪 Working', working_sets)
+
+    if warmup_df is not None:
+        all_dfs.append((ex_name, warmup_df, warmup_ids))
+    if working_df is not None:
+        all_dfs.append((ex_name, working_df, working_ids))
+
     # Back to Dashboard button with save logic
     if st.button("⬅ Back to Dashboard"):
         all_completed = True
         for ex_name, edited_df, ids in all_dfs:
             completed_sets_list = []
-            for i, row_id in enumerate(ids):
                 is_done = bool(edited_df.loc[i, 'Done'])
                 supabase.table('plan_session_exercises').update({
                     'completed': is_done,
@@ -187,7 +199,6 @@ def render(session):
 
             # ✅ Update 1RM for this exercise
             update_1rm_on_completion(ex_name, completed_sets_list)
-            for i, row_id in enumerate(ids):
                 is_done = bool(edited_df.loc[i, "Done"])
                 supabase.table("plan_session_exercises").update({
                     "completed": is_done,
