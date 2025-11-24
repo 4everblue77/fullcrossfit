@@ -140,7 +140,7 @@ if st.session_state.selected_session:
     elif session_type == "WOD":
         wod.render(session)    
     elif session_type == "Light":
-        cooldown.render(session)
+        light.render(session)
     elif session_type == "Cooldown":
         cooldown.render(session)
     else:
