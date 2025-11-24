@@ -3,6 +3,7 @@ import streamlit as st
 import time
 import re
 from supabase import create_client
+from datetime import datetime
 
 # Supabase setup
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
