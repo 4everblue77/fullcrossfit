@@ -140,9 +140,7 @@ def render(session):
                 st.subheader("Performance Over Time")
                 st.line_chart([r["rating"] for r in results])
 
-    if st.button("⬅ Back to Dashboard"):
-        st.session_state.selected_session = None
-        st.rerun()
+
 
 
         # Display historical performance
