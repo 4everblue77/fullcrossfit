@@ -47,8 +47,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def render(session):
     st.title("💡 Light Session")
-    st.markdown(f"**Week:** {session['week']}  
- **Day:** {session['day']}")
+    st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
 
     # Fetch sets from DB
     sets_data = supabase.table("plan_session_exercises")         .select("*")         .eq("session_id", session["session_id"])         .order("exercise_order")         .execute().data
