@@ -90,7 +90,7 @@ def render(session):
             "user_id": st.session_state.get("user_id", 1),
             "result_details": user_result,
             "rating": rating,
-            "timestamp": time.time()
+            "timestamp": datetime.utcnow().isoformat()
         }).execute()
         st.success(f"Result saved! Your rating: {rating}/100")
 
