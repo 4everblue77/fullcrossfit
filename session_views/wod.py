@@ -84,16 +84,54 @@ def render(session):
     else:
         user_result["score"] = st.number_input("Score", min_value=0, step=1)
 
+
     if st.button("Submit Result"):
         rating = calculate_rating(wod_type, user_result, performance_targets)
-        supabase.table("wod_results").insert({
-            "session_id": session["session_id"],
-            "user_id": st.session_state.get("user_id", 1),
-            "result_details": user_result,
-            "rating": rating,
-            "timestamp": datetime.utcnow().isoformat()
-        }).execute()
-        st.success(f"Result saved! Your rating: {rating}/100")
+    
+        # Check if existing result exists
+        existing_result = supabase.table('wod_results') \
+            .select('id') \
+            .eq('session_id', session['session_id']) \
+            .eq('user_id', st.session_state.get('user_id', 1)) \
+            .execute().data
+    
+        if existing_result:
+            st.warning('A previous result exists for this session.')
+            col1, col2 = st.columns(2)
+            with col1:
+                overwrite = st.button('Yes, Overwrite')
+            with col2:
+                cancel = st.button('Cancel')
+    
+            if cancel:
+                st.warning('Submission cancelled.')
+                st.stop()
+            if not overwrite:
+                st.stop()
+    
+            # Update existing record
+            supabase.table('wod_results').update({
+                'result_details': user_result,
+                'rating': rating,
+                'timestamp': datetime.utcnow().isoformat()
+            }).eq('id', existing_result[0]['id']).execute()
+    
+        else:
+            # Insert new record
+            supabase.table('wod_results').insert({
+                'session_id': session['session_id'],
+                'user_id': st.session_state.get('user_id', 1),
+                'result_details': user_result,
+                'rating': rating,
+                'timestamp': datetime.utcnow().isoformat()
+            }).execute()
+    
+        # Mark session as complete
+        supabase.table('plan_sessions').update({'completed': True}) \
+            .eq('id', session['session_id']).execute()
+    
+        st.success(f'Result saved! Your rating: {rating}/100')
+
 
         # Display historical performance
         results = supabase.table("wod_results").select("rating, timestamp").eq("user_id", st.session_state.get("user_id", 1)).order("timestamp", desc=True).execute().data
