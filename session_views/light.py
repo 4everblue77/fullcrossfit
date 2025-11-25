@@ -113,11 +113,13 @@ def render(session):
         return
 
     # ✅ Group by Superset using notes
+
     superset_groups = defaultdict(list)
     for row in sets_data:
-        match = re.search(r"Superset (\d+)", row.get("notes", ""))
-        superset_key = f"Superset {match.group(1)}" if match else "Other"
+        match = re.search(r"Set (\d+)", row.get("notes", ""))
+        superset_key = f"Set {match.group(1)}" if match else "Other"
         superset_groups[superset_key].append(row)
+
 
     total_sets = len(sets_data)
     completed_sets = sum(1 for r in sets_data if r.get("completed", False))
