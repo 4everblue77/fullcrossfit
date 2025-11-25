@@ -45,12 +45,17 @@ SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+
 def render(session):
     st.title("💡 Light Session")
     st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
 
     # Fetch sets from DB
-    sets_data = supabase.table("plan_session_exercises")         .select("*")         .eq("session_id", session["session_id"])         .order("exercise_order")         .execute().data
+    sets_data = supabase.table("plan_session_exercises") \
+        .select("*") \
+        .eq("session_id", session["session_id"]) \
+        .order("exercise_order") \
+        .execute().data
 
     if not sets_data:
         st.warning("No sets found for this light session.")
@@ -60,21 +65,23 @@ def render(session):
     grouped_exercises = defaultdict(list)
     for row in sets_data:
         grouped_exercises[row["exercise_name"]].append(row)
-        for ex_name in grouped_exercises:
-            grouped_exercises[ex_name].sort(key=lambda r: r.get("set_number", 1))
 
-    # Overall progress
+    # Sort sets within each exercise
+    for ex_name in grouped_exercises:
+        grouped_exercises[ex_name].sort(key=lambda r: r.get("set_number", 1))
+
+    # Progress bar
     total_sets = len(sets_data)
     completed_sets = sum(1 for r in sets_data if r.get("completed", False))
     st.progress(completed_sets / total_sets if total_sets else 0)
     st.markdown(f"**Progress:** {completed_sets}/{total_sets} sets completed")
 
-    # Render each exercise
     all_dfs = []
 
-    def render_block(block_name, block_sets):
+    def render_block(block_name, block_sets, ex_name):
         if not block_sets:
             return None, []
+
         st.markdown(f"**{block_name} Sets**")
 
         # Prepare DataFrame
@@ -85,19 +92,20 @@ def render(session):
             actual_reps = row.get("actual_reps", "")
             reps_value = actual_reps if completed and actual_reps else planned_reps
 
-            weight_value = row.get("actual_weight") or row.get("weight") or ""
+            # Suggested weight logic
+            suggested_weight = row.get("weight") or "None"
 
             data.append({
                 "ID": row["id"],
                 "Set": row.get("set_number", ""),
-                "Weight": weight_value,
+                "Weight": row.get("actual_weight") or row.get("weight") or "",
+                "Suggested": suggested_weight,
                 "Reps": reps_value,
                 "Done": completed,
-                "Rest": row.get("rest", 60)  # Default 60s for light session
+                "Rest": row.get("rest", 60)
             })
 
         df = pd.DataFrame(data)
-
 
         edited_df = st.data_editor(
             df.drop(columns=["ID", "Rest"]),
@@ -107,14 +115,14 @@ def render(session):
             column_config={
                 "Set": st.column_config.NumberColumn("Set", disabled=True),
                 "Weight": st.column_config.NumberColumn("Weight", format="%.2f"),
+                "Suggested": st.column_config.TextColumn("Suggested", disabled=True),
                 "Reps": st.column_config.TextColumn("Reps"),
                 "Done": st.column_config.CheckboxColumn("Done")
             },
-            key=f"editor_{block_name}_{ex_name}"  # ✅ Unique key per block and exercise
+            key=f"editor_{block_name}_{ex_name}"
         )
 
-
-        # Optional: Rest timer logic similar to heavy session
+        # Rest timer logic
         for i, done in enumerate(edited_df["Done"]):
             if done and not df.loc[i, "Done"]:
                 rest_seconds = int(df.loc[i, "Rest"])
@@ -123,10 +131,13 @@ def render(session):
                 progress_placeholder = st.empty()
                 skip_placeholder = st.empty()
 
-                status_placeholder.markdown(f"<h4>✅ Set {edited_df.loc[i, 'Set']} completed! Rest timer:</h4>", unsafe_allow_html=True)
-                skip_button_key = f"skip_light_{block_name}_{edited_df.loc[i, 'Set']}_{i}"
-                skip_state_key = f"skip_state_light_{block_name}_{edited_df.loc[i, 'Set']}_{i}"
+                status_placeholder.markdown(
+                    f"<h4>✅ Set {edited_df.loc[i, 'Set']} completed! Rest timer:</h4>",
+                    unsafe_allow_html=True
+                )
 
+                skip_button_key = f"skip_light_{block_name}_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
+                skip_state_key = f"skip_state_light_{block_name}_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
                 skip = skip_placeholder.button(f"⏭ Skip Rest for Set {edited_df.loc[i, 'Set']}", key=skip_button_key)
                 if skip:
                     st.session_state[skip_state_key] = True
@@ -143,7 +154,6 @@ def render(session):
                     if not st.session_state.get(skip_state_key, False):
                         timer_placeholder.markdown("<h3 style='color:#28a745;'>🔥 Ready for next set!</h3>", unsafe_allow_html=True)
 
-                time.sleep(1)
                 status_placeholder.empty()
                 timer_placeholder.empty()
                 progress_placeholder.empty()
@@ -151,44 +161,34 @@ def render(session):
 
         return edited_df, df["ID"].tolist()
 
-    # Loop through exercises
-        warmup_sets = [s for s in sets if str(s.get("notes", "")).lower().startswith("warmup")]
-        working_sets = [s for s in sets if s not in warmup_sets]
-
-        warmup_df, warmup_ids = render_block("🔥 Warmup", warmup_sets)
-        working_df, working_ids = render_block("💪 Working", working_sets)
-
-        if warmup_df is not None:
-            all_dfs.append((ex_name, warmup_df, warmup_ids))
-        if working_df is not None:
-            all_dfs.append((ex_name, working_df, working_ids))
-
-    # Loop through exercises
+    # Render exercises
     for ex_name, sets in grouped_exercises.items():
         st.subheader(ex_name)
         warmup_sets = [s for s in sets if str(s.get('notes', '')).lower().startswith('warmup')]
         working_sets = [s for s in sets if s not in warmup_sets]
-    
-        warmup_df, warmup_ids = render_block('🔥 Warmup', warmup_sets)
-        working_df, working_ids = render_block('💪 Working', working_sets)
-    
+
+        warmup_df, warmup_ids = render_block('🔥 Warmup', warmup_sets, ex_name)
+        working_df, working_ids = render_block('💪 Working', working_sets, ex_name)
+
         if warmup_df is not None:
             all_dfs.append((ex_name, warmup_df, warmup_ids))
         if working_df is not None:
             all_dfs.append((ex_name, working_df, working_ids))
-    
-        # Back to Dashboard button with save logic
-        if st.button("⬅ Back to Dashboard", key=f"back_to_dashboard_{session['session_id']}_{len(all_dfs)}"):
-            all_completed = True
-            for ex_name, edited_df, ids in all_dfs:
-                completed_sets_list = []
+
+    # ✅ Single Back to Dashboard button
+    if st.button("⬅ Back to Dashboard", key=f"back_to_dashboard_{session['session_id']}_{uuid.uuid4()}"):
+        all_completed = True
+        for ex_name, edited_df, ids in all_dfs:
+            exercise_completed = True
+            completed_sets_list = []
+            for i, row_id in enumerate(ids):
                 is_done = bool(edited_df.loc[i, 'Done'])
                 supabase.table('plan_session_exercises').update({
                     'completed': is_done,
                     'actual_weight': str(edited_df.loc[i, 'Weight']),
                     'actual_reps': str(edited_df.loc[i, 'Reps'])
                 }).eq('id', row_id).execute()
-    
+
                 completed_sets_list.append({
                     'id': row_id,
                     'completed': is_done,
@@ -196,18 +196,22 @@ def render(session):
                     'actual_reps': edited_df.loc[i, 'Reps'],
                     'set_number': edited_df.loc[i, 'Set']
                 })
-    
+
                 if not is_done:
+                    exercise_completed = False
                     all_completed = False
-    
+
             # ✅ Update 1RM for this exercise
             update_1rm_on_completion(ex_name, completed_sets_list)
-    
-    
-            # ✅ Mark session complete if all sets are done
-            if all_completed:
-                supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
-    
-            st.success("Progress saved. Returning to dashboard...")
-            st.session_state.selected_session = None
-            st.rerun()
+
+            # ✅ Mark exercise complete if all sets done
+            if exercise_completed:
+                supabase.table('plan_session_exercises').update({'exercise_completed': True}).eq('exercise_name', ex_name).execute()
+
+        # ✅ Mark session complete if all exercises done
+        if all_completed:
+            supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
+
+        st.success("Progress saved. Returning to dashboard...")
+        st.session_state.selected_session = None
+        st.rerun()
