@@ -72,6 +72,7 @@ class LightGenerator:
         })
 
         # ✅ Add each set for both exercises
+
         for set_num in range(1, LIGHT_SETS + 1):
             exercises.append({
                 "exercise_name": ex1["name"],
@@ -80,14 +81,12 @@ class LightGenerator:
                 "reps": LIGHT_REPS,
                 "intensity": "<60% 1RM",
                 "rest": 30,
-                "notes": f"Set {set_num} - Primary ({target})"
+                "notes": f"Set {set_num} - Primary ({target})",
                 "exercise_order": len(exercises) + 1,
                 "tempo": "2010",
                 "expected_weight": "",
                 "equipment": ""
             })
-
-        for set_num in range(1, LIGHT_SETS + 1):
             exercises.append({
                 "exercise_name": ex2["name"],
                 "exercise_id": ex2["id"],
@@ -95,12 +94,13 @@ class LightGenerator:
                 "reps": LIGHT_REPS,
                 "intensity": "<60% 1RM",
                 "rest": 30,
-                "notes": f"Superset {i} - Opposing ({opposing_group})",
+                "notes": f"Set {set_num} - Opposing ({opposing_group})",
                 "exercise_order": len(exercises) + 1,
                 "tempo": "2010",
                 "expected_weight": "",
                 "equipment": ""
             })
+
 
         return {
             "type": "Light",
