@@ -79,37 +79,32 @@ def render(session):
     all_dfs = []
 
         
+   
     def render_block(block_name, block_sets, ex_name):
         if not block_sets:
             return None, []
     
         st.markdown(f"**{block_name} Sets**")
     
-        # Prepare DataFrame: one row per set
         data = []
         for row in block_sets:
-            completed = row.get("completed", False)
             planned_reps = row.get("reps", "")
-            actual_reps = row.get("actual_reps", "")
-            reps_value = actual_reps if completed and actual_reps else planned_reps
-    
             suggested_weight = row.get("weight") or "None"
-            planned_sets = int(row.get("sets", 3))  # Default to 3 sets if not provided
+            planned_sets = int(row.get("sets", 3))  # Default 3 sets
     
             for set_num in range(1, planned_sets + 1):
                 data.append({
-                    "ID": f"{row['id']}_{set_num}",  # Unique ID per set
+                    "ID": f"{row['id']}_{set_num}",
                     "Set": set_num,
                     "Weight": row.get("actual_weight") or "",
                     "Suggested": suggested_weight,
-                    "Reps": reps_value,
-                    "Done": completed if set_num <= row.get("completed_sets", 0) else False,
+                    "Reps": planned_reps,
+                    "Done": False,
                     "Rest": row.get("rest", 60)
                 })
     
         df = pd.DataFrame(data)
     
-        # Editable table
         edited_df = st.data_editor(
             df.drop(columns=["ID", "Rest"]),
             num_rows="fixed",
@@ -127,7 +122,7 @@ def render(session):
     
         # Rest timer logic
         for i, done in enumerate(edited_df["Done"]):
-            if done and not df.loc[i, "Done"]:  # Trigger only when status changes
+            if done and not df.loc[i, "Done"]:
                 rest_seconds = int(df.loc[i, "Rest"])
                 status_placeholder = st.empty()
                 timer_placeholder = st.empty()
@@ -141,7 +136,29 @@ def render(session):
     
                 skip_button_key = f"skip_light_{block_name}_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
                 skip_state_key = f"skip_state_light_{block_name}_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
+                skip = skip_placeholder.button(f"⏭ Skip Rest for Set {edited_df.loc[i, 'Set']}", key=skip_button_key)
+                if skip:
+                    st.session_state[skip_state_key] = True
     
+                for remaining in range(rest_seconds, 0, -1):
+                    if st.session_state.get(skip_state_key, False):
+                        timer_placeholder.markdown("<h3 style='color:#ff4b4b;'>⏭ Timer skipped! Ready for next set.</h3>", unsafe_allow_html=True)
+                        break
+                    mins, secs = divmod(remaining, 60)
+                    timer_placeholder.markdown(f"<h1 style='text-align:center; color:#28a745;'>⏳ {mins:02d}:{secs:02d}</h1>", unsafe_allow_html=True)
+                    progress_placeholder.progress((rest_seconds - remaining) / rest_seconds)
+                    time.sleep(1)
+                else:
+                    if not st.session_state.get(skip_state_key, False):
+                        timer_placeholder.markdown("<h3 style='color:#28a745;'>🔥 Ready for next set!</h3>", unsafe_allow_html=True)
+    
+                status_placeholder.empty()
+                timer_placeholder.empty()
+                progress_placeholder.empty()
+                skip_placeholder.empty()
+    
+        return edited_df, df["ID"].tolist()
+
 
     # Render exercises
     for ex_name, sets in grouped_exercises.items():
