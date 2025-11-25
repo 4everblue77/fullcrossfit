@@ -102,11 +102,11 @@ class LightGenerator:
                 "equipment": ""
             })
 
-    return {
-        "type": "Light",
-        "target": target,
-        "time": LIGHT_TIME,
-        "details": f"3 supersets targeting {target} with opposing muscle activation",
-        "supersets": supersets,
-        "exercises": exercises  # ✅ Each set is its own row for Supabase sync
-    }
+        return {
+            "type": "Light",
+            "target": target,
+            "time": LIGHT_TIME,
+            "details": f"3 supersets targeting {target} with opposing muscle activation",
+            "supersets": supersets,
+            "exercises": exercises  # ✅ Each set is its own row for Supabase sync
+        }
