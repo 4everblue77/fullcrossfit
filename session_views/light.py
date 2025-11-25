@@ -19,58 +19,59 @@ def calculate_1rm(weight: float, reps: int) -> float:
         return weight
     return round(weight * (1 + 0.0333 * reps), 2)
 
-def update_1rm_on_completion(exercise_name, completed_sets):
+def update_best_set(exercise_name, completed_sets):
+    """Find best set and record in exercise_maxes."""
+    best_set = None
+    best_1rm = 0
     for s in completed_sets:
         if s.get('completed') and s.get('actual_weight') and s.get('actual_reps'):
-            weight = float(s['actual_weight'])
-            reps = int(s['actual_reps'])
-            calc_1rm = calculate_1rm(weight, reps)
+            try:
+                weight = float(s['actual_weight'])
+                reps = int(s['actual_reps'])
+                calc_1rm = calculate_1rm(weight, reps)
+                if calc_1rm > best_1rm:
+                    best_1rm = calc_1rm
+                    best_set = s
+            except ValueError:
+                continue
 
-            latest = supabase.table('exercise_maxes') \
-                .select('*') \
-                .eq('exercise_name', exercise_name) \
-                .order('date', desc=True) \
-                .limit(1) \
-                .execute().data
+    if best_set:
+        latest = supabase.table('exercise_maxes') \
+            .select('*') \
+            .eq('exercise_name', exercise_name) \
+            .order('date', desc=True) \
+            .limit(1) \
+            .execute().data
+        latest_max = latest[0].get('manual_1rm') or latest[0].get('calculated_1rm') if latest else 0
 
-            latest_max = None
-            if latest:
-                latest_max = latest[0].get('manual_1rm') or latest[0].get('calculated_1rm')
-
-            if not latest_max or calc_1rm > latest_max:
-                supabase.table('exercise_maxes').insert({
-                    'exercise_name': exercise_name,
-                    'calculated_1rm': calc_1rm,
-                    'source_set_id': s['id'],
-                    'date': datetime.utcnow().isoformat()
-                }).execute()
-
-
+        if best_1rm > latest_max:
+            supabase.table('exercise_maxes').insert({
+                'exercise_name': exercise_name,
+                'calculated_1rm': best_1rm,
+                'source_set_id': best_set['id'],
+                'date': datetime.utcnow().isoformat()
+            }).execute()
 
 def parse_reps_and_weight(note, one_rm):
-    #st.write(f"🔍 Parsing note: '{note}' | 1RM: {one_rm}")
-
     # Normalize dashes and spaces
     normalized_note = note.replace("–", "-").replace("—", "-").replace("−", "-")
-    normalized_note = re.sub(r'\s+', ' ', normalized_note)  # collapse spaces
+    normalized_note = re.sub(r'\s+', ' ', normalized_note)
 
-    # Debug normalized note
-    #st.write(f"🔍 Normalized note: '{normalized_note}'")
+    # Debug info
+    st.write(f"🔍 Parsing note: '{normalized_note}' | 1RM: {one_rm}")
 
-    # Match reps range
+    # Extract reps range
     reps_match = re.search(r'(\d+\s*-\s*\d+)', normalized_note)
     reps = reps_match.group(1) if reps_match else ""
 
-    # Match percentage
+    # Extract percentage
     pct_match = re.search(r'(\d+)\s*%?\s*1RM', normalized_note)
     pct = int(pct_match.group(1)) if pct_match else 0
 
     suggested_weight = round(one_rm * (pct / 100), 2) if pct > 0 and one_rm > 0 else None
 
-    #st.write(f"✅ Parsed reps: '{reps}', pct: {pct}, suggested weight: {suggested_weight}")
+    st.write(f"✅ Parsed reps: '{reps}', pct: {pct}, suggested weight: {suggested_weight}")
     return reps, suggested_weight
-
-
 
 # --- Render Block ---
 def render_block(block_name, block_sets, ex_name, one_rm):
@@ -84,16 +85,18 @@ def render_block(block_name, block_sets, ex_name, one_rm):
         note = str(row.get("reps", "")) or str(row.get("notes", ""))
         reps_value, suggested_weight = parse_reps_and_weight(note, one_rm)
 
-        planned_sets = int(row.get("sets", 3))  # Default 3 sets
-        for set_num in range(1, planned_sets + 1):
-            data.append({
-                "ID": f"{row['id']}_{set_num}",
-                "Set": set_num,
-                "Weight": suggested_weight if suggested_weight else 0.0,
-                "Reps": reps_value if reps_value else "",
-                "Done": False,
-                "Rest": row.get("rest", 60)
-            })
+        # Pre-fill completed sets
+        weight_value = row.get("actual_weight") if row.get("completed") else (suggested_weight if suggested_weight else 0.0)
+        reps_display = row.get("actual_reps") if row.get("completed") else reps_value
+
+        data.append({
+            "ID": row["id"],
+            "Set": row.get("set_number", ""),
+            "Weight": weight_value,
+            "Reps": reps_display,
+            "Done": row.get("completed", False),
+            "Rest": row.get("rest", 60)
+        })
 
     df = pd.DataFrame(data)
 
@@ -201,10 +204,9 @@ def render(session):
             all_dfs.append((ex_name, working_df, working_ids))
 
     # ✅ Single Back to Dashboard button
-   
     if st.button("⬅ Back to Dashboard", key=f"back_to_dashboard_{session['session_id']}_{len(all_dfs)}"):
         all_completed = True
-    
+
         for ex_name, edited_df, ids in all_dfs:
             completed_sets_list = []
             for i, row_id in enumerate(ids):
@@ -214,7 +216,7 @@ def render(session):
                     'actual_weight': str(edited_df.loc[i, 'Weight']),
                     'actual_reps': str(edited_df.loc[i, 'Reps'])
                 }).eq('id', row_id).execute()
-    
+
                 completed_sets_list.append({
                     'id': row_id,
                     'completed': is_done,
@@ -222,15 +224,16 @@ def render(session):
                     'actual_reps': edited_df.loc[i, 'Reps'],
                     'set_number': edited_df.loc[i, 'Set']
                 })
-    
+
                 if not is_done:
                     all_completed = False
-    
-            update_1rm_on_completion(ex_name, completed_sets_list)
-    
+
+            # ✅ Record best set for exercise
+            update_best_set(ex_name, completed_sets_list)
+
         if all_completed:
             supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
-    
+
         st.success("Progress saved. Returning to dashboard...")
         st.session_state.selected_session = None
         st.rerun()
