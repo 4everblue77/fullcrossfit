@@ -21,11 +21,12 @@ class LightGenerator:
         self.categories = data["categories"]
         self.category_mappings = data["category_mappings"]
 
+        # Opposing muscle group map for supersets
         self.opposing_map = {
             "Chest": "Back",
             "Back": "Chest",
             "Quads": "Glutes/Hamstrings",
-            "Glutes_Hamstrings": "Quads",
+            "Glutes/Hamstrings": "Quads",
             "Shoulders": "Core",
             "Core": "Shoulders"
         }
@@ -36,21 +37,20 @@ class LightGenerator:
         )
 
     def get_light_exercises_by_muscle(self, muscle_name):
-        # Get muscle group ID
+        """Return exercises for a muscle group filtered by 'Muscular Endurance' category."""
         mg_id = next((mg["id"] for mg in self.muscle_groups if mg["name"] == muscle_name), None)
         if not mg_id or not self.light_category_id:
             return []
 
-        # Get exercise IDs mapped to both the muscle group and the "Muscular Endurance" category
+        # Get exercise IDs mapped to both muscle group and category
         muscle_ex_ids = {m["exercise_id"] for m in self.mappings if m["musclegroup_id"] == mg_id}
         category_ex_ids = {m["exercise_id"] for m in self.category_mappings if m["category_id"] == self.light_category_id}
 
-        # Intersection of both sets
         valid_ex_ids = muscle_ex_ids & category_ex_ids
-
         return [ex for ex in self.exercises if ex["id"] in valid_ex_ids]
 
     def generate(self, target):
+        """Generate a light session with 3 supersets of 2 exercises (primary + opposing)."""
         primary_pool = self.get_light_exercises_by_muscle(target)
         opposing_group = self.opposing_map.get(target, target)
         opposing_pool = self.get_light_exercises_by_muscle(opposing_group)
@@ -68,7 +68,7 @@ class LightGenerator:
                 "Reps": LIGHT_REPS
             })
 
-            # ✅ Create one row per set for each exercise
+            # ✅ Add each set for both exercises
             for set_num in range(1, LIGHT_SETS + 1):
                 exercises.append({
                     "exercise_name": ex1["name"],
@@ -105,5 +105,5 @@ class LightGenerator:
             "time": LIGHT_TIME,
             "details": f"3 supersets targeting {target} with opposing muscle activation",
             "supersets": supersets,
-            "exercises": exercises  # ✅ Each set is its own row
+            "exercises": exercises  # ✅ Each set is its own row for Supabase sync
         }
