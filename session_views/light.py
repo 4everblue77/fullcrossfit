@@ -5,6 +5,22 @@ from supabase import create_client
 from collections import defaultdict
 from datetime import datetime
 
+import re
+
+def parse_reps_and_weight(note, one_rm):
+    # Extract reps range
+    reps_match = re.search(r'(\d+\s*-\s*\d+)', note)
+    reps = reps_match.group(1) if reps_match else ""
+
+    # Extract percentage
+    pct_match = re.search(r'(\d+)%\s*1RM', note)
+    pct = int(pct_match.group(1)) if pct_match else 0
+
+    # Calculate suggested weight
+    suggested_weight = round(one_rm * (pct / 100), 2) if pct > 0 else ""
+    return reps, suggested_weight
+
+
 def calculate_1rm(weight: float, reps: int) -> float:
     """Calculate estimated 1RM using Epley formula."""
     if reps <= 1:
@@ -79,7 +95,9 @@ def render(session):
     all_dfs = []
 
         
-   
+       
+    
+    
     def render_block(block_name, block_sets, ex_name):
         if not block_sets:
             return None, []
@@ -88,17 +106,17 @@ def render(session):
     
         data = []
         for row in block_sets:
-            planned_reps = row.get("reps", "")
-            suggested_weight = row.get("weight") or "None"
-            planned_sets = int(row.get("sets", 3))  # Default 3 sets
+            note = str(row.get("reps", ""))  # or row.get("notes", "")
+            one_rm = float(row.get("one_rm", 0))  # Ensure 1RM is passed or fetched
+            reps_value, suggested_weight = parse_reps_and_weight(note, one_rm)
     
+            planned_sets = int(row.get("sets", 3))  # Default 3 sets
             for set_num in range(1, planned_sets + 1):
                 data.append({
                     "ID": f"{row['id']}_{set_num}",
                     "Set": set_num,
-                    "Weight": row.get("actual_weight") or "",
-                    "Suggested": suggested_weight,
-                    "Reps": planned_reps,
+                    "Weight": suggested_weight,  # ✅ Suggested weight pre-filled
+                    "Reps": reps_value,          # ✅ Numeric reps only
                     "Done": False,
                     "Rest": row.get("rest", 60)
                 })
@@ -113,14 +131,13 @@ def render(session):
             column_config={
                 "Set": st.column_config.NumberColumn("Set", disabled=True),
                 "Weight": st.column_config.NumberColumn("Weight", format="%.2f"),
-                "Suggested": st.column_config.TextColumn("Suggested", disabled=True),
                 "Reps": st.column_config.TextColumn("Reps"),
                 "Done": st.column_config.CheckboxColumn("Done")
             },
             key=f"editor_{block_name}_{ex_name}"
         )
     
-        # Rest timer logic
+        # ✅ Rest timer logic remains same
         for i, done in enumerate(edited_df["Done"]):
             if done and not df.loc[i, "Done"]:
                 rest_seconds = int(df.loc[i, "Rest"])
@@ -158,6 +175,7 @@ def render(session):
                 skip_placeholder.empty()
     
         return edited_df, df["ID"].tolist()
+
 
 
     # Render exercises
