@@ -64,50 +64,49 @@ class LightGenerator:
         supersets = []
         exercises = []
 
-        for i in range(1, 4):  # 3 supersets
 
-            supersets.append({
-                "Superset": f"{ex1['name']} + {ex2['name']}",
-                "Sets": LIGHT_SETS,
-                "Reps": LIGHT_REPS
+        supersets.append({
+            "Superset": f"{ex1['name']} + {ex2['name']}",
+            "Sets": LIGHT_SETS,
+            "Reps": LIGHT_REPS
+        })
+
+        # ✅ Add each set for both exercises
+        for set_num in range(1, LIGHT_SETS + 1):
+            exercises.append({
+                "exercise_name": ex1["name"],
+                "exercise_id": ex1["id"],
+                "set_number": set_num,
+                "reps": LIGHT_REPS,
+                "intensity": "<60% 1RM",
+                "rest": 30,
+                "notes": f"Superset {i} - Primary ({target})",
+                "exercise_order": len(exercises) + 1,
+                "tempo": "2010",
+                "expected_weight": "",
+                "equipment": ""
             })
 
-            # ✅ Add each set for both exercises
-            for set_num in range(1, LIGHT_SETS + 1):
-                exercises.append({
-                    "exercise_name": ex1["name"],
-                    "exercise_id": ex1["id"],
-                    "set_number": set_num,
-                    "reps": LIGHT_REPS,
-                    "intensity": "<60% 1RM",
-                    "rest": 30,
-                    "notes": f"Superset {i} - Primary ({target})",
-                    "exercise_order": len(exercises) + 1,
-                    "tempo": "2010",
-                    "expected_weight": "",
-                    "equipment": ""
-                })
+        for set_num in range(1, LIGHT_SETS + 1):
+            exercises.append({
+                "exercise_name": ex2["name"],
+                "exercise_id": ex2["id"],
+                "set_number": set_num,
+                "reps": LIGHT_REPS,
+                "intensity": "<60% 1RM",
+                "rest": 30,
+                "notes": f"Superset {i} - Opposing ({opposing_group})",
+                "exercise_order": len(exercises) + 1,
+                "tempo": "2010",
+                "expected_weight": "",
+                "equipment": ""
+            })
 
-            for set_num in range(1, LIGHT_SETS + 1):
-                exercises.append({
-                    "exercise_name": ex2["name"],
-                    "exercise_id": ex2["id"],
-                    "set_number": set_num,
-                    "reps": LIGHT_REPS,
-                    "intensity": "<60% 1RM",
-                    "rest": 30,
-                    "notes": f"Superset {i} - Opposing ({opposing_group})",
-                    "exercise_order": len(exercises) + 1,
-                    "tempo": "2010",
-                    "expected_weight": "",
-                    "equipment": ""
-                })
-
-        return {
-            "type": "Light",
-            "target": target,
-            "time": LIGHT_TIME,
-            "details": f"3 supersets targeting {target} with opposing muscle activation",
-            "supersets": supersets,
-            "exercises": exercises  # ✅ Each set is its own row for Supabase sync
-        }
+    return {
+        "type": "Light",
+        "target": target,
+        "time": LIGHT_TIME,
+        "details": f"3 supersets targeting {target} with opposing muscle activation",
+        "supersets": supersets,
+        "exercises": exercises  # ✅ Each set is its own row for Supabase sync
+    }
