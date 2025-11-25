@@ -55,12 +55,16 @@ class LightGenerator:
         opposing_group = self.opposing_map.get(target, target)
         opposing_pool = self.get_light_exercises_by_muscle(opposing_group)
 
+        
+        # ✅ Pick two exercises ONCE
+        ex1 = random.choice(primary_pool) if primary_pool else {"name": f"No match for {target}", "id": None}
+        ex2 = random.choice(opposing_pool) if opposing_pool else {"name": f"No match for {opposing_group}", "id": None}
+
+
         supersets = []
         exercises = []
 
         for i in range(1, 4):  # 3 supersets
-            ex1 = random.choice(primary_pool) if primary_pool else {"name": f"No match for {target}", "id": None}
-            ex2 = random.choice(opposing_pool) if opposing_pool else {"name": f"No match for {opposing_group}", "id": None}
 
             supersets.append({
                 "Superset": f"{ex1['name']} + {ex2['name']}",
