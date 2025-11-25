@@ -57,12 +57,15 @@ def sync_plan_to_supabase(supabase, full_plan, data):
                 session_id = session_resp.data[0]["id"]
                 summary["sessions"] += 1
 
+
                 if "exercises" in session_data and isinstance(session_data["exercises"], list):
                     for i, ex in enumerate(session_data["exercises"], start=1):
-                        exercise_id = next((e["id"] for e in data["exercises"] if e["name"] == ex["name"]), None)
+                        exercise_name = ex.get("name") or ex.get("exercise_name") or "Unknown"
+                        exercise_id = next((e["id"] for e in data["exercises"] if e.get("name") == exercise_name), None)
+                
                         supabase.table("plan_session_exercises").insert({
                             "session_id": session_id,
-                            "exercise_name": ex["name"],
+                            "exercise_name": exercise_name,
                             "exercise_id": exercise_id,
                             "set_number": ex.get("set", 1),
                             "reps": ex.get("reps", ""),
@@ -78,5 +81,6 @@ def sync_plan_to_supabase(supabase, full_plan, data):
                             "equipment": ex.get("equipment", "")
                         }).execute()
                         summary["exercises"] += 1
+
 
     return summary
