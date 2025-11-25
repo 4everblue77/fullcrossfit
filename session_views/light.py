@@ -178,7 +178,7 @@ def render(session):
             all_dfs.append((ex_name, working_df, working_ids))
     
         # Back to Dashboard button with save logic
-        if st.button("⬅ Back to Dashboard", key=f"back_to_dashboard_{session['session_id']}_{uuid.uuid4()}"):
+        if st.button("⬅ Back to Dashboard", key=f"back_to_dashboard_{session['session_id']}_{len(all_dfs)}"):
             all_completed = True
             for ex_name, edited_df, ids in all_dfs:
                 completed_sets_list = []
