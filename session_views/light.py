@@ -98,6 +98,7 @@ def render(session):
 
         df = pd.DataFrame(data)
 
+
         edited_df = st.data_editor(
             df.drop(columns=["ID", "Rest"]),
             num_rows="fixed",
@@ -108,8 +109,10 @@ def render(session):
                 "Weight": st.column_config.NumberColumn("Weight", format="%.2f"),
                 "Reps": st.column_config.TextColumn("Reps"),
                 "Done": st.column_config.CheckboxColumn("Done")
-            }
+            },
+            key=f"editor_{block_name}_{ex_name}"  # ✅ Unique key per block and exercise
         )
+
 
         # Optional: Rest timer logic similar to heavy session
         for i, done in enumerate(edited_df["Done"]):
