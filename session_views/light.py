@@ -192,8 +192,8 @@ def render(session):
         warmup_sets = [s for s in sets if str(s.get('notes', '')).lower().startswith('warmup')]
         working_sets = [s for s in sets if s not in warmup_sets]
 
-        warmup_df, warmup_ids = render_block('🔥 Warmup', warmup_sets, ex_name, one_rm)
-        working_df, working_ids = render_block('💪 Working', working_sets, ex_name, one_rm)
+        #warmup_df, warmup_ids = render_block('🔥 Warmup', warmup_sets, ex_name, one_rm)
+        #working_df, working_ids = render_block('💪 Working', working_sets, ex_name, one_rm)
 
         if warmup_df is not None:
             all_dfs.append((ex_name, warmup_df, warmup_ids))
