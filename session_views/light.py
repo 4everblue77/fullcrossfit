@@ -58,7 +58,7 @@ def parse_reps_and_weight(note, one_rm):
     normalized_note = re.sub(r'\s+', ' ', normalized_note)
 
     # Debug info
-    st.write(f"🔍 Parsing note: '{normalized_note}' | 1RM: {one_rm}")
+    #st.write(f"🔍 Parsing note: '{normalized_note}' | 1RM: {one_rm}")
 
     # Extract reps range
     reps_match = re.search(r'(\d+\s*-\s*\d+)', normalized_note)
@@ -70,7 +70,7 @@ def parse_reps_and_weight(note, one_rm):
 
     suggested_weight = round(one_rm * (pct / 100), 2) if pct > 0 and one_rm > 0 else None
 
-    st.write(f"✅ Parsed reps: '{reps}', pct: {pct}, suggested weight: {suggested_weight}")
+    #st.write(f"✅ Parsed reps: '{reps}', pct: {pct}, suggested weight: {suggested_weight}")
     return reps, suggested_weight
 
 # --- Render Block ---
