@@ -51,7 +51,7 @@ def parse_reps_and_weight(note, one_rm):
     st.write(f"🔍 Parsing note: '{note}' | 1RM: {one_rm}")
 
     # Extract reps range
-    reps_match = re.search(r'(\d+\s*-\s*\d+)', note)
+    reps_match = re.search(r'(\d+\s*[-–]\s*\d+)', note)
     reps = reps_match.group(1) if reps_match else ""
 
     # Extract percentage
