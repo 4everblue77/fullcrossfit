@@ -48,14 +48,14 @@ def update_1rm_on_completion(exercise_name, completed_sets):
 
 
 def parse_reps_and_weight(note, one_rm):
-    st.write(f"🔍 Parsing note: '{note}' | 1RM: {one_rm}")
+    #st.write(f"🔍 Parsing note: '{note}' | 1RM: {one_rm}")
 
     # Normalize dashes and spaces
     normalized_note = note.replace("–", "-").replace("—", "-").replace("−", "-")
     normalized_note = re.sub(r'\s+', ' ', normalized_note)  # collapse spaces
 
     # Debug normalized note
-    st.write(f"🔍 Normalized note: '{normalized_note}'")
+    #st.write(f"🔍 Normalized note: '{normalized_note}'")
 
     # Match reps range
     reps_match = re.search(r'(\d+\s*-\s*\d+)', normalized_note)
@@ -67,7 +67,7 @@ def parse_reps_and_weight(note, one_rm):
 
     suggested_weight = round(one_rm * (pct / 100), 2) if pct > 0 and one_rm > 0 else None
 
-    st.write(f"✅ Parsed reps: '{reps}', pct: {pct}, suggested weight: {suggested_weight}")
+    #st.write(f"✅ Parsed reps: '{reps}', pct: {pct}, suggested weight: {suggested_weight}")
     return reps, suggested_weight
 
 
