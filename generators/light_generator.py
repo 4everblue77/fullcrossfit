@@ -1,3 +1,4 @@
+
 import random
 
 LIGHT_SETS = 3
@@ -47,61 +48,62 @@ class LightGenerator:
         # Intersection of both sets
         valid_ex_ids = muscle_ex_ids & category_ex_ids
 
-        return [ex["name"] for ex in self.exercises if ex["id"] in valid_ex_ids]
+        return [ex for ex in self.exercises if ex["id"] in valid_ex_ids]
 
     def generate(self, target):
         primary_pool = self.get_light_exercises_by_muscle(target)
         opposing_group = self.opposing_map.get(target, target)
         opposing_pool = self.get_light_exercises_by_muscle(opposing_group)
-    
+
         supersets = []
         exercises = []
-    
+
         for i in range(1, 4):  # 3 supersets
-            ex1 = random.choice(primary_pool) if primary_pool else f"No match for {target}"
-            ex2 = random.choice(opposing_pool) if opposing_pool else f"No match for {opposing_group}"
-    
+            ex1 = random.choice(primary_pool) if primary_pool else {"name": f"No match for {target}", "id": None}
+            ex2 = random.choice(opposing_pool) if opposing_pool else {"name": f"No match for {opposing_group}", "id": None}
+
             supersets.append({
-                "Superset": f"{ex1} + {ex2}",
+                "Superset": f"{ex1['name']} + {ex2['name']}",
                 "Sets": LIGHT_SETS,
                 "Reps": LIGHT_REPS
             })
-    
-        ex_id1 = next((e["id"] for e in self.exercises if e["name"] == ex1), None)
-        ex_id2 = next((e["id"] for e in self.exercises if e["name"] == ex2), None)
-        
-        exercises.append({
-            "name": ex1,
-            "exercise_id": ex_id1,
-            "set": i,
-            "reps": LIGHT_REPS,
-            "intensity": "<60% 1RM",
-            "rest": 30,
-            "notes": f"Superset {i} - Primary ({target})",
-            "exercise_order": len(exercises) + 1,
-            "tempo": "2010",
-            "expected_weight": "",
-            "equipment": ""
-        })
-        exercises.append({
-            "name": ex2,
-            "exercise_id": ex_id2,
-            "set": i,
-            "reps": LIGHT_REPS,
-            "intensity": "<60% 1RM",
-            "rest": 30,
-            "notes": f"Superset {i} - Opposing ({opposing_group})",
-            "exercise_order": len(exercises) + 1,
-            "tempo": "2010",
-            "expected_weight": "",
-            "equipment": ""
-        })
-    
+
+            # ✅ Create one row per set for each exercise
+            for set_num in range(1, LIGHT_SETS + 1):
+                exercises.append({
+                    "exercise_name": ex1["name"],
+                    "exercise_id": ex1["id"],
+                    "set_number": set_num,
+                    "reps": LIGHT_REPS,
+                    "intensity": "<60% 1RM",
+                    "rest": 30,
+                    "notes": f"Superset {i} - Primary ({target})",
+                    "exercise_order": len(exercises) + 1,
+                    "tempo": "2010",
+                    "expected_weight": "",
+                    "equipment": ""
+                })
+
+            for set_num in range(1, LIGHT_SETS + 1):
+                exercises.append({
+                    "exercise_name": ex2["name"],
+                    "exercise_id": ex2["id"],
+                    "set_number": set_num,
+                    "reps": LIGHT_REPS,
+                    "intensity": "<60% 1RM",
+                    "rest": 30,
+                    "notes": f"Superset {i} - Opposing ({opposing_group})",
+                    "exercise_order": len(exercises) + 1,
+                    "tempo": "2010",
+                    "expected_weight": "",
+                    "equipment": ""
+                })
+
         return {
             "type": "Light",
             "target": target,
             "time": LIGHT_TIME,
             "details": f"3 supersets targeting {target} with opposing muscle activation",
             "supersets": supersets,
-            "exercises": exercises  # ✅ Enables syncing
+            "exercises": exercises  # ✅ Each set is its own row
         }
