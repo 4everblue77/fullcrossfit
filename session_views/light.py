@@ -45,7 +45,11 @@ def update_1rm_on_completion(exercise_name, completed_sets):
                     'date': datetime.utcnow().isoformat()
                 }).execute()
 
+
 def parse_reps_and_weight(note, one_rm):
+    # Debug: Show raw input
+    st.write(f"🔍 Parsing note: '{note}' | 1RM: {one_rm}")
+
     # Extract reps range
     reps_match = re.search(r'(\d+\s*-\s*\d+)', note)
     reps = reps_match.group(1) if reps_match else ""
@@ -56,7 +60,12 @@ def parse_reps_and_weight(note, one_rm):
 
     # Calculate suggested weight
     suggested_weight = round(one_rm * (pct / 100), 2) if pct > 0 and one_rm > 0 else None
+
+    # Debug: Show parsed output
+    st.write(f"✅ Parsed reps: '{reps}', pct: {pct}, suggested weight: {suggested_weight}")
+
     return reps, suggested_weight
+
 
 # --- Render Block ---
 def render_block(block_name, block_sets, ex_name, one_rm):
