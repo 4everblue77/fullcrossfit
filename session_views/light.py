@@ -4,28 +4,22 @@ import time
 from supabase import create_client
 from collections import defaultdict
 from datetime import datetime
-
 import re
 
+
 def parse_reps_and_weight(note, one_rm):
-    # Extract reps range
+    # Extract reps range (e.g., "15-20")
     reps_match = re.search(r'(\d+\s*-\s*\d+)', note)
     reps = reps_match.group(1) if reps_match else ""
 
-    # Extract percentage
-    pct_match = re.search(r'(\d+)%\s*1RM', note)
+    # Extract percentage (e.g., "60%")
+    pct_match = re.search(r'(\d+)\s*%?\s*1RM', note)
     pct = int(pct_match.group(1)) if pct_match else 0
 
     # Calculate suggested weight
-    suggested_weight = round(one_rm * (pct / 100), 2) if pct > 0 else ""
+    suggested_weight = round(one_rm * (pct / 100), 2) if pct > 0 and one_rm > 0 else ""
     return reps, suggested_weight
 
-
-def calculate_1rm(weight: float, reps: int) -> float:
-    """Calculate estimated 1RM using Epley formula."""
-    if reps <= 1:
-        return weight
-    return round(weight * (1 + 0.0333 * reps), 2)
 
 def update_1rm_on_completion(exercise_name, completed_sets):
     for s in completed_sets:
