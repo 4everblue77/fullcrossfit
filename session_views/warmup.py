@@ -110,14 +110,18 @@ def render(session):
     if col1.button("▶ Start / Resume"):
         st.session_state.running = True
         
-        # ✅ Ensure we start at first incomplete exercise if current one is done
-        if st.session_state.exercise_completion.get(exercises[st.session_state.exercise_index]["id"], False):
-            next_incomplete_index = next(
-                (i for i, ex in enumerate(exercises)
-                 if not st.session_state.exercise_completion.get(ex["id"], False)), None
-            )
-            if next_incomplete_index is not None:
-                st.session_state.exercise_index = next_incomplete_index
+
+        # ✅ Always check if current exercise is completed
+        if st.session_state.exercise_index is not None:
+            current_ex_id = exercises[st.session_state.exercise_index]["id"]
+            if st.session_state.exercise_completion.get(current_ex_id, False):
+                next_incomplete_index = next(
+                    (i for i, ex in enumerate(exercises)
+                     if not st.session_state.exercise_completion.get(ex["id"], False)), None
+                )
+                if next_incomplete_index is not None:
+                    st.session_state.exercise_index = next_incomplete_index
+    
 
     if col2.button("⏸ Pause"):
         st.session_state.running = False
