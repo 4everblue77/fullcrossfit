@@ -139,6 +139,8 @@ if st.session_state.selected_session:
         olympic.render(session)
     elif session_type == "WOD":
         wod.render(session)    
+    elif session_type == "Skill":
+        skill.render(session)
     elif session_type == "Light":
         light.render(session)
     elif session_type == "Cooldown":
