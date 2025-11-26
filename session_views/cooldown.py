@@ -40,6 +40,15 @@ def render(session):
     # ✅ Count completed exercises
     completed_count = sum(1 for val in st.session_state.exercise_completion.values() if val)
 
+    
+    # ✅ Check if all exercises are completed and mark session complete
+    all_completed = all(st.session_state.exercise_completion.get(ex["id"], False) for ex in exercises)
+    if all_completed and not st.session_state.session_completed:
+        st.session_state.session_completed = True
+        supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
+        st.success("Cooldown completed!")
+
+
     # ✅ Determine first incomplete exercise
     first_incomplete_index = next((i for i, ex in enumerate(exercises)
                                    if not st.session_state.exercise_completion.get(ex["id"], False)), None)
