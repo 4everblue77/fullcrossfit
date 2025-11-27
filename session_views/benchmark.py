@@ -15,16 +15,23 @@ def render(session):
     st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
 
 
+
     # Fetch session details first
     session_data = supabase.table("plan_sessions").select("*").eq("id", session["session_id"]).single().execute().data
-    benchmark_id = session_data.get("details")
+    details_text = session_data.get("details", "")
     
-    if not benchmark_id:
-        st.error("No benchmark WOD linked to this session.")
+    # Extract benchmark WOD ID from details (assuming it's numeric)
+    import re
+    match_id = re.search(r"\b\d+\b", details_text)
+    if not match_id:
+        st.error("No benchmark WOD ID found in session details.")
         return
     
+    benchmark_id = int(match_id.group(0))
+    
     # Fetch benchmark WOD details
-    wod_data = supabase.table("benchmark_wods").select("*").eq("id", benchmark_id).single().execute().data
+    wod_data = supabase.table("benchmark_wod").select("*").eq("id", benchmark_id).single().execute().data
+
 
 
     workout_name = wod_data.get("text", "Unnamed WOD")
