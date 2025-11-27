@@ -39,5 +39,5 @@ class BenchmarkGenerator:
                 "elite": wod["elite"]
             },
             "url": wod["wodwell_url"],
-            "details": wod['id']}"
+            "details": wod['id']
         }
