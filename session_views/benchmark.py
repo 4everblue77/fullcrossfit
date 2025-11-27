@@ -15,7 +15,7 @@ def render(session):
     st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
 
     # Fetch benchmark WOD details
-    wod_data = supabase.table("benchmarks_wod").select("*").eq("id", session.get("benchmarks_wod_id")).single().execute().data
+    wod_data = supabase.table("benchmark_wods").select("*").eq("id", session.get("benchmark_wods_id")).single().execute().data
     if not wod_data:
         st.error("Benchmark WOD details not found.")
         return
