@@ -30,7 +30,7 @@ def render(session):
     benchmark_id = int(match_id.group(0))
     
     # Fetch benchmark WOD details
-    wod_data = supabase.table("benchmark_wod").select("*").eq("id", benchmark_id).single().execute().data
+    wod_data = supabase.table("benchmark_wods").select("*").eq("id", benchmark_id).single().execute().data
 
 
 
