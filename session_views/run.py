@@ -20,18 +20,10 @@ def render(session):
 
     details = session_details[0]
 
-    # Display run details
+    # Display overall details note
     st.markdown("### Session Details")
-    distance = details.get("distance", "Not specified")
-    duration = details.get("duration", "Not specified")
-    pace = details.get("pace", "Not specified")
-    notes = details.get("notes", "")
-
-    st.write(f"**Distance:** {distance}")
-    st.write(f"**Duration:** {duration}")
-    st.write(f"**Pace:** {pace}")
-    if notes:
-        st.write(f"**Notes:** {notes}")
+    run_details = details.get("details", "No details provided")
+    st.write(run_details)
 
     # Completion checkbox
     if "run_completed" not in st.session_state:
