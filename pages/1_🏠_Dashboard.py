@@ -1,7 +1,7 @@
 import streamlit as st
 from supabase import create_client
 
-from session_views import warmup, heavy, olympic, wod, cooldown, light, skill
+from session_views import warmup, heavy, olympic, wod, cooldown, light, skill, run
 
 # ✅ Page config
 st.set_page_config(page_title="FullCrossFit Dashboard", page_icon="🏠", layout="wide")
@@ -143,6 +143,8 @@ if st.session_state.selected_session:
         skill.render(session)
     elif session_type == "Light":
         light.render(session)
+    elif session_type == "Run":
+        run.render(session)
     elif session_type == "Cooldown":
         cooldown.render(session)
     else:
