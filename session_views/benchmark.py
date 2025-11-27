@@ -14,11 +14,18 @@ def render(session):
     st.title("🏆 Benchmark WOD")
     st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
 
-    # Fetch benchmark WOD details
-    wod_data = supabase.table("benchmark_wods").select("*").eq("id", session.get("benchmark_wods_id")).single().execute().data
-    if not wod_data:
-        st.error("Benchmark WOD details not found.")
+
+    # Fetch session details first
+    session_data = supabase.table("plan_sessions").select("*").eq("id", session["session_id"]).single().execute().data
+    benchmark_id = session_data.get("benchmark_wod_id")
+    
+    if not benchmark_id:
+        st.error("No benchmark WOD linked to this session.")
         return
+    
+    # Fetch benchmark WOD details
+    wod_data = supabase.table("benchmark_wods").select("*").eq("id", benchmark_id).single().execute().data
+
 
     workout_name = wod_data.get("text", "Unnamed WOD")
     workout_type = wod_data.get("workout_type", "Unknown")
