@@ -17,7 +17,7 @@ def render(session):
 
     # Fetch session details first
     session_data = supabase.table("plan_sessions").select("*").eq("id", session["session_id"]).single().execute().data
-    benchmark_id = session_data.get("benchmark_wod_id")
+    benchmark_id = session_data.get("details")
     
     if not benchmark_id:
         st.error("No benchmark WOD linked to this session.")
