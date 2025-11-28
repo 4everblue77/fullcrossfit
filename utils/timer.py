@@ -36,27 +36,20 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
         mins, secs = divmod(remaining, 60)
         timer_placeholder.markdown(f"<h1 style='text-align:center; color:#28a745;'>⏳ {mins:02d}:{secs:02d}</h1>", unsafe_allow_html=True)
         progress_placeholder.progress((seconds - remaining) / seconds)
-        time.sleep(1)
-    else:
-        if not st.session_state.get(skip_key, False):  
-            # ✅ 3-second countdown before beep
-            for i in range(3, 0, -1):
-                timer_placeholder.markdown(f"<h2 style='text-align:center; color:#ff4b4b;'>⏳ {i}</h2>", unsafe_allow_html=True)
-                time.sleep(1)
 
-
-
-            # ✅ Play beep sound and hide the player
-            beep_url = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
-
-            st.audio(beep_url, format="audio/ogg", autoplay=True)
+        
+        # ✅ Beep on last 3 seconds
+        if remaining <= 3:
             st.markdown("""
-            <style>
-            audio { display: none; }
-            </style>
+            <style>audio { display: none; }</style>
+            <audio autoplay>
+                https://actions.google.com/sounds/v1/alarms/beep_short.ogg
+            </audio>
             """, unsafe_allow_html=True)
-            
-            timer_placeholder.markdown("<h3 style='color:#28a745;'>🔥 Ready for next!</h3>", unsafe_allow_html=True)
+
+        time.sleep(1)
+    else:         
+        timer_placeholder.markdown("<h3 style='color:#28a745;'>🔥 Ready for next!</h3>", unsafe_allow_html=True)
 
     # Clear placeholders
     time.sleep(1)
