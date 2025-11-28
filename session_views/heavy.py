@@ -187,15 +187,21 @@ def render(session):
     st.markdown("---")
     st.subheader("Rest Timers")
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         if st.button(f"▶ Start Warmup Rest Timer ({warmup_rest}s)"):
-            run_rest_timer(warmup_rest, label="Warmup Rest", next_item="Start Working Sets",
+            run_rest_timer(warmup_rest, label="Warmup Rest", next_item=None,
                            skip_key=f"warmup_rest_{session['session_id']}")
     with col2:
         if st.button(f"▶ Start Working Rest Timer ({working_rest}s)"):
-            run_rest_timer(working_rest, label="Working Rest", next_item="Next Set",
+            run_rest_timer(working_rest, label="Working Rest", next_item=None,
                            skip_key=f"working_rest_{session['session_id']}")
+
+    with col3:
+        custom_rest = st.number_input("Custom Rest (seconds)", min_value=10, max_value=600, value=120, step=10)
+        if st.button(f"▶ Custom Rest ({custom_rest}s)"):
+            run_rest_timer(custom_rest, label="Custom Rest", next_item=None,
+                           skip_key=f"custom_rest_{session['session_id']}")
 
     # Back to Dashboard button with save logic
       
