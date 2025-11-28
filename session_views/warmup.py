@@ -1,7 +1,7 @@
 
 import streamlit as st
 from supabase import create_client
-from timer import run_rest_timer
+from utils.timer import run_rest_timer
 
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
