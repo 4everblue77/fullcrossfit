@@ -41,12 +41,14 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
         # ✅ Beep on last 3 seconds
         if remaining <= 3:
 
-            st.markdown("""
+
+            components.html(f"""
             <script>
                 var audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
                 audio.play();
             </script>
-            """, unsafe_allow_html=True)
+            """, height=0)
+
 
 
         time.sleep(1)
