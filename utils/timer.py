@@ -1,4 +1,6 @@
 
+import streamlit as st
+
 def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
     """
     Unified rest timer for all session types.
