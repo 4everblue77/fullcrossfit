@@ -47,6 +47,7 @@ def render(session):
     # Display WOD details
     st.subheader(workout_name)
     st.write(f"**Type:** {workout_type}")
+    st.write(f"**Description:" {description}")
     st.write(f"**Estimated Time:** {estimated_time}")
     st.write("**Target Times:**")
     st.write(f"- Beginner: {beginner}")
