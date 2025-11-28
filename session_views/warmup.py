@@ -23,10 +23,10 @@ def render(session):
     if "warmup_paused" not in st.session_state:
         st.session_state.warmup_paused = False
 
-    # Global progress bar
-    completed_exercises = sum(1 for ex in exercises if ex.get("completed"))
-    st.progress(completed_exercises / len(exercises))
-    st.markdown(f"**Progress:** {completed_exercises}/{len(exercises)} exercises completed")
+    # Placeholders for dynamic content
+    progress_placeholder = st.empty()
+    current_placeholder = st.empty()
+    next_placeholder = st.empty()
 
     # Control buttons
     col1, col2, col3 = st.columns(3)
@@ -40,50 +40,36 @@ def render(session):
         st.session_state.selected_session = None
         st.rerun()
 
-    # Show current and next exercise names at all times
-    if st.session_state.warmup_running:
-        current_index = 0
-        st.subheader("Current Exercise: " + exercises[current_index]['exercise_name'])
-        next_ex_name = exercises[current_index+1]['exercise_name'] if current_index+1 < len(exercises) else "None"
-        st.info("Next Exercise: " + next_ex_name)
-
     # Execute session if running and not paused
     if st.session_state.warmup_running and not st.session_state.warmup_paused:
-
-        current_placeholder = st.empty()
-        next_placeholder = st.empty()
-        timer_placeholder = st.empty()
-        progress_placeholder = st.empty()
-        
+        completed_count = 0
         for i, ex in enumerate(exercises):
-            
+            next_ex_name = exercises[i+1]['exercise_name'] if i+1 < len(exercises) else None
+
             # Update progress dynamically
-            completed_exercises = i  # or count from Supabase if needed
-            progress_placeholder.progress(completed_exercises / len(exercises))
-            progress_placeholder.markdown(f"**Progress:** {completed_exercises}/{len(exercises)} exercises completed")
-        
+            progress_placeholder.progress(completed_count / len(exercises))
+            progress_placeholder.markdown(f"**Progress:** {completed_count}/{len(exercises)} exercises completed")
+
             # Clear previous exercise
             current_placeholder.empty()
             next_placeholder.empty()
-         
-            # Show current and next exercise dynamically
-            next_ex_name = exercises[i+1]['exercise_name'] if i+1 < len(exercises) else None
+
+            # Show current and next
             current_placeholder.subheader(f"Current: {ex['exercise_name']}")
             next_placeholder.info(f"Next: {next_ex_name if next_ex_name else 'None'}")
-        
+
             # Exercise phase
-            run_rest_timer(int(ex.get("duration", 30)), label=None, next_item=next_ex_name, skip_key=f"skip_ex_{ex['id']}")
+            run_rest_timer(int(ex.get("duration", 30)), label=ex['exercise_name'], next_item=next_ex_name, skip_key=f"skip_ex_{ex['id']}")
             supabase.table("plan_session_exercises").update({"completed": True}).eq("id", ex["id"]).execute()
-        
-            # Clear previous exercise after completion
-            current_placeholder.empty()
-            next_placeholder.empty()
-            timer_placeholder.empty()
-        
+            completed_count += 1
+
+            # Update progress after exercise
+            progress_placeholder.progress(completed_count / len(exercises))
+            progress_placeholder.markdown(f"**Progress:** {completed_count}/{len(exercises)} exercises completed")
+
             # Rest phase
             if next_ex_name:
-                run_rest_timer(int(ex.get("rest", 30)), label=None, next_item=next_ex_name, skip_key=f"skip_rest_{ex['id']}")
-        
+                run_rest_timer(int(ex.get("rest", 30)), label="Rest", next_item=next_ex_name, skip_key=f"skip_rest_{ex['id']}")
 
         # Mark session complete
         supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
