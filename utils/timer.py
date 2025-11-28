@@ -40,7 +40,7 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
 
         
         # ✅ Beep on last 3 seconds
-        if remaining <= 3:
+        if remaining <= 3 or remaining % 60 == 0:
 
 
             components.html(f"""
