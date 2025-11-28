@@ -68,9 +68,13 @@ def render_superset_block(superset_name, superset_sets,session):
     # timer
     rest_seconds = int(df["Rest"].iloc[0])  # use first row's rest value
     rest_seconds = st.number_input("Rest (seconds)", min_value=10, max_value=600, value=rest_seconds, step=10, key=f"light_rest_input{session['session_id']}_{superset_name}")
-    if st.button(f"▶ Start Rest Timer ({rest_seconds}s)"):
+    if st.button(
+        f"▶ Start Rest Timer ({rest_seconds}s)"),
+        key = f"(light_rest_button{session['session_id']}_{superset_name}"
+    ):
         run_rest_timer(rest_seconds, label="Set", next_item=None,
-                       skip_key=f"light_rest_button{session['session_id']}_{superset_name}")
+                       skip_key=f"light_rest_skip{session['session_id']}_{superset_name}")
+        
     return edited_df, df["ID"].tolist()
  
 # --- Main Render ---
