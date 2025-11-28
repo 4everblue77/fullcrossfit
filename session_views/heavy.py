@@ -4,6 +4,7 @@ import time
 from supabase import create_client
 from collections import defaultdict
 from datetime import datetime
+from utils.timer import run_rest_timer
 
 # Supabase setup
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -151,55 +152,17 @@ def render(session):
         # Detect newly completed sets and show timer
         for i, done in enumerate(edited_df["Done"]):
             if done and not df.loc[i, "Done"]:  # Newly marked complete
+  
                 rest_seconds = int(df.loc[i, "Rest"])
-                #st.write(f"✅ Set {edited_df.loc[i, 'Set']} completed! Rest timer:")
+                set_number = edited_df.loc[i, "Set"]
+                next_item = f"Next Set" if i + 1 < len(df) else None
 
-                # Create placeholders for dynamic elements
-                status_placeholder = st.empty()      # For "Set X completed" or "Timer skipped"
-                timer_placeholder = st.empty()       # For countdown
-                progress_placeholder = st.empty()    # For progress bar
-                skip_placeholder = st.empty()        # For skip button
-                
-                # Show initial status
-                status_placeholder.markdown(f"<h4>✅ Set {edited_df.loc[i, 'Set']} completed! Rest timer:</h4>", unsafe_allow_html=True)
-
-                # Unique keys include block_name
-                skip_button_key = f"skip_btn_{block_name}_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
-                skip_state_key = f"skip_state_{block_name}_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
-        
-                
-                skip = skip_placeholder.button(f"⏭ Skip Rest for Set {edited_df.loc[i, 'Set']}", key=skip_button_key)
-                if skip:
-                    st.session_state[skip_state_key] = True
-        
-                # Countdown loop
-                for remaining in range(rest_seconds, 0, -1):
-                    if st.session_state.get(skip_state_key, False):
-                        timer_placeholder.markdown("<h3 style='color:#ff4b4b;'>⏭ Timer skipped! Ready for next set.</h3>", unsafe_allow_html=True)
-                        break
-        
-                    mins, secs = divmod(remaining, 60)
-                    timer_placeholder.markdown(
-                        f"<h1 style='text-align:center; color:#28a745; font-size:48px;'>⏳ {mins:02d}:{secs:02d}</h1>",
-                        unsafe_allow_html=True
-                    )
-                    progress_placeholder.progress((rest_seconds - remaining) / rest_seconds)
-        
-                    time.sleep(1)
-                else:
-                    if not st.session_state.get(skip_state_key, False):
-                        timer_placeholder.markdown("<h3 style='color:#28a745;'>🔥 Ready for next set!</h3>", unsafe_allow_html=True)
-
-                # ✅ Clear all placeholders after timer ends or skip
-                time.sleep(1)  # Small delay so user sees final message
-                status_placeholder.empty()
-                timer_placeholder.empty()
-                progress_placeholder.empty()
-                skip_placeholder.empty()
-
-
+                # ✅ Use unified timer
+                run_rest_timer(rest_seconds, label=f"Set {set_number}", next_item=next_item,
+                               skip_key=f"rest_{session['session_id']}_{set_number}")
 
         return edited_df, df["ID"].tolist()
+
 
     # Loop through exercises
     for ex_name, sets in grouped_exercises.items():
