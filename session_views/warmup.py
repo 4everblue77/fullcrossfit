@@ -53,6 +53,7 @@ def render(session):
         current_placeholder = st.empty()
         next_placeholder = st.empty()
         timer_placeholder = st.empty()
+        progress_placeholder = st.empty()
         
         for i, ex in enumerate(exercises):
             
