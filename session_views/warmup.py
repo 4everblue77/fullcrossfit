@@ -1,7 +1,7 @@
 
 import streamlit as st
 from supabase import create_client
-from utils.timer import run_rest_timer
+from timer import run_rest_timer
 
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
@@ -11,6 +11,7 @@ def render(session):
     st.title("🔥 Warmup")
     st.markdown(f"**Week:** {session['week']}  \n**Day:** {session['day']}")
 
+    # Fetch exercises from Supabase
     exercises = supabase.table("plan_session_exercises")        .select("*")        .eq("session_id", session["session_id"])        .order("exercise_order")        .execute().data
 
     if not exercises:
@@ -23,10 +24,17 @@ def render(session):
     if "warmup_paused" not in st.session_state:
         st.session_state.warmup_paused = False
 
+    # Calculate initial completed count from Supabase data
+    completed_count = sum(1 for ex in exercises if ex.get("completed", False))
+
     # Placeholders for dynamic content
     progress_placeholder = st.empty()
     current_placeholder = st.empty()
     next_placeholder = st.empty()
+
+    # Initial progress display
+    progress_placeholder.progress(completed_count / len(exercises))
+    progress_placeholder.markdown(f"**Progress:** {completed_count}/{len(exercises)} exercises completed")
 
     # Control buttons
     col1, col2, col3 = st.columns(3)
@@ -42,11 +50,14 @@ def render(session):
 
     # Execute session if running and not paused
     if st.session_state.warmup_running and not st.session_state.warmup_paused:
-        completed_count = 0
         for i, ex in enumerate(exercises):
+            # Skip already completed exercises
+            if ex.get("completed", False):
+                continue
+
             next_ex_name = exercises[i+1]['exercise_name'] if i+1 < len(exercises) else None
 
-            # Update progress dynamically
+            # Update progress dynamically before exercise
             progress_placeholder.progress(completed_count / len(exercises))
             progress_placeholder.markdown(f"**Progress:** {completed_count}/{len(exercises)} exercises completed")
 
