@@ -56,7 +56,16 @@ def render(session):
     st.write(f"- Elite: {elite}")
     if wodwell_url:
         st.markdown(f"[View on WODwell]({wodwell_url})")
-        st.markdown(f'<iframe src="{wodwell_url}" width="100%" height = 800 unsafe_allow_html=True')
+
+       st.markdown(
+            f"""
+            <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden;">
+                {wodwell_url}</iframe>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
 
 
     # Timer placeholders
