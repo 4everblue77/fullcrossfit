@@ -46,9 +46,10 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
 
             # ✅ Play beep sound
             st.markdown("""
-            <audio autoplay>
-                https://actions.google.com/sounds/v1/alarms/beep_short.ogg
-            </audio>
+            <script>
+                var audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+                audio.play();
+            </script>
             """, unsafe_allow_html=True)
 
             timer_placeholder.markdown("<h3 style='color:#28a745;'>🔥 Ready for next!</h3>", unsafe_allow_html=True)
