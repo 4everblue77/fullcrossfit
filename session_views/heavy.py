@@ -150,7 +150,7 @@ def render(session):
         )
 
         # Detect newly completed sets and show timer
-        for i, done in enumerate(edited_df["Done"]):
+        #for i, done in enumerate(edited_df["Done"]):
             #if done and not df.loc[i, "Done"]:  # Newly marked complete
   
              #   rest_seconds = int(df.loc[i, "Rest"])
