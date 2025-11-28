@@ -150,54 +150,6 @@ def render(session):
         
 
             
-        # Detect newly completed sets and show timer
-        for i, done in enumerate(edited_df["Done"]):
-            if done and not df.loc[i, "Done"]:  # Newly marked complete
-                rest_seconds = int(df.loc[i, "Rest"])
-                #st.write(f"✅ Set {edited_df.loc[i, 'Set']} completed! Rest timer:")
-
-                # Create placeholders for dynamic elements
-                status_placeholder = st.empty()      # For "Set X completed" or "Timer skipped"
-                timer_placeholder = st.empty()       # For countdown
-                progress_placeholder = st.empty()    # For progress bar
-                skip_placeholder = st.empty()        # For skip button
-                
-                # Show initial status
-                status_placeholder.markdown(f"<h4>✅ Set {edited_df.loc[i, 'Set']} completed! Rest timer:</h4>", unsafe_allow_html=True)
-
-                # Unique keys include block_name
-                skip_button_key = f"skip_btn_{block_name}_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
-                skip_state_key = f"skip_state_{block_name}_{ex_name}_{edited_df.loc[i, 'Set']}_{i}"
-        
-                
-                skip = skip_placeholder.button(f"⏭ Skip Rest for Set {edited_df.loc[i, 'Set']}", key=skip_button_key)
-                if skip:
-                    st.session_state[skip_state_key] = True
-        
-                # Countdown loop
-                for remaining in range(rest_seconds, 0, -1):
-                    if st.session_state.get(skip_state_key, False):
-                        timer_placeholder.markdown("<h3 style='color:#ff4b4b;'>⏭ Timer skipped! Ready for next set.</h3>", unsafe_allow_html=True)
-                        break
-        
-                    mins, secs = divmod(remaining, 60)
-                    timer_placeholder.markdown(
-                        f"<h1 style='text-align:center; color:#28a745; font-size:48px;'>⏳ {mins:02d}:{secs:02d}</h1>",
-                        unsafe_allow_html=True
-                    )
-                    progress_placeholder.progress((rest_seconds - remaining) / rest_seconds)
-        
-                    time.sleep(1)
-                else:
-                    if not st.session_state.get(skip_state_key, False):
-                        timer_placeholder.markdown("<h3 style='color:#28a745;'>🔥 Ready for next set!</h3>", unsafe_allow_html=True)
-
-                # ✅ Clear all placeholders after timer ends or skip
-                time.sleep(1)  # Small delay so user sees final message
-                status_placeholder.empty()
-                timer_placeholder.empty()
-                progress_placeholder.empty()
-                skip_placeholder.empty()
 
 
 
@@ -212,16 +164,20 @@ def render(session):
         warmup_df, warmup_ids = render_block("🔥 Technique Warmup", warmup_sets)
 
         # warmup timer
-        rest_seconds = int(df["Rest"].iloc[0])  # use first row's rest value
-        rest_seconds = st.number_input("Rest (seconds)", min_value=10, max_value=600, value=rest_seconds, step=10, key=f"light_rest_input{session['session_id']}_{superset_name}")
-        if st.button(
-            f"▶ Start Rest Timer ({rest_seconds}s)",
-            key = f"(light_rest_button{session['session_id']}_{superset_name}"
-        ):
-            run_rest_timer(rest_seconds, label="Set", next_item=None,
-                           skip_key=f"light_rest_skip{session['session_id']}_{superset_name}")
+        warmup_rest = max([int(s.get("rest", 60)) for s in warmup_sets], default=60)
+        warmup_rest = st.number_input("Warmup Rest (seconds)", min_value=10, max_value=600, value=warmup_rest, step=10)
+        if st.button(f"▶ Start Warmup Rest Timer ({warmup_rest}s)"):
+            run_rest_timer(warmup_rest, label="Warmup Set", next_item=None,
+                           skip_key=f"warmup_rest_{session['session_id']}")
             
         working_df, working_ids = render_block("💪 Main Lifts", working_sets)
+
+        # warmup timer
+        working_rest = max([int(s.get("rest", 60)) for s in working_sets], default=120)
+        working_rest = st.number_input("Working Rest (seconds)", min_value=10, max_value=600, value=working_rest, step=10)
+        if st.button(f"▶ Start Working Rest Timer ({warmup_rest}s)"):
+            run_rest_timer(warmup_rest, label="Working Set", next_item=None,
+                           skip_key=f"working_rest_{session['session_id']}")
 
 
         if warmup_df is not None:
