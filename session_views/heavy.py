@@ -151,15 +151,15 @@ def render(session):
 
         # Detect newly completed sets and show timer
         for i, done in enumerate(edited_df["Done"]):
-            if done and not df.loc[i, "Done"]:  # Newly marked complete
+            #if done and not df.loc[i, "Done"]:  # Newly marked complete
   
-                rest_seconds = int(df.loc[i, "Rest"])
-                set_number = edited_df.loc[i, "Set"]
-                next_item = f"Next Set" if i + 1 < len(df) else None
+             #   rest_seconds = int(df.loc[i, "Rest"])
+             #   set_number = edited_df.loc[i, "Set"]
+             #   next_item = f"Next Set" if i + 1 < len(df) else None
 
                 # ✅ Use unified timer
-                run_rest_timer(rest_seconds, label=f"Set {set_number}", next_item=next_item,
-                               skip_key=f"rest_{session['session_id']}_{set_number}")
+              #  run_rest_timer(rest_seconds, label=f"Set {set_number}", next_item=next_item,
+             #                  skip_key=f"rest_{session['session_id']}_{set_number}")
 
         return edited_df, df["ID"].tolist()
 
@@ -179,6 +179,23 @@ def render(session):
         if working_df is not None:
             all_dfs.append((ex_name, working_df, working_ids))
         
+
+    # Calculate rest times from Supabase data
+    warmup_rest = max([int(s.get("rest", 60)) for s in warmup_sets], default=60)
+    working_rest = max([int(s.get("rest", 90)) for s in working_sets], default=90)
+    
+    st.markdown("---")
+    st.subheader("Rest Timers")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button(f"▶ Start Warmup Rest Timer ({warmup_rest}s)"):
+            run_rest_timer(warmup_rest, label="Warmup Rest", next_item="Start Working Sets",
+                           skip_key=f"warmup_rest_{session['session_id']}")
+    with col2:
+        if st.button(f"▶ Start Working Rest Timer ({working_rest}s)"):
+            run_rest_timer(working_rest, label="Working Rest", next_item="Next Set",
+                           skip_key=f"working_rest_{session['session_id']}")
 
     # Back to Dashboard button with save logic
       
