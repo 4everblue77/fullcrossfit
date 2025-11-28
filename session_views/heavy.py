@@ -198,6 +198,7 @@ def render(session):
                            skip_key=f"working_rest_{session['session_id']}")
 
     with col3:
+        st.write("Custom Timer")
         custom_rest = st.number_input("Custom Rest (seconds)", min_value=10, max_value=600, value=120, step=10)
         if st.button(f"▶ Custom Rest ({custom_rest}s)"):
             run_rest_timer(custom_rest, label="Custom Rest", next_item=None,
