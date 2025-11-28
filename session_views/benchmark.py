@@ -60,7 +60,7 @@ def render(session):
 
         st.markdown(
             f"""
-            <div style="position:relative; width:100%; height:800; overflow:hidden;">
+            <div style=" width:100%; height:800; overflow:hidden;">
                 <iframe>
                     {wodwell_url}
                 </iframe>
