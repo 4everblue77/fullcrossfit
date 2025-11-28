@@ -40,12 +40,8 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
         
         # ✅ Beep on last 3 seconds
         if remaining <= 3:
-            st.markdown("""
-            <style>audio { display: none; }</style>
-            <audio autoplay>
-                https://actions.google.com/sounds/v1/alarms/beep_short.ogg
-            </audio>
-            """, unsafe_allow_html=True)
+            st.audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg", format="audio/ogg", autoplay=True)
+
 
         time.sleep(1)
     else:         
