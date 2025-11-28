@@ -58,18 +58,6 @@ def render(session):
         st.markdown(f"[View on WODwell]({wodwell_url})")
 
 
-        st.markdown(
-            f"""
-            
-            <iframe>
-                {wodwell_url} width:100%; height:800;
-            </iframe>
-            
-            """,
-            unsafe_allow_html=True
-        )
-
-
 
 
     # Timer placeholders
