@@ -177,7 +177,7 @@ def render(session):
         warmup_rest = max([int(s.get("rest", 60)) for s in warmup_sets], default=60)
         warmup_rest = st.number_input("Warmup Rest (seconds)", min_value=10, max_value=600, value=warmup_rest, step=10)
         if st.button(f"▶ Start Warmup Rest Timer ({warmup_rest}s)"):
-            run_rest_timer(warmup_rest, label="Warmup Rest", next_item=None,
+            run_rest_timer(warmup_rest, label="Warmup Set", next_item=None,
                            skip_key=f"warmup_rest_{session['session_id']}")
 
         # add working sets
@@ -187,7 +187,7 @@ def render(session):
         working_rest = max([int(s.get("rest", 90)) for s in working_sets], default=90)
         working_rest = st.number_input("Working Rest (seconds)", min_value=10, max_value=600, value=working_rest, step=10)
         if st.button(f"▶ Start Working Rest Timer ({working_rest}s)"):
-            run_rest_timer(working_rest, label="Working Rest", next_item=None,
+            run_rest_timer(working_rest, label="Working Set", next_item=None,
                            skip_key=f"working_rest_{session['session_id']}")
 
         
