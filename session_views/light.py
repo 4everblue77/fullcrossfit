@@ -72,7 +72,7 @@ def render_superset_block(superset_name, superset_sets,session):
         run_rest_timer(rest_seconds, label="Set", next_item=None,
                        skip_key=f"light_rest{session['session_id']}_{superset_name}")
     return edited_df, df["ID"].tolist()
-
+ 
 # --- Main Render ---
 def render(session):
     st.title("💡 Light Session")
