@@ -29,7 +29,7 @@ def parse_reps_and_weight(note, one_rm):
     suggested_weight = round(one_rm * (pct / 100), 2) if pct > 0 and one_rm > 0 else None
     return reps, suggested_weight
 
-def render_superset_block(superset_name, superset_sets):
+def render_superset_block(superset_name, superset_sets,session):
     """Render a superset block with both exercises grouped."""
     st.markdown(f"### {superset_name}")
     data = []
@@ -104,7 +104,7 @@ def render(session):
 
     all_dfs = []
     for superset_name, superset_sets in superset_groups.items():
-        edited_df, ids = render_superset_block(superset_name, superset_sets)
+        edited_df, ids = render_superset_block(superset_name, superset_sets,session)
         if edited_df is not None:
             all_dfs.append((superset_name, edited_df, ids))
 
