@@ -34,8 +34,8 @@ def render(session):
 
 
 
-    workout_name = wod_data.get("text", "Unnamed WOD")
-    workout_type = wod_data.get("workout_type", "Unknown")
+    workout_name = wod_data.get("name", "Unnamed WOD")
+    workout_type = wod_data.get("type", "Unknown")
     estimated_time = wod_data.get("estimated_time", "N/A")
     beginner = wod_data.get("beginner", "")
     intermediate = wod_data.get("intermediate", "")
