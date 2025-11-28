@@ -46,14 +46,10 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
 
 
 
-            # ✅ Play beep sound and hide the player
-            beep_url = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
-            st.markdown("""
-            <style>
-            audio { display: none; }
-            </style>
-            """, unsafe_allow_html=True)
-            st.audio(beep_url, format="audio/ogg", autoplay=True)
+                # ✅ Play beep sound and hide the player
+                beep_url = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+
+                st.audio(beep_url, format="audio/ogg", autoplay=True)
 
 
 
