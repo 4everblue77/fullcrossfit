@@ -55,14 +55,23 @@ def render(session):
         timer_placeholder = st.empty()
         
         for i, ex in enumerate(exercises):
-            next_ex_name = exercises[i+1]['exercise_name'] if i+1 < len(exercises) else None
+            
+            # Update progress dynamically
+            completed_exercises = i  # or count from Supabase if needed
+            progress_placeholder.progress(completed_exercises / len(exercises))
+            progress_placeholder.markdown(f"**Progress:** {completed_exercises}/{len(exercises)} exercises completed")
         
+            # Clear previous exercise
+            current_placeholder.empty()
+            next_placeholder.empty()
+         
             # Show current and next exercise dynamically
+            next_ex_name = exercises[i+1]['exercise_name'] if i+1 < len(exercises) else None
             current_placeholder.subheader(f"Current: {ex['exercise_name']}")
             next_placeholder.info(f"Next: {next_ex_name if next_ex_name else 'None'}")
         
             # Exercise phase
-            run_rest_timer(int(ex.get("duration", 30)), label=ex['exercise_name'], next_item=next_ex_name, skip_key=f"skip_ex_{ex['id']}")
+            run_rest_timer(int(ex.get("duration", 30)), label=None, next_item=next_ex_name, skip_key=f"skip_ex_{ex['id']}")
             supabase.table("plan_session_exercises").update({"completed": True}).eq("id", ex["id"]).execute()
         
             # Clear previous exercise after completion
@@ -72,7 +81,7 @@ def render(session):
         
             # Rest phase
             if next_ex_name:
-                run_rest_timer(int(ex.get("rest", 30)), label="Rest", next_item=next_ex_name, skip_key=f"skip_rest_{ex['id']}")
+                run_rest_timer(int(ex.get("rest", 30)), label=None, next_item=next_ex_name, skip_key=f"skip_rest_{ex['id']}")
         
 
         # Mark session complete
