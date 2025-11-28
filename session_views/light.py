@@ -65,37 +65,12 @@ def render_superset_block(superset_name, superset_sets):
         key=f"editor_{superset_name}"
     )
 
-    # Rest timer logic
-    # ✅ Only start timer when ALL exercises in this superset are completed
-    if all(edited_df["Done"]) and not all(df["Done"]):
-        rest_seconds = int(df["Rest"].iloc[0])  # use first row's rest value
-        status_placeholder = st.empty()
-        timer_placeholder = st.empty()
-        progress_placeholder = st.empty()
-        skip_placeholder = st.empty()
-        status_placeholder.markdown("<h4>✅ Superset completed! Rest timer:</h4>", unsafe_allow_html=True)
-        skip_button_key = f"skip_rest_{superset_name}"
-        skip_state_key = f"skip_state_{superset_name}"
-        skip = skip_placeholder.button("⏭ Skip Rest", key=skip_button_key)
-        if skip:
-            st.session_state[skip_state_key] = True
-        for remaining in range(rest_seconds, 0, -1):
-            if st.session_state.get(skip_state_key, False):
-                timer_placeholder.markdown("<h3 style='color:#ff4b4b;'>⏭ Timer skipped! Ready for next superset.</h3>", unsafe_allow_html=True)
-                break
-            mins, secs = divmod(remaining, 60)
-            timer_placeholder.markdown(f"<h1 style='text-align:center; color:#28a745;'>⏳ {mins:02d}:{secs:02d}</h1>", unsafe_allow_html=True)
-            progress_placeholder.progress((rest_seconds - remaining) / rest_seconds)
-            time.sleep(1)
-        else:
-            if not st.session_state.get(skip_state_key, False):
-                timer_placeholder.markdown("<h3 style='color:#28a745;'>🔥 Ready for next superset!</h3>", unsafe_allow_html=True)
-        status_placeholder.empty()
-        timer_placeholder.empty()
-        progress_placeholder.empty()
-        skip_placeholder.empty()
-
-
+    # timer
+    rest_seconds = int(df["Rest"].iloc[0])  # use first row's rest value
+    rest_seconds = st.number_input("Rest (seconds)", min_value=10, max_value=600, value=rest_seconds, step=10)
+    if st.button(f"▶ Start Rest Timer ({rest_seconds}s)"):
+        run_rest_timer(rest_seconds, label="Set", next_item=None,
+                       skip_key=f"light_rest{session['session_id']}")
     return edited_df, df["ID"].tolist()
 
 # --- Main Render ---
