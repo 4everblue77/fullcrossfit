@@ -115,9 +115,17 @@ def render(session):
         .order("timestamp", desc=True).execute().data
 
     if results:
+
         st.subheader("Previous Results")
         for r in results:
-            st.write(f"{r['timestamp']}: {r['result_details']} (Rating: {r['rating']}/100)")
+            # Format timestamp nicely
+            ts = datetime.fromisoformat(r["timestamp"]).strftime("%d %b %Y, %H:%M")
+            
+            # Extract details from JSON
+            details = ", ".join([f"{k.capitalize()}: {v}" for k, v in r["result_details"].items()])
+            
+            st.write(f"**{ts}** — {details}  |  **Rating:** {r['rating']}/100")
+        
 
     if st.button("⬅ Back to Dashboard", key='back_to_dashboard_btn'):
         st.session_state.selected_session = None
