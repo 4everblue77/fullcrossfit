@@ -170,49 +170,39 @@ def render(session):
         warmup_sets = [s for s in sets if str(s.get("notes", "")).lower().startswith("warmup")]
         working_sets = [s for s in sets if s not in warmup_sets]
 
+        # add warmup exercises
         warmup_df, warmup_ids = render_block("🔥 Warmup", warmup_sets)
         
-        #warmup timer
+        # warmup timer
         warmup_rest = max([int(s.get("rest", 60)) for s in warmup_sets], default=60)
-        #st.write("Warmup Timer")
         warmup_rest = st.number_input("Warmup Rest (seconds)", min_value=10, max_value=600, value=warmup_rest, step=10)
         if st.button(f"▶ Start Warmup Rest Timer ({warmup_rest}s)"):
             run_rest_timer(warmup_rest, label="Warmup Rest", next_item=None,
                            skip_key=f"warmup_rest_{session['session_id']}")
+
+        # add working sets
         working_df, working_ids = render_block("💪 Working", working_sets)
 
+        # working sets timer
+        working_rest = max([int(s.get("rest", 90)) for s in working_sets], default=90)
+        working_rest = st.number_input("Working Rest (seconds)", min_value=10, max_value=600, value=working_rest, step=10)
+        if st.button(f"▶ Start Working Rest Timer ({working_rest}s)"):
+            run_rest_timer(working_rest, label="Working Rest", next_item=None,
+                           skip_key=f"working_rest_{session['session_id']}")
 
+        
         if warmup_df is not None:
             all_dfs.append((ex_name, warmup_df, warmup_ids))
         if working_df is not None:
             all_dfs.append((ex_name, working_df, working_ids))
-        
+
+    
 
     # Calculate rest times from Supabase data
     warmup_rest = max([int(s.get("rest", 60)) for s in warmup_sets], default=60)
     working_rest = max([int(s.get("rest", 90)) for s in working_sets], default=90)
     
-    st.markdown("---")
-    st.subheader("Rest Timers")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.write("Warmup Timer")
-        warmup_rest = st.number_input("Warmup Rest (seconds)", min_value=10, max_value=600, value=warmup_rest, step=10)
-        if st.button(f"▶ Start Warmup Rest Timer ({warmup_rest}s)"):
-            run_rest_timer(warmup_rest, label="Warmup Rest", next_item=None,
-                           skip_key=f"warmup_rest_{session['session_id']}")
-    with col2:
-        if st.button(f"▶ Start Working Rest Timer ({working_rest}s)"):
-            run_rest_timer(working_rest, label="Working Rest", next_item=None,
-                           skip_key=f"working_rest_{session['session_id']}")
 
-    with col3:
-        st.write("Custom Timer")
-        custom_rest = st.number_input("Custom Rest (seconds)", min_value=10, max_value=600, value=120, step=10)
-        if st.button(f"▶ Custom Rest ({custom_rest}s)"):
-            run_rest_timer(custom_rest, label="Custom Rest", next_item=None,
-                           skip_key=f"custom_rest_{session['session_id']}")
 
     # Back to Dashboard button with save logic
       
