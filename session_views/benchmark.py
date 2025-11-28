@@ -92,21 +92,28 @@ def render(session):
 
     if st.button("Submit Result", key="submit_result_btn"):
         rating = calculate_rating(workout_type, user_result, intermediate)
-        supabase.table("benchmark_results").insert({
-            "benchmark_wod_id": wod_data["id"],
+
+        supabase.table("wod_results").insert({
             "session_id": session["session_id"],
+            "benchmark_id": wod_data["id"],  # new column
             "user_id": st.session_state.get("user_id", 1),
-            "result_details": user_result,
-            "rating": rating,
-            "timestamp": datetime.utcnow().isoformat()
+            "result_details": user_result,   # JSONB field
+            "rating": rating
+            # timestamp omitted because DEFAULT CURRENT_TIMESTAMP handles it
         }).execute()
+
         supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
         st.success(f"Result saved! Your rating: {rating}/100")
         st.session_state.selected_session = None
         st.rerun()
 
     # Display previous benchmark results
-    results = supabase.table("benchmark_results").select("result_details, rating, timestamp").eq("benchmark_wod_id", wod_data["id"]).eq("user_id", st.session_state.get("user_id", 1)).order("timestamp", desc=True).execute().data
+   
+    results = supabase.table("wod_results").select("result_details, rating, timestamp") \
+        .eq("benchmark_id", wod_data["id"]) \
+        .eq("user_id", st.session_state.get("user_id", 1)) \
+        .order("timestamp", desc=True).execute().data
+
     if results:
         st.subheader("Previous Results")
         for r in results:
