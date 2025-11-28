@@ -4,6 +4,7 @@ import time
 from supabase import create_client
 from collections import defaultdict
 from datetime import datetime
+from utils.timer import run_rest_timer
 
 # Supabase setup
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
