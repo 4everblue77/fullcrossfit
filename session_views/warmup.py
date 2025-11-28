@@ -49,20 +49,31 @@ def render(session):
 
     # Execute session if running and not paused
     if st.session_state.warmup_running and not st.session_state.warmup_paused:
+
+        current_placeholder = st.empty()
+        next_placeholder = st.empty()
+        timer_placeholder = st.empty()
+        
         for i, ex in enumerate(exercises):
             next_ex_name = exercises[i+1]['exercise_name'] if i+1 < len(exercises) else None
-
-            # Display current and next exercise before timer
-            st.subheader(f"Current: {ex['exercise_name']}")
-            st.info(f"Next: {next_ex_name if next_ex_name else 'None'}")
-
+        
+            # Show current and next exercise dynamically
+            current_placeholder.subheader(f"Current: {ex['exercise_name']}")
+            next_placeholder.info(f"Next: {next_ex_name if next_ex_name else 'None'}")
+        
             # Exercise phase
             run_rest_timer(int(ex.get("duration", 30)), label=ex['exercise_name'], next_item=next_ex_name, skip_key=f"skip_ex_{ex['id']}")
             supabase.table("plan_session_exercises").update({"completed": True}).eq("id", ex["id"]).execute()
-
-            # Rest phase (if not last exercise)
+        
+            # Clear previous exercise after completion
+            current_placeholder.empty()
+            next_placeholder.empty()
+            timer_placeholder.empty()
+        
+            # Rest phase
             if next_ex_name:
                 run_rest_timer(int(ex.get("rest", 30)), label="Rest", next_item=next_ex_name, skip_key=f"skip_rest_{ex['id']}")
+        
 
         # Mark session complete
         supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
