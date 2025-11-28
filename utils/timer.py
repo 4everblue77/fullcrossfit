@@ -44,13 +44,11 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
                 timer_placeholder.markdown(f"<h2 style='text-align:center; color:#ff4b4b;'>⏳ {i}</h2>", unsafe_allow_html=True)
                 time.sleep(1)
 
-            # ✅ Play beep sound
-            st.markdown("""
-            <script>
-                var audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
-                audio.play();
-            </script>
-            """, unsafe_allow_html=True)
+
+            # ✅ Play beep sound using st.audio
+            beep_url = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+            st.audio(beep_url, format="audio/ogg", autoplay=True)
+
 
             timer_placeholder.markdown("<h3 style='color:#28a745;'>🔥 Ready for next!</h3>", unsafe_allow_html=True)
 
