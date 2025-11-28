@@ -174,7 +174,7 @@ def render(session):
         
         #warmup timer
         warmup_rest = max([int(s.get("rest", 60)) for s in warmup_sets], default=60)
-        st.write("Warmup Timer")
+        #st.write("Warmup Timer")
         warmup_rest = st.number_input("Warmup Rest (seconds)", min_value=10, max_value=600, value=warmup_rest, step=10)
         if st.button(f"▶ Start Warmup Rest Timer ({warmup_rest}s)"):
             run_rest_timer(warmup_rest, label="Warmup Rest", next_item=None,
