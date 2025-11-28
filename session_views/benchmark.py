@@ -57,13 +57,18 @@ def render(session):
     if wodwell_url:
         st.markdown(f"[View on WODwell]({wodwell_url})")
 
+
         st.markdown(
             f"""
             <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden;">
-                <iframe src="{wodwell_url}" style="position:absolute       unsafe_allow_html=True</iframe>
+                <iframe>
+                    {wodwell_url}
+                </iframe>
             </div>
-            """
+            """,
+            unsafe_allow_html=True
         )
+
 
 
 
