@@ -175,7 +175,7 @@ def render(session):
         # warmup timer
         working_rest = max([int(s.get("rest", 60)) for s in working_sets], default=120)
         working_rest = st.number_input("Working Rest (seconds)", min_value=10, max_value=600, value=working_rest, step=10)
-        if st.button(f"▶ Start Working Rest Timer ({warmup_rest}s)"):
+        if st.button(f"▶ Start Working Rest Timer ({working_rest}s)"):
             run_rest_timer(warmup_rest, label="Working Set", next_item=None,
                            skip_key=f"working_rest_{session['session_id']}")
 
