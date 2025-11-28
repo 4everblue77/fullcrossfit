@@ -50,9 +50,12 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
             beep_url = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
 
             st.audio(beep_url, format="audio/ogg", autoplay=True)
-
-
-
+            st.markdown("""
+            <style>
+            audio { display: none; }
+            </style>
+            """, unsafe_allow_html=True)
+            
             timer_placeholder.markdown("<h3 style='color:#28a745;'>🔥 Ready for next!</h3>", unsafe_allow_html=True)
 
     # Clear placeholders
