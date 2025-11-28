@@ -147,7 +147,9 @@ def render(session):
                 "Done": st.column_config.CheckboxColumn("Done")
             }
         )
+        
 
+            
         # Detect newly completed sets and show timer
         for i, done in enumerate(edited_df["Done"]):
             if done and not df.loc[i, "Done"]:  # Newly marked complete
@@ -208,6 +210,17 @@ def render(session):
         working_sets = [s for s in sets if s not in warmup_sets]
 
         warmup_df, warmup_ids = render_block("🔥 Technique Warmup", warmup_sets)
+
+        # warmup timer
+        rest_seconds = int(df["Rest"].iloc[0])  # use first row's rest value
+        rest_seconds = st.number_input("Rest (seconds)", min_value=10, max_value=600, value=rest_seconds, step=10, key=f"light_rest_input{session['session_id']}_{superset_name}")
+        if st.button(
+            f"▶ Start Rest Timer ({rest_seconds}s)",
+            key = f"(light_rest_button{session['session_id']}_{superset_name}"
+        ):
+            run_rest_timer(rest_seconds, label="Set", next_item=None,
+                           skip_key=f"light_rest_skip{session['session_id']}_{superset_name}")
+            
         working_df, working_ids = render_block("💪 Main Lifts", working_sets)
 
 
