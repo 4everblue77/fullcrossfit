@@ -20,7 +20,7 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
 
     # Initial status
     next_text = f" → Next: {next_item}" if next_item else ""
-    status_placeholder.markdown(f"<h4>✅ {label} completed! Rest timer:{next_text}</h4>", unsafe_allow_html=True)
+    status_placeholder.markdown(f"<h4>✅ {label} -> {next_text}</h4>", unsafe_allow_html=True)
 
     # Skip button
     if skip_key not in st.session_state:
