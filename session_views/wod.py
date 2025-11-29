@@ -77,55 +77,6 @@ def render(session):
         if rest_match:
             rest_minutes = int(rest_match.group(1))
 
-    # --- Result Recording Section ---
-    st.subheader("Enter Your WOD Result")
-    previous_result = supabase.table('wod_results').select('result_details', 'rating').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
-    if previous_result:
-        prev = previous_result[0]
-        st.info(f"Previously submitted result: {prev['result_details']} (Rating: {prev['rating']}/100)")
-
-    performance_targets = session_data.get("performance_targets", {})
-    user_result = {}
-    if wod_type == "AMRAP":
-        user_result["rounds"] = st.number_input("Rounds Completed", min_value=0, step=1)
-    elif wod_type == "For Time":
-        user_result["time_min"] = st.number_input("Time Taken (minutes)", min_value=0.0, step=0.1)
-    elif wod_type == "Interval":
-        user_result["intervals_completed"] = st.number_input("Intervals Completed", min_value=0, step=1)
-    elif wod_type == "Tabata":
-        user_result["avg_reps_per_round"] = st.number_input("Average Reps per Round", min_value=0, step=1)
-    elif wod_type in ["Death by", "EMOM", "Alternating EMOM"]:
-        user_result["rounds_completed"] = st.number_input("Rounds Completed", min_value=0, step=1)
-    else:
-        user_result["score"] = st.number_input("Score", min_value=0, step=1)
-
-    if st.button("Submit Result"):
-        rating = calculate_rating(wod_type, user_result, performance_targets)
-        existing_result = supabase.table('wod_results').select('id').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
-        if existing_result:
-            supabase.table('wod_results').update({
-                'result_details': user_result,
-                'rating': rating,
-                'timestamp': datetime.utcnow().isoformat()
-            }).eq('id', existing_result[0]['id']).execute()
-            st.success(f'Result updated! Your rating: {rating}/100')
-        else:
-            supabase.table('wod_results').insert({
-                'session_id': session['session_id'],
-                'user_id': st.session_state.get('user_id', 1),
-                'result_details': user_result,
-                'rating': rating,
-                'timestamp': datetime.utcnow().isoformat()
-            }).execute()
-            st.success(f'Result saved! Your rating: {rating}/100')
-        supabase.table('plan_sessions').update({'completed': True}).eq('id', session['session_id']).execute()
-
-    # Display historical performance
-    results = supabase.table("wod_results").select("rating, timestamp").eq("user_id", st.session_state.get("user_id", 1)).order("timestamp", desc=True).execute().data
-    if results:
-        st.subheader("Performance Over Time")
-        st.line_chart([r["rating"] for r in results])
-
     # --- Global Timer Logic ---
     progress_placeholder = st.empty()
     current_placeholder = st.empty()
@@ -186,6 +137,57 @@ def render(session):
                 elapsed += 60
 
             progress_placeholder.progress(min(elapsed / total_seconds, 1.0))
+
+    # --- Result Recording Section ---
+    st.subheader("Enter Your WOD Result")
+    previous_result = supabase.table('wod_results').select('result_details', 'rating').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
+    if previous_result:
+        prev = previous_result[0]
+        st.info(f"Previously submitted result: {prev['result_details']} (Rating: {prev['rating']}/100)")
+
+    performance_targets = session_data.get("performance_targets", {})
+    user_result = {}
+    if wod_type == "AMRAP":
+        user_result["rounds"] = st.number_input("Rounds Completed", min_value=0, step=1)
+    elif wod_type == "For Time":
+        user_result["time_min"] = st.number_input("Time Taken (minutes)", min_value=0.0, step=0.1)
+    elif wod_type == "Interval":
+        user_result["intervals_completed"] = st.number_input("Intervals Completed", min_value=0, step=1)
+    elif wod_type == "Tabata":
+        user_result["avg_reps_per_round"] = st.number_input("Average Reps per Round", min_value=0, step=1)
+    elif wod_type in ["Death by", "EMOM", "Alternating EMOM"]:
+        user_result["rounds_completed"] = st.number_input("Rounds Completed", min_value=0, step=1)
+    else:
+        user_result["score"] = st.number_input("Score", min_value=0, step=1)
+
+    if st.button("Submit Result"):
+        rating = calculate_rating(wod_type, user_result, performance_targets)
+        existing_result = supabase.table('wod_results').select('id').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
+        if existing_result:
+            supabase.table('wod_results').update({
+                'result_details': user_result,
+                'rating': rating,
+                'timestamp': datetime.utcnow().isoformat()
+            }).eq('id', existing_result[0]['id']).execute()
+            st.success(f'Result updated! Your rating: {rating}/100')
+        else:
+            supabase.table('wod_results').insert({
+                'session_id': session['session_id'],
+                'user_id': st.session_state.get('user_id', 1),
+                'result_details': user_result,
+                'rating': rating,
+                'timestamp': datetime.utcnow().isoformat()
+            }).execute()
+            st.success(f'Result saved! Your rating: {rating}/100')
+        supabase.table('plan_sessions').update({'completed': True}).eq('id', session['session_id']).execute()
+
+    # Display historical performance
+    results = supabase.table("wod_results").select("rating, timestamp").eq("user_id", st.session_state.get("user_id", 1)).order("timestamp", desc=True).execute().data
+    if results:
+        st.subheader("Performance Over Time")
+        st.line_chart([r["rating"] for r in results])
+
+
 
         supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
         st.success("WOD completed!")
