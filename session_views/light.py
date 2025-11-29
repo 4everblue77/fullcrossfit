@@ -73,7 +73,7 @@ def render_superset_block(superset_name, superset_sets,session):
         f"▶ Start Rest Timer ({rest_seconds}s)",
         key = f"(light_rest_button{session['session_id']}_{superset_name}"
     ):
-        run_rest_timer(rest_seconds, label="Set", next_item=None,
+        run_rest_timer(rest_seconds, label="Rest", next_item=None,
                        skip_key=f"light_rest_skip{session['session_id']}_{superset_name}")
         
     return edited_df, df["ID"].tolist()
