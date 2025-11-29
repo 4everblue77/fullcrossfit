@@ -138,6 +138,12 @@ def render(session):
 
             progress_placeholder.progress(min(elapsed / total_seconds, 1.0))
 
+    
+        supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
+        st.success("WOD completed!")
+        st.session_state.selected_session = None
+        st.rerun()
+
     # --- Result Recording Section ---
     st.subheader("Enter Your WOD Result")
     previous_result = supabase.table('wod_results').select('result_details', 'rating').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
@@ -189,7 +195,3 @@ def render(session):
 
 
 
-        supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
-        st.success("WOD completed!")
-        st.session_state.selected_session = None
-        st.rerun()
