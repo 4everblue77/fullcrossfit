@@ -79,28 +79,6 @@ def render(session):
 
 
 
-    if st.button("Submit Result"):
-        rating = calculate_rating(wod_type, user_result, performance_targets)
-        existing_result = supabase.table('wod_results').select('id').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
-        if existing_result:
-            supabase.table('wod_results').update({
-                'result_details': user_result,
-                'notes': notes,
-                'rating': rating,
-                'timestamp': datetime.utcnow().isoformat()
-            }).eq('id', existing_result[0]['id']).execute()
-            st.success(f'Result updated! Your rating: {rating}/100')
-        else:
-            supabase.table('wod_results').insert({
-                'session_id': session['session_id'],
-                'user_id': st.session_state.get('user_id', 1),
-                'result_details': user_result,
-                'notes': notes,
-                'rating': rating,
-                'timestamp': datetime.utcnow().isoformat()
-            }).execute()
-            st.success(f'Result saved! Your rating: {rating}/100')
-        supabase.table('plan_sessions').update({'completed': True}).eq('id', session['session_id']).execute()
 
     # --- Global Timer Logic ---
     progress_placeholder = st.empty()
@@ -195,7 +173,29 @@ def render(session):
 
     notes = st.text_area("Notes (optional)")
 
-    supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
-    st.success("WOD completed!")
-    st.session_state.selected_session = None
-    st.rerun()
+
+    if st.button("Submit Result"):
+        rating = calculate_rating(wod_type, user_result, performance_targets)
+        existing_result = supabase.table('wod_results').select('id').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
+        if existing_result:
+            supabase.table('wod_results').update({
+                'result_details': user_result,
+                'notes': notes,
+                'rating': rating,
+                'timestamp': datetime.utcnow().isoformat()
+            }).eq('id', existing_result[0]['id']).execute()
+            st.success(f'Result updated! Your rating: {rating}/100')
+        else:
+            supabase.table('wod_results').insert({
+                'session_id': session['session_id'],
+                'user_id': st.session_state.get('user_id', 1),
+                'result_details': user_result,
+                'notes': notes,
+                'rating': rating,
+                'timestamp': datetime.utcnow().isoformat()
+            }).execute()
+            st.success(f'Result saved! Your rating: {rating}/100')
+        supabase.table('plan_sessions').update({'completed': True}).eq('id', session['session_id']).execute()
+        st.success("WOD completed!")
+        st.session_state.selected_session = None
+        st.rerun()
