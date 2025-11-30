@@ -130,7 +130,7 @@ if st.session_state.selected_session is None:
     if day_data.get("Rest"):
         st.markdown("**Rest Day 💤**")
     else:
-        st.markdown(f"### Sessions for {selected_day}")
+        st.markdown(f"### Sessions for {selected_day} ({day.get('date', '')})")
 
     # ✅ Enforce session order
     session_order = ["Warmup", "Heavy", "Olympic", "Run", "WOD", "Benchmark", "Light", "Skill", "Cooldown"]
