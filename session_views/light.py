@@ -51,7 +51,7 @@ def render_superset_block(superset_name, superset_sets,session):
 
     df = pd.DataFrame(data)
     edited_df = st.data_editor(
-        df.drop(columns=["ID", "Rest"]),
+        df.drop(columns=["ID", "Rest","Set"]),
         num_rows="fixed",
         width='stretch',
         hide_index=True,
