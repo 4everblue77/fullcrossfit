@@ -195,7 +195,7 @@ def render(session):
 
     notes = st.text_area("Notes (optional)")
 
-        supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
-        st.success("WOD completed!")
-        st.session_state.selected_session = None
-        st.rerun()
+    supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
+    st.success("WOD completed!")
+    st.session_state.selected_session = None
+    st.rerun()
