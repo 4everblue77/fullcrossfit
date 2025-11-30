@@ -59,7 +59,8 @@ def render(session):
     exercises = [line.strip("- ") for line in details.split("\n") if line.strip().startswith("-")]
 
     st.title(f"🔥 {wod_type} Session")
-    st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
+    st.markdown(f"**Week:** {session['week']}  
+ **Day:** {session['day']}")
     st.write(f"**Details:** {details}")
 
     # Detect duration and intervals
@@ -76,6 +77,56 @@ def render(session):
             work_minutes = int(work_match.group(1))
         if rest_match:
             rest_minutes = int(rest_match.group(1))
+
+    # --- Result Recording Section ---
+    st.subheader("Enter Your WOD Result")
+    previous_result = supabase.table('wod_results').select('result_details', 'rating').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
+    if previous_result:
+        prev = previous_result[0]
+        st.info(f"Previously submitted result: {prev['result_details']} (Rating: {prev['rating']}/100)")
+
+    performance_targets = session_data.get("performance_targets", {})
+    user_result = {}
+    if wod_type == "AMRAP":
+        user_result["rounds"] = st.number_input("Rounds Completed", min_value=0, step=1)
+        user_result["reps"] = st.number_input("Additional Reps", min_value=0, step=1)
+    elif wod_type == "For Time":
+        user_result["time_min"] = st.number_input("Time Taken (minutes)", min_value=0.0, step=0.1)
+    elif wod_type == "Interval":
+        user_result["intervals_completed"] = st.number_input("Intervals Completed", min_value=0, step=1)
+        user_result["rounds"] = st.number_input("Total Rounds Completed", min_value=0, step=1)
+        user_result["reps"] = st.number_input("Additional Reps", min_value=0, step=1)
+    elif wod_type == "Tabata":
+        user_result["avg_reps_per_round"] = st.number_input("Average Reps per Round", min_value=0, step=1)
+    elif wod_type in ["Death by", "EMOM", "Alternating EMOM"]:
+        user_result["rounds_completed"] = st.number_input("Rounds Completed", min_value=0, step=1)
+    else:
+        user_result["score"] = st.number_input("Score", min_value=0, step=1)
+
+    notes = st.text_area("Notes (optional)")
+
+    if st.button("Submit Result"):
+        rating = calculate_rating(wod_type, user_result, performance_targets)
+        existing_result = supabase.table('wod_results').select('id').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
+        if existing_result:
+            supabase.table('wod_results').update({
+                'result_details': user_result,
+                'notes': notes,
+                'rating': rating,
+                'timestamp': datetime.utcnow().isoformat()
+            }).eq('id', existing_result[0]['id']).execute()
+            st.success(f'Result updated! Your rating: {rating}/100')
+        else:
+            supabase.table('wod_results').insert({
+                'session_id': session['session_id'],
+                'user_id': st.session_state.get('user_id', 1),
+                'result_details': user_result,
+                'notes': notes,
+                'rating': rating,
+                'timestamp': datetime.utcnow().isoformat()
+            }).execute()
+            st.success(f'Result saved! Your rating: {rating}/100')
+        supabase.table('plan_sessions').update({'completed': True}).eq('id', session['session_id']).execute()
 
     # --- Global Timer Logic ---
     progress_placeholder = st.empty()
@@ -101,111 +152,43 @@ def render(session):
     if st.session_state.wod_running and not st.session_state.wod_paused:
         total_seconds = (duration_minutes * 60) if duration_minutes else 900
         elapsed = 0
-        for i, ex in enumerate(exercises):
-            next_ex = exercises[i+1] if i+1 < len(exercises) else None
-            progress_placeholder.progress(elapsed / total_seconds)
-            progress_placeholder.markdown(f"**Elapsed:** {elapsed//60} min")
-            current_placeholder.empty()
-            next_placeholder.empty()
-            current_placeholder.subheader(f"Current: {ex}")
-            next_placeholder.info(f"Next: {next_ex if next_ex else 'None'}")
 
-            if wod_type == "AMRAP" and duration_minutes:
-                run_rest_timer(duration_minutes * 60, label="AMRAP", next_item=next_ex, skip_key=f"skip_amrap")
-                elapsed += duration_minutes * 60
-                break
-            elif wod_type in ["For Time", "Chipper", "Ladder"]:
-                run_rest_timer(60, label=ex, next_item=next_ex, skip_key=f"skip_ex_{i}")
-                elapsed += 60
-            elif wod_type == "Interval" and work_minutes and rest_minutes:
-                total_seconds = duration_minutes * 60
-                elapsed = 0
-                interval_count = 0
-            
-                while elapsed < total_seconds:
-                    # Work phase
-                    current_placeholder.subheader(f"Work Interval {interval_count+1}: Complete as many rounds as possible")
-                    next_placeholder.info("Next: Rest")
-                    run_rest_timer(work_minutes * 60, label="Work", next_item="Rest", skip_key=f"skip_work_{interval_count}")
-                    elapsed += work_minutes * 60
-            
-                    # Rest phase
-                    if elapsed < total_seconds:
-                        current_placeholder.subheader("Rest Interval")
-                        next_placeholder.info("Next: Work")
-                        run_rest_timer(rest_minutes * 60, label="Rest", next_item="Work", skip_key=f"skip_rest_{interval_count}")
-                        elapsed += rest_minutes * 60
-    
-                    interval_count += 1
-            elif wod_type == "Tabata":
-                for r in range(8):
-                    run_rest_timer(20, label=f"Round {r+1} Work", next_item="Rest", skip_key=f"skip_tabata_work_{r}")
-                    run_rest_timer(10, label="Rest", next_item=next_ex, skip_key=f"skip_tabata_rest_{r}")
-                    elapsed += 30
-            elif wod_type in ["EMOM", "Alternating EMOM", "Death by"]:
-                for m in range(duration_minutes or 15):
-                    run_rest_timer(60, label=f"Minute {m+1}", next_item=next_ex, skip_key=f"skip_emom_{m}")
-                    elapsed += 60
-            else:
+        if wod_type == "Interval" and work_minutes and rest_minutes:
+            interval_count = 0
+            while elapsed < total_seconds:
+                # Work phase
+                current_placeholder.subheader(f"Work Interval {interval_count+1}: Complete as many rounds/reps as possible")
+                st.write("Exercises:")
+                for ex in exercises:
+                    st.markdown(f"- {ex}")
+                next_placeholder.info("Next: Rest")
+                run_rest_timer(work_minutes * 60, label="Work", next_item="Rest", skip_key=f"skip_work_{interval_count}")
+                elapsed += work_minutes * 60
+
+                # Rest phase
+                if elapsed < total_seconds:
+                    current_placeholder.subheader("Rest Interval")
+                    next_placeholder.info("Next: Work")
+                    run_rest_timer(rest_minutes * 60, label="Rest", next_item="Work", skip_key=f"skip_rest_{interval_count}")
+                    elapsed += rest_minutes * 60
+
+                interval_count += 1
+                progress_placeholder.progress(min(elapsed / total_seconds, 1.0))
+        else:
+            for i, ex in enumerate(exercises):
+                next_ex = exercises[i+1] if i+1 < len(exercises) else None
+                progress_placeholder.progress(elapsed / total_seconds)
+                progress_placeholder.markdown(f"**Elapsed:** {elapsed//60} min")
+                current_placeholder.empty()
+                next_placeholder.empty()
+                current_placeholder.subheader(f"Current: {ex}")
+                next_placeholder.info(f"Next: {next_ex if next_ex else 'None'}")
+
                 run_rest_timer(60, label=ex, next_item=next_ex, skip_key=f"skip_generic_{i}")
                 elapsed += 60
+                progress_placeholder.progress(min(elapsed / total_seconds, 1.0))
 
-            progress_placeholder.progress(min(elapsed / total_seconds, 1.0))
-
-    
         supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
         st.success("WOD completed!")
         st.session_state.selected_session = None
         st.rerun()
-
-    # --- Result Recording Section ---
-    st.subheader("Enter Your WOD Result")
-    previous_result = supabase.table('wod_results').select('result_details', 'rating').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
-    if previous_result:
-        prev = previous_result[0]
-        st.info(f"Previously submitted result: {prev['result_details']} (Rating: {prev['rating']}/100)")
-
-    performance_targets = session_data.get("performance_targets", {})
-    user_result = {}
-    if wod_type == "AMRAP":
-        user_result["rounds"] = st.number_input("Rounds Completed", min_value=0, step=1)
-    elif wod_type == "For Time":
-        user_result["time_min"] = st.number_input("Time Taken (minutes)", min_value=0.0, step=0.1)
-    elif wod_type == "Interval":
-        user_result["intervals_completed"] = st.number_input("Intervals Completed", min_value=0, step=1)
-    elif wod_type == "Tabata":
-        user_result["avg_reps_per_round"] = st.number_input("Average Reps per Round", min_value=0, step=1)
-    elif wod_type in ["Death by", "EMOM", "Alternating EMOM"]:
-        user_result["rounds_completed"] = st.number_input("Rounds Completed", min_value=0, step=1)
-    else:
-        user_result["score"] = st.number_input("Score", min_value=0, step=1)
-
-    if st.button("Submit Result"):
-        rating = calculate_rating(wod_type, user_result, performance_targets)
-        existing_result = supabase.table('wod_results').select('id').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
-        if existing_result:
-            supabase.table('wod_results').update({
-                'result_details': user_result,
-                'rating': rating,
-                'timestamp': datetime.utcnow().isoformat()
-            }).eq('id', existing_result[0]['id']).execute()
-            st.success(f'Result updated! Your rating: {rating}/100')
-        else:
-            supabase.table('wod_results').insert({
-                'session_id': session['session_id'],
-                'user_id': st.session_state.get('user_id', 1),
-                'result_details': user_result,
-                'rating': rating,
-                'timestamp': datetime.utcnow().isoformat()
-            }).execute()
-            st.success(f'Result saved! Your rating: {rating}/100')
-        supabase.table('plan_sessions').update({'completed': True}).eq('id', session['session_id']).execute()
-
-    # Display historical performance
-    results = supabase.table("wod_results").select("rating, timestamp").eq("user_id", st.session_state.get("user_id", 1)).order("timestamp", desc=True).execute().data
-    if results:
-        st.subheader("Performance Over Time")
-        st.line_chart([r["rating"] for r in results])
-
-
-
