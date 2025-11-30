@@ -59,8 +59,7 @@ def render(session):
     exercises = [line.strip("- ") for line in details.split("\n") if line.strip().startswith("-")]
 
     st.title(f"🔥 {wod_type} Session")
-    st.markdown(f"**Week:** {session['week']}  
- **Day:** {session['day']}")
+    st.markdown(f"**Week:** {session['week']}  \n **Day:** {session['day']}")
     st.write(f"**Details:** {details}")
 
     # Detect duration and intervals
