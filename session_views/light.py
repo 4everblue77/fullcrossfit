@@ -129,8 +129,8 @@ def render(session):
                     'id': row_id,
                     'completed': is_done,
                     'actual_weight': edited_df.loc[i, 'Weight'],
-                    'actual_reps': edited_df.loc[i, 'Reps'],
-                    'set_number': edited_df.loc[i, 'Set']
+                    'actual_reps': edited_df.loc[i, 'Reps']
+                    #,'set_number': edited_df.loc[i, 'Set']
                 })
                 if not is_done:
                     all_completed = False
