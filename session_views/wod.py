@@ -155,6 +155,9 @@ def render(session):
         if wod_type == "Interval" and work_minutes and rest_minutes:
             interval_count = 0
             while elapsed < total_seconds:
+                remaining_time = max(total_seconds - elapsed, 0)
+                counter_placeholder.markdown(f"**Intervals Completed:** {interval_count} | **Remaining Time:** {remaining_time//60} min {remaining_time%60}s")
+                
                 # Work phase
                 current_placeholder.subheader(f"Work Interval {interval_count+1}: Complete as many rounds/reps as possible")
                 st.write("Exercises:")
