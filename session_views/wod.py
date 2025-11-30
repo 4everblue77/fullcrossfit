@@ -92,7 +92,6 @@ def render(session):
     elif wod_type == "For Time":
         user_result["time_min"] = st.number_input("Time Taken (minutes)", min_value=0.0, step=0.1)
     elif wod_type == "Interval":
-        user_result["intervals_completed"] = st.number_input("Intervals Completed", min_value=0, step=1)
         user_result["rounds"] = st.number_input("Total Rounds Completed", min_value=0, step=1)
         user_result["reps"] = st.number_input("Additional Reps", min_value=0, step=1)
     elif wod_type == "Tabata":
@@ -154,11 +153,14 @@ def render(session):
         elapsed = 0
 
         if wod_type == "Interval" and work_minutes and rest_minutes:
+
             interval_count = 0
             while elapsed < total_seconds:
                 remaining_time = max(total_seconds - elapsed, 0)
-                counter_placeholder.markdown(f"**Intervals Completed:** {interval_count} | **Remaining Time:** {remaining_time//60} min {remaining_time%60}s")
-                
+                counter_placeholder.markdown(
+                    f"**Intervals Completed:** {interval_count}\n"
+                    f"**Remaining Time:** {remaining_time//60} min {remaining_time%60}s"
+                )
                 # Work phase
                 current_placeholder.subheader(f"Work Interval {interval_count+1}: Complete as many rounds/reps as possible")
                 st.write("Exercises:")
@@ -167,16 +169,16 @@ def render(session):
                 next_placeholder.info("Next: Rest")
                 run_rest_timer(work_minutes * 60, label="Work", next_item="Rest", skip_key=f"skip_work_{interval_count}")
                 elapsed += work_minutes * 60
-
+    
                 # Rest phase
                 if elapsed < total_seconds:
                     current_placeholder.subheader("Rest Interval")
                     next_placeholder.info("Next: Work")
                     run_rest_timer(rest_minutes * 60, label="Rest", next_item="Work", skip_key=f"skip_rest_{interval_count}")
                     elapsed += rest_minutes * 60
-
                 interval_count += 1
                 progress_placeholder.progress(min(elapsed / total_seconds, 1.0))
+
         else:
             for i, ex in enumerate(exercises):
                 next_ex = exercises[i+1] if i+1 < len(exercises) else None
