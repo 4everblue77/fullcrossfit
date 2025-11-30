@@ -143,7 +143,10 @@ if st.session_state.selected_session is None:
         }
         icon = icon_map.get(session_type, "📋")
         indicator = "✅" if session_content.get("completed") else "⚫"
-        button_text = f"{icon} {session_type} {indicator}"
+        
+        focus_muscle = session_content.get("focus_muscle", "")
+        button_text = f"{icon} {session_type} ({focus_muscle}) {indicator}"
+
         if st.button(button_text, key=session_content["session_id"], use_container_width=True):
             st.session_state.selected_session = {
                 "session_id": session_content["session_id"],
