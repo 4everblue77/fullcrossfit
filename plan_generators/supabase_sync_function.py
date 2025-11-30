@@ -49,7 +49,7 @@ def sync_plan_to_supabase(supabase, full_plan, data):
                     "target_muscle": ", ".join(day_data.get("muscles", [])),
                     "duration": int(session_data.get("time", 0)),
                     "details": session_data.get("details", ""),
-                    "focus_muscle": session_content.get("focus_muscle", "")
+                    "focus_muscle": session_data.get("focus_muscle", "")
                 }
 
                 if session_type == "WOD":
