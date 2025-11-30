@@ -22,19 +22,19 @@ def calculate_rating(wod_type, user_result, targets):
     ratio = 0
     if wod_type == 'AMRAP':
         expected = parse_rounds(targets.get('Intermediate', '5-6 rounds'))
-        ratio = user_result.get('rounds', 0) / expected if expected else 0
+        ratio = (user_result.get('rounds', 0) + user_result.get('reps', 0) / 10) / expected if expected else 0
     elif wod_type in ['For Time', 'Chipper', 'Ladder']:
         expected = parse_time(targets.get('Intermediate', '15-20 min'))
         ratio = expected / user_result.get('time_min', 1) if user_result.get('time_min') else 0
     elif wod_type == 'Interval':
         expected = parse_rounds(targets.get('Intermediate', '6 intervals'))
-        ratio = user_result.get('intervals_completed', 0) / expected if expected else 0
+        ratio = (user_result.get('rounds', 0) + user_result.get('reps', 0) / 10) / expected if expected else 0
     elif wod_type == 'Tabata':
         expected = parse_rounds(targets.get('Intermediate', '10 reps'))
         ratio = user_result.get('avg_reps_per_round', 0) / expected if expected else 0
     elif wod_type in ['Death by', 'EMOM', 'Alternating EMOM']:
         expected = parse_rounds(targets.get('Intermediate', '10 rounds'))
-        ratio = user_result.get('rounds_completed', 0) / expected if expected else 0
+        ratio = (user_result.get('rounds_completed', 0) + user_result.get('reps', 0) / 10) / expected if expected else 0
     else:
         expected = parse_rounds(targets.get('Intermediate', '10 reps'))
         ratio = user_result.get('score', 0) / expected if expected else 0
