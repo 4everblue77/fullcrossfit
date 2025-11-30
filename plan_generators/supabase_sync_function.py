@@ -30,6 +30,7 @@ def sync_plan_to_supabase(supabase, full_plan, data):
                 "week_id": week_id,
                 "day_number": day_number,
                 "is_rest_day": day_data.get("Rest", False),
+                "date": day_data.get("date", None),
                 "total_time": int(day_data.get("estimated_time", 0))
             }).execute()
             day_id = day_resp.data[0]["id"]
@@ -47,7 +48,8 @@ def sync_plan_to_supabase(supabase, full_plan, data):
                     "type": session_type,
                     "target_muscle": ", ".join(day_data.get("muscles", [])),
                     "duration": int(session_data.get("time", 0)),
-                    "details": session_data.get("details", "")
+                    "details": session_data.get("details", ""),
+                    "focus_muscle": session_content.get("focus_muscle", "")
                 }
 
                 if session_type == "WOD":
