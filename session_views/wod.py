@@ -118,11 +118,25 @@ def render(session):
                 run_rest_timer(60, label=ex, next_item=next_ex, skip_key=f"skip_ex_{i}")
                 elapsed += 60
             elif wod_type == "Interval" and work_minutes and rest_minutes:
-                run_rest_timer(work_minutes * 60, label=f"Work: {ex}", next_item="Rest", skip_key=f"skip_work_{i}")
-                elapsed += work_minutes * 60
-                if next_ex:
-                    run_rest_timer(rest_minutes * 60, label="Rest", next_item=next_ex, skip_key=f"skip_rest_{i}")
-                    elapsed += rest_minutes * 60
+                total_seconds = duration_minutes * 60
+                elapsed = 0
+                interval_count = 0
+            
+                while elapsed < total_seconds:
+                    # Work phase
+                    current_placeholder.subheader(f"Work Interval {interval_count+1}: Complete as many rounds as possible")
+                    next_placeholder.info("Next: Rest")
+                    run_rest_timer(work_minutes * 60, label="Work", next_item="Rest", skip_key=f"skip_work_{interval_count}")
+                    elapsed += work_minutes * 60
+            
+                    # Rest phase
+                    if elapsed < total_seconds:
+                        current_placeholder.subheader("Rest Interval")
+                        next_placeholder.info("Next: Work")
+                        run_rest_timer(rest_minutes * 60, label="Rest", next_item="Work", skip_key=f"skip_rest_{interval_count}")
+                        elapsed += rest_minutes * 60
+    
+                    interval_count += 1
             elif wod_type == "Tabata":
                 for r in range(8):
                     run_rest_timer(20, label=f"Round {r+1} Work", next_item="Rest", skip_key=f"skip_tabata_work_{r}")
