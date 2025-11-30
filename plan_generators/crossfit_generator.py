@@ -113,6 +113,25 @@ class CrossFitPlanGenerator:
                     continue
                 actual_date = start_date + timedelta(days=day_offset)
                 daily_plan = self.generate_daily_plan(day_config, week)
+                
+                # ✅ Add focus muscles for each session
+                for session_type, session_data in daily_plan.items():
+                    if isinstance(session_data, dict):
+                        if session_type == "Heavy":
+                            session_data["focus_muscle"] = ", ".join(day_config["heavy"])
+                        elif session_type == "WOD":
+                            session_data["focus_muscle"] = ", ".join(day_config["wod"])
+                        elif session_type == "Light":
+                            session_data["focus_muscle"] = ", ".join(day_config["light"])
+                        elif session_type == "Olympic":
+                            session_data["focus_muscle"] = "Olympic Lifts"
+                        elif session_type == "Run":
+                            session_data["focus_muscle"] = "Cardio"
+                        elif session_type == "Skill":
+                            session_data["focus_muscle"] = "Skill Work"
+                        elif session_type == "Warmup" or session_type == "Cooldown":
+                            session_data["focus_muscle"] = "Full Body"
+
                 full_plan[f"Week {week}"][day_config["day"]] = {
                     "date": actual_date.isoformat(),
                     "muscles": list(set(day_config["heavy"] + day_config["wod"] + day_config["light"])),
