@@ -1,6 +1,8 @@
+
 import streamlit as st
 from supabase import create_client
 import pandas as pd
+from datetime import datetime
 
 # Plan generators
 from plan_generators.crossfit_generator import CrossFitPlanGenerator
@@ -29,6 +31,9 @@ else:
 
 st.title(f"6-Week {plan_type} Plan Generator")
 
+# ✅ New input for start date
+start_date = st.date_input("Select Start Date", datetime.today()).isoformat()
+
 debug_mode = st.checkbox("Enable Debug Mode")
 sync_to_supabase = st.checkbox("Sync Plan to Supabase")
 
@@ -37,7 +42,8 @@ if "full_plan" not in st.session_state:
 
 if st.button(f"Generate 6-Week {plan_type} Plan"):
     st.session_state.full_plan = None
-    full_plan = plan_gen.generate_full_plan()
+    # ✅ Pass start_date to generator
+    full_plan = plan_gen.generate_full_plan(start_date=start_date)
     st.session_state.full_plan = full_plan
 
     if sync_to_supabase and hasattr(plan_gen, "sync_plan_to_supabase"):
@@ -53,7 +59,7 @@ if st.session_state.full_plan:
         with week_tabs[idx]:
             st.header(week_label)
             for day_label, day_data in week_data.items():
-                st.subheader(day_label)
+                st.subheader(f"{day_label} ({day_data.get('date', '')})")  # ✅ Show actual date
                 if day_data.get("Rest"):
                     st.markdown("**Rest Day 💤**")
                 else:
@@ -84,7 +90,7 @@ if st.session_state.full_plan:
         for week_label, week_data in full_plan.items():
             for day_label, day_data in week_data.items():
                 if day_data.get("Rest"):
-                    rows.append([week_label, day_label, "Rest", "", "", "", ""])
+                    rows.append([week_label, day_label, day_data.get("date", ""), "Rest", "", "", "", ""])
                 else:
                     if "plan" in day_data:
                         for section, content in day_data["plan"].items():
@@ -95,12 +101,13 @@ if st.session_state.full_plan:
                                 rows.append([
                                     week_label,
                                     day_label,
+                                    day_data.get("date", ""),
                                     section,
                                     ", ".join(day_data.get("muscles", [])),
                                     day_data.get("stimulus", ""),
                                     content.get("details", ""),
                                     content.get("time", "")
                                 ])
-        df = pd.DataFrame(rows, columns=["Week", "Day", "Type", "Target Muscles", "Stimulus", "Details", "Duration"])
+        df = pd.DataFrame(rows, columns=["Week", "Day", "Date", "Type", "Target Muscles", "Stimulus", "Details", "Duration"])
         csv = df.to_csv(index=False)
         st.download_button("Download CSV", csv, "6_week_plan.csv", "text/csv")
