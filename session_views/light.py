@@ -41,7 +41,7 @@ def render_superset_block(superset_name, superset_sets,session):
         data.append({
             "ID": row["id"],
             "Exercise": row.get("exercise_name", ""),
-            #"Set": row.get("set_number", ""),
+            "Set": row.get("set_number", ""),
             "Weight": weight_value,
             "Reps": reps_display,
             "%RM": row.get("intensity", ""),
