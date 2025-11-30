@@ -9,6 +9,7 @@ from generators.light_generator import LightGenerator
 from generators.cooldown_generator import CooldownGenerator
 from generators.skillsession_generator import SkillSessionGenerator
 from plan_generators.supabase_sync_function import sync_plan_to_supabase
+from datetime import datetime, timedelta
 
 class CrossFitPlanGenerator:
     def __init__(self, supabase, debug=False):
@@ -91,24 +92,38 @@ class CrossFitPlanGenerator:
         plan["Total Time"] = f"{self._estimate_total_time(plan)} min"
         return plan
 
-    def generate_full_plan(self):
+
+    def generate_full_plan(self, start_date):
+        if isinstance(start_date, str):
+            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
         framework = self.build_framework()
         full_plan = {}
+        day_offset = 0
         for week, days in framework.items():
             full_plan[f"Week {week}"] = {}
             for day_config in days:
                 if day_config is None:
-                    full_plan[f"Week {week}"]["Sun"] = {"Rest": True, "details": "Rest day"}
+                    actual_date = start_date + timedelta(days=day_offset)
+                    full_plan[f"Week {week}"]["Sun"] = {
+                        "Rest": True,
+                        "details": "Rest day",
+                        "date": actual_date.isoformat()
+                    }
+                    day_offset += 1
                     continue
+                actual_date = start_date + timedelta(days=day_offset)
                 daily_plan = self.generate_daily_plan(day_config, week)
                 full_plan[f"Week {week}"][day_config["day"]] = {
+                    "date": actual_date.isoformat(),
                     "muscles": list(set(day_config["heavy"] + day_config["wod"] + day_config["light"])),
                     "stimulus": day_config["stimulus"],
                     "day_type": day_config["day"],
                     "plan": daily_plan,
                     "estimated_time": self._estimate_total_time(daily_plan)
                 }
+                day_offset += 1
         return full_plan
+
 
     def sync_plan_to_supabase(self, full_plan):
         return sync_plan_to_supabase(self.supabase, full_plan, self.data)
