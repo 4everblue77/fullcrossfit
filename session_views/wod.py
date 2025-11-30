@@ -117,9 +117,6 @@ def render(session):
                 )
                 # Work phase
                 current_placeholder.subheader(f"Work Interval {interval_count+1}: Complete as many rounds/reps as possible")
-                st.write("Exercises:")
-                for ex in exercises:
-                    st.markdown(f"- {ex}")
                 next_placeholder.info("Next: Rest")
                 run_rest_timer(work_minutes * 60, label="Work", next_item="Rest", skip_key=f"skip_work_{interval_count}")
                 elapsed += work_minutes * 60
