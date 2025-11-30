@@ -131,6 +131,7 @@ def render(session):
     progress_placeholder = st.empty()
     current_placeholder = st.empty()
     next_placeholder = st.empty()
+    counter_placeholder = st.empty()
 
     col1, col2, col3 = st.columns(3)
     if "wod_running" not in st.session_state:
