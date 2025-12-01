@@ -43,6 +43,10 @@ class CrossFitPlanGenerator:
             if isinstance(block, dict) and "time" in block:
                 total += block["time"]
         return total
+    
+    def fetch_skills(self):
+        return self.supabase.table("skills").select("skill_name").execute().data
+    
 
     def build_framework(self):
         framework = {}
@@ -86,14 +90,14 @@ class CrossFitPlanGenerator:
             light_target = "Core" if config["olympic"] else (config["light"][0] if config["light"] else "Core")
             plan["Light"] = self.light_gen.generate(target=light_target)
         if config["skill"]:
-            plan["Skill"] = self.skill_gen.generate("Handstand Push-Up", week_number)
+            plan["Skill"] = self.skill_gen.generate(skill, week_number)
         if not config["run"]:
             plan["Cooldown"] = self.cooldown_gen.generate(muscles)
         plan["Total Time"] = f"{self._estimate_total_time(plan)} min"
         return plan
 
 
-    def generate_full_plan(self, start_date):
+    def generate_full_plan(self, start_date, skill="Handstand Push-Up"):
         if isinstance(start_date, str):
             start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
         framework = self.build_framework()
