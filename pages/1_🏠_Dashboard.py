@@ -147,7 +147,11 @@ if st.session_state.selected_session is None:
         icon = icon_map.get(session_type, "📋")
         indicator = "✅" if session_content.get("completed") else "⚫"
         
-        focus_muscle = session_content.get("focus_muscle", "")
+        
+        # Find matching session from Supabase
+        session_row = next((s for s in sessions if s["id"] == session_content["session_id"]), None)
+        focus_muscle = session_row.get("focus_muscle", "") if session_row else ""
+
         button_text = f"{icon} {session_type} ({focus_muscle}) {indicator}"
 
         if st.button(button_text, key=session_content["session_id"], use_container_width=True):
