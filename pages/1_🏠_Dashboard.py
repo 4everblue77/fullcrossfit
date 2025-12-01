@@ -128,7 +128,10 @@ if st.session_state.selected_session is None:
 
     # Render sessions
     if day_data.get("Rest"):
+
+        st.markdown(f"### {selected_day} ({day_record.get('date', '') if day_record else ''})")
         st.markdown("**Rest Day 💤**")
+
     else:
         
         day_record = next((d for d in days if d["day_number"] == expected_labels.index(selected_day)+1), None)
