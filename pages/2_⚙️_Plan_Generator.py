@@ -18,6 +18,9 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 st.sidebar.title("Plan Options")
 plan_type = st.sidebar.selectbox("Select Plan Type", ["CrossFit", "PHAT", "5km Improvement"])
 
+# ✅ New input for start date
+start_date = st.date_input("Select Start Date", datetime.today()).isoformat()
+
 # Initialize appropriate plan generator
 if plan_type == "CrossFit":
     plan_gen = CrossFitPlanGenerator(supabase)
@@ -35,8 +38,7 @@ else:
 
 st.title(f"6-Week {plan_type} Plan Generator")
 
-# ✅ New input for start date
-start_date = st.date_input("Select Start Date", datetime.today()).isoformat()
+
 
 debug_mode = st.checkbox("Enable Debug Mode")
 sync_to_supabase = st.checkbox("Sync Plan to Supabase")
