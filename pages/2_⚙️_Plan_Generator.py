@@ -18,6 +18,8 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 st.sidebar.title("Plan Options")
 plan_type = st.sidebar.selectbox("Select Plan Type", ["CrossFit", "PHAT", "5km Improvement"])
 
+st.title(f"6-Week {plan_type} Plan Generator")
+
 # ✅ New input for start date
 start_date = st.date_input("Select Start Date", datetime.today()).isoformat()
 
@@ -36,7 +38,7 @@ else:
     st.warning("Selected plan type is not implemented.")
     st.stop()
 
-st.title(f"6-Week {plan_type} Plan Generator")
+
 
 
 
