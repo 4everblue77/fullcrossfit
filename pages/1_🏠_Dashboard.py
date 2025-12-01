@@ -125,7 +125,8 @@ if st.session_state.selected_session is None:
     selected_day_label = st.radio("Select Day", days_list, index=default_day_index, horizontal=True)
     selected_day = selected_day_label.split()[1]  # Always second element is day name
     day_data = full_plan[selected_week_label][selected_day]
-
+    day_record = next((d for d in days if d["day_number"] == expected_labels.index(selected_day)+1), None)
+    
     # Render sessions
     if day_data.get("Rest"):
 
@@ -134,7 +135,7 @@ if st.session_state.selected_session is None:
 
     else:
         
-        day_record = next((d for d in days if d["day_number"] == expected_labels.index(selected_day)+1), None)
+
         st.markdown(f"### Sessions for {selected_day} ({day_record.get('date', '') if day_record else ''})")
 
 
