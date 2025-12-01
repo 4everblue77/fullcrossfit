@@ -137,35 +137,38 @@ if st.session_state.selected_session is None:
         
 
         st.markdown(f"### Sessions for {selected_day} ({day_record.get('date', '') if day_record else ''})")
-
-
-    # ✅ Enforce session order
-    session_order = ["Warmup", "Heavy", "Olympic", "Run", "WOD", "Benchmark", "Light", "Skill", "Cooldown"]
-    ordered_sessions = sorted(day_data["plan"].items(),
-                              key=lambda x: session_order.index(x[0]) if x[0] in session_order else len(session_order))
-    for session_type, session_content in ordered_sessions:
-        icon_map = {
-            "Warmup": "🔥", "Heavy": "🏋️", "Olympic": "🏅", "Run": "🏃",
-            "WOD": "📦", "Benchmark": "⭐", "Light": "💡", "Skill": "🎯", "Cooldown": "❄️"
-        }
-        icon = icon_map.get(session_type, "📋")
-        indicator = "✅" if session_content.get("completed") else "⚫"
         
-        
-        # Find matching session from Supabase
-        session_row = next((s for s in sessions if s["id"] == session_content["session_id"]), None)
-        focus_muscle = session_row.get("focus_muscle", "") if session_row else ""
+        # ✅ Only proceed if 'plan' exists
+        if "plan" in day_data:
 
-        button_text = f"{icon} {session_type} ({focus_muscle}) {indicator}"
 
-        if st.button(button_text, key=session_content["session_id"], use_container_width=True):
-            st.session_state.selected_session = {
-                "session_id": session_content["session_id"],
-                "type": session_type,
-                "day": selected_day,
-                "week": selected_week_label
+        # ✅ Enforce session order
+        session_order = ["Warmup", "Heavy", "Olympic", "Run", "WOD", "Benchmark", "Light", "Skill", "Cooldown"]
+        ordered_sessions = sorted(day_data["plan"].items(),
+                                  key=lambda x: session_order.index(x[0]) if x[0] in session_order else len(session_order))
+        for session_type, session_content in ordered_sessions:
+            icon_map = {
+                "Warmup": "🔥", "Heavy": "🏋️", "Olympic": "🏅", "Run": "🏃",
+                "WOD": "📦", "Benchmark": "⭐", "Light": "💡", "Skill": "🎯", "Cooldown": "❄️"
             }
-            st.rerun()
+            icon = icon_map.get(session_type, "📋")
+            indicator = "✅" if session_content.get("completed") else "⚫"
+            
+            
+            # Find matching session from Supabase
+            session_row = next((s for s in sessions if s["id"] == session_content["session_id"]), None)
+            focus_muscle = session_row.get("focus_muscle", "") if session_row else ""
+    
+            button_text = f"{icon} {session_type} ({focus_muscle}) {indicator}"
+    
+            if st.button(button_text, key=session_content["session_id"], use_container_width=True):
+                st.session_state.selected_session = {
+                    "session_id": session_content["session_id"],
+                    "type": session_type,
+                    "day": selected_day,
+                    "week": selected_week_label
+                }
+                st.rerun()
 
 # ✅ Routing to session detail
 if st.session_state.selected_session:
