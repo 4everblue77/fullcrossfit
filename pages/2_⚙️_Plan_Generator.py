@@ -21,6 +21,10 @@ plan_type = st.sidebar.selectbox("Select Plan Type", ["CrossFit", "PHAT", "5km I
 # Initialize appropriate plan generator
 if plan_type == "CrossFit":
     plan_gen = CrossFitPlanGenerator(supabase)
+    
+    skills = [s["skill_name"] for s in plan_gen.fetch_skills()]
+    selected_skill = st.selectbox("Select Skill for Skill Sessions", skills)
+
 elif plan_type == "PHAT":
     plan_gen = PHATPlanGenerator(supabase)
 elif plan_type == "5km Improvement":
@@ -43,7 +47,7 @@ if "full_plan" not in st.session_state:
 if st.button(f"Generate 6-Week {plan_type} Plan"):
     st.session_state.full_plan = None
     # ✅ Pass start_date to generator
-    full_plan = plan_gen.generate_full_plan(start_date=start_date)
+    full_plan = plan_gen.generate_full_plan(start_date=start_date, skill=selected_skill)
     st.session_state.full_plan = full_plan
 
     if sync_to_supabase and hasattr(plan_gen, "sync_plan_to_supabase"):
