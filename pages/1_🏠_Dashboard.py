@@ -1,7 +1,7 @@
 
 import streamlit as st
 from supabase import create_client
-from session_views import warmup, heavy, olympic, wod, cooldown, light, skill, run, benchmark
+#from session_views import warmup, heavy, olympic, wod, cooldown, light, skill, run, benchmark
 from datetime import date
 
 # ✅ Page config
@@ -11,6 +11,26 @@ st.set_page_config(page_title="FullCrossFit Dashboard", page_icon="🏠", layout
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+
+def safe_import(modname: str):
+    """Import a module by name; warn and return None if it fails."""
+    try:
+        return importlib.import_module(modname)
+    except Exception as e:
+               st.warning(f"Optional module `{modname}` not loaded: {e}")
+        return None
+
+# Lazy imports of session views (each can fail without killing the app)
+warmup    = safe_import("session_views.warmup")
+heavy     = safe_import("session_views.heavy")
+olympic   = safe_import("session_views.olympic")
+wod       = safe_import("session_views.wod")
+cooldown  = safe_import("session_views.cooldown")
+light     = safe_import("session_views.light")
+run       = safe_import("session_views.run")
+benchmark = safe_import("session_views.benchmark")
+
 
 # ✅ Session state
 if "selected_session" not in st.session_state:
