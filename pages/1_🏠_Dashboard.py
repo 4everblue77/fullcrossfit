@@ -19,7 +19,7 @@ def safe_import(modname: str):
         return importlib.import_module(modname)
     except Exception as e:
                st.warning(f"Optional module `{modname}` not loaded: {e}")
-        return None
+    return None
 
 # Lazy imports of session views (each can fail without killing the app)
 warmup    = safe_import("session_views.warmup")
