@@ -173,7 +173,7 @@ def render(session):
     if performance_targets:
         st.markdown("**Performance Targets**")
         # Pretty print levels in a consistent order if available
-        levels_order = ["Beginner", "Intermediate", "Advanced","Elite"]
+        levels_order = ["Beginner", "Intermediate", "Advanced", "Elite"]
         for lvl in levels_order:
             if lvl in performance_targets:
                 st.markdown(f"- **{lvl}**: {performance_targets[lvl]}")
