@@ -177,7 +177,7 @@ def render(session):
         st.info(
             f"Previously submitted: {prev['result_details']} "
             f"(Level: {prev_level if prev_level else 'N/A'}, Rating: {prev['rating']}/100)"
-    st.write("DEBUG previous_result:", previous_result)
+
 
 
 
