@@ -11,6 +11,9 @@ def render(session):
     st.title("❄️ Cooldown")
     st.markdown(f"**Week:** {session['week']}  \n**Day:** {session['day']}")
 
+    # Create a fixed container near the top for all timer visuals
+    timer_container = st.container()  # <-- this is the anchor
+
     # Fetch exercises from Supabase
     exercises = supabase.table("plan_session_exercises")        .select("*")        .eq("session_id", session["session_id"])        .order("exercise_order")        .execute().data
 
@@ -70,7 +73,7 @@ def render(session):
             next_placeholder.info(f"Next: {next_ex_name if next_ex_name else 'None'}")
 
             # Exercise phase
-            run_rest_timer(int(ex.get("duration", 30)), label=ex['exercise_name'], next_item=next_ex_name, skip_key=f"skip_ex_{ex['id']}")
+            run_rest_timer(int(ex.get("duration", 30)), label=ex['exercise_name'], next_item=next_ex_name, skip_key=f"skip_ex_{ex['id']},parent=timer_container")
             supabase.table("plan_session_exercises").update({"completed": True}).eq("id", ex["id"]).execute()
             completed_count += 1
 
@@ -80,7 +83,7 @@ def render(session):
 
             # Rest phase
             if next_ex_name:
-                run_rest_timer(int(ex.get("rest", 30)), label="Rest", next_item=next_ex_name, skip_key=f"skip_rest_{ex['id']}")
+                run_rest_timer(int(ex.get("rest", 30)), label="Rest", next_item=next_ex_name, skip_key=f"skip_rest_{ex['id']},parent=timer_container")
 
         # Mark session complete
         supabase.table("plan_sessions").update({"completed": True}).eq("id", session["session_id"]).execute()
