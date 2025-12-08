@@ -20,24 +20,40 @@ def parse_time(text):
 def calculate_rating(wod_type, user_result, targets):
     expected = 0
     ratio = 0
+
+    
+    # Pick the level target, fall back to Intermediate, then to a sensible default
+    def level_target(default_text):
+        return targets.get(level) or targets.get("Intermediate") or default_text
+
+    
     if wod_type == 'AMRAP':
-        expected = parse_rounds(targets.get('Intermediate', '5-6 rounds'))
+        expected = parse_rounds(level_target('5-6 rounds'))
         ratio = (user_result.get('rounds', 0) + user_result.get('reps', 0) / 10) / expected if expected else 0
+
     elif wod_type in ['For Time', 'Chipper', 'Ladder']:
-        expected = parse_time(targets.get('Intermediate', '15-20 min'))
-        ratio = expected / user_result.get('time_min', 1) if user_result.get('time_min') else 0
+        expected = parse_time(level_target('15-20 min'))
+        # Faster time ⇒ higher rating (expected / actual)
+        tmin = user_result.get('time_min')
+        ratio = (expected / tmin) if tmin and tmin > 0 else        ratio = (expected / tmin) if tmin and tmin > 0 else 0
+
     elif wod_type == 'Interval':
-        expected = parse_rounds(targets.get('Intermediate', '6 intervals'))
+        expected = parse_rounds(level_target('6 intervals'))
         ratio = (user_result.get('rounds', 0) + user_result.get('reps', 0) / 10) / expected if expected else 0
+
     elif wod_type == 'Tabata':
-        expected = parse_rounds(targets.get('Intermediate', '10 reps'))
+        expected = parse_rounds(level_target('10 reps'))
         ratio = user_result.get('avg_reps_per_round', 0) / expected if expected else 0
+
     elif wod_type in ['Death by', 'EMOM', 'Alternating EMOM']:
-        expected = parse_rounds(targets.get('Intermediate', '10 rounds'))
+        expected = parse_rounds(level_target('10 rounds'))
         ratio = (user_result.get('rounds_completed', 0) + user_result.get('reps', 0) / 10) / expected if expected else 0
+
+
     else:
-        expected = parse_rounds(targets.get('Intermediate', '10 reps'))
+        expected = parse_rounds(level_target('10 reps'))
         ratio = user_result.get('score', 0) / expected if expected else 0
+
     return min(int(ratio * 100), 100)
 
 def render(session):
@@ -151,28 +167,69 @@ def render(session):
         prev = previous_result[0]
         st.info(f"Previously submitted result: {prev['result_details']} (Rating: {prev['rating']}/100)")
 
+
+    # NEW: Show performance targets and let user choose a level
     performance_targets = session_data.get("performance_targets", {})
+    if performance_targets:
+        st.markdown("**Performance Targets**")
+        # Pretty print levels in a consistent order if available
+        levels_order = ["Beginner", "Intermediate", "Advanced"]
+        for lvl in levels_order:
+            if lvl in performance_targets:
+                st.markdown(f"- **{lvl}**: {performance_targets[lvl]}")
+        # Include any other keys not in the above order
+        for k, v in performance_targets.items():
+            if k not in levels_order:
+                st.markdown(f"- **{k}**: {v}")
+    else:
+        st.info("No performance targets available for this session.")
+    
+    # NEW: Level selector used for rating
+    level = st.selectbox("Select target level for rating", 
+                         options=[opt for opt in ["Beginner", "Intermediate", "Advanced"] if opt in performance_targets] 
+                         or ["Intermediate"],
+                         index=0)
+    
     user_result = {}
+
+
+    # Inputs differ by wod_type
     if wod_type == "AMRAP":
         user_result["rounds"] = st.number_input("Rounds Completed", min_value=0, step=1)
         user_result["reps"] = st.number_input("Additional Reps", min_value=0, step=1)
-    elif wod_type == "For Time":
-        user_result["time_min"] = st.number_input("Time Taken (minutes)", min_value=0.0, step=0.1)
+    
+    elif wod_type in ["For Time", "Chipper", "Ladder"]:
+        # NEW: minutes + seconds
+        col_m, col_s = st.columns(2)
+        with col_m:
+            time_min_only = st.number_input("Minutes", min_value=0, step=1)
+        with col_s:
+            time_sec_only = st.number_input("Seconds", min_value=0, max_value=59, step=1)
+        user_result["time_min"] = float(time_min_only) + float(time_sec_only) / 60.0
+        # Store raw mm:ss too for clarity
+        user_result["time_mmss"] = f"{int(time_min_only):02d}:{int(time_sec_only):02d}"
+    
     elif wod_type == "Interval":
         user_result["rounds"] = st.number_input("Total Rounds Completed", min_value=0, step=1)
         user_result["reps"] = st.number_input("Additional Reps", min_value=0, step=1)
+    
     elif wod_type == "Tabata":
         user_result["avg_reps_per_round"] = st.number_input("Average Reps per Round", min_value=0, step=1)
+    
     elif wod_type in ["Death by", "EMOM", "Alternating EMOM"]:
         user_result["rounds_completed"] = st.number_input("Rounds Completed", min_value=0, step=1)
+    
     else:
         user_result["score"] = st.number_input("Score", min_value=0, step=1)
+
 
     notes = st.text_area("Notes (optional)")
 
 
     if st.button("Submit Result"):
-        rating = calculate_rating(wod_type, user_result, performance_targets)
+        
+        rating = calculate_rating(wod_type, user_result, performance_targets, level=level)
+
         existing_result = supabase.table('wod_results').select('id').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
         if existing_result:
             supabase.table('wod_results').update({
