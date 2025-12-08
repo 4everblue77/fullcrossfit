@@ -162,10 +162,23 @@ def render(session):
 
     # --- Result Recording Section ---
     st.subheader("Enter Your WOD Result")
-    previous_result = supabase.table('wod_results').select('result_details', 'rating').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
+
+    previous_result = (
+        supabase.table('wod_results')
+        .select('result_details', 'rating', 'level')  # <-- include level if stored top-level
+        .eq('session_id', session['session_id'])
+        .eq('user_id', st.session_state.get('user_id', 1))
+        .execute()
+        .data
+    )
     if previous_result:
         prev = previous_result[0]
-        st.info(f"Previously submitted result: {prev['result_details']} (Rating: {prev['rating']}/100)")
+        prev_level = prev.get('level') or prev['result_details'].get('    prev_level = prev.get('level') or prev['result_details'].get('level')  # fallback if you stored inside details earlier
+        st.info(
+            f"Previously submitted: {prev['result_details']} "
+            f"(Level: {prev_level if prev_level else 'N/A'}, Rating: {prev['rating']}/100)"
+        st.write("DEBUG previous_result:", previous_result)
+
 
 
     # NEW: Show performance targets and let user choose a level
@@ -226,30 +239,37 @@ def render(session):
     notes = st.text_area("Notes (optional)")
 
 
-    if st.button("Submit Result"):
-        
-        rating = calculate_rating(wod_type, user_result, performance_targets, level=level)
 
-        existing_result = supabase.table('wod_results').select('id').eq('session_id', session['session_id']).eq('user_id', st.session_state.get('user_id', 1)).execute().data
+    if st.button("Submit Result"):
+        rating = calculate_rating(wod_type, user_result, performance_targets, level    rating = calculate_rating(wod_type, user_result, performance_targets, level=level)
+    
+        existing_result = (
+            supabase.table('wod_results')
+            .select('id')
+            .eq('session_id', session['session_id'])
+            .eq('user_id', st.session_state.get('user_id', 1))
+            .execute()
+            .data
+        )
+    
+        payload = {
+            'result_details': user_result,     # keep detailed inputs here
+            'level': level,                    # <-- NEW: top-level column for easy querying
+            'notes': notes,
+            'rating': rating,
+            'timestamp': datetime.utcnow().isoformat(),
+        }
+    
         if existing_result:
-            supabase.table('wod_results').update({
-                'result_details': user_result,
-                'notes': notes,
-                'rating': rating,
-                'timestamp': datetime.utcnow().isoformat()
-            }).eq('id', existing_result[0]['id']).execute()
-            st.success(f'Result updated! Your rating: {rating}/100')
+            supabase.table('wod_results').update(payload).eq('id', existing_result[0]['id']).execute()
+            st.success(f"Result updated! Your rating: {rating}/100")
         else:
             supabase.table('wod_results').insert({
                 'session_id': session['session_id'],
                 'user_id': st.session_state.get('user_id', 1),
-                'result_details': user_result,
-                'notes': notes,
-                'rating': rating,
-                'timestamp': datetime.utcnow().isoformat()
+                **payload
             }).execute()
-            st.success(f'Result saved! Your rating: {rating}/100')
-        supabase.table('plan_sessions').update({'completed': True}).eq('id', session['session_id']).execute()
+
         st.success("WOD completed!")
         st.session_state.selected_session = None
         st.rerun()
