@@ -176,7 +176,7 @@ def render(session):
         prev_level = prev.get('level') or prev['result_details'].get('    prev_level = prev.get('level') or prev['result_details'].get('level')  # fallback if you stored inside details earlier
         st.info(
             f"Previously submitted: {prev['result_details']} "
-            f"(Level: {prev_level if prev_level else 'N/A'}, Rating: {prev['rating']}/100)"
+            f"(Level: {prev_level if prev_level else 'N/A'}, Rating: {prev['rating']}/100)")
 
 
 
