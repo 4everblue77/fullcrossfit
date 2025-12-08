@@ -69,7 +69,7 @@ class CrossFitPlanGenerator:
             ]
         return framework
 
-    def generate_daily_plan(self, config, week_number):
+    def generate_daily_plan(self, config, week_number, skill_name=None):
         if config is None:
             return {"Rest Day": "No workout scheduled"}
         plan = {}
@@ -90,7 +90,7 @@ class CrossFitPlanGenerator:
             light_target = "Core" if config["olympic"] else (config["light"][0] if config["light"] else "Core")
             plan["Light"] = self.light_gen.generate(target=light_target)
         if config["skill"]:
-            plan["Skill"] = self.skill_gen.generate(skill, week_number)
+            plan["Skill"] = self.skill_gen.generate(skill_name, week_number)
         if not config["run"]:
             plan["Cooldown"] = self.cooldown_gen.generate(muscles)
         plan["Total Time"] = f"{self._estimate_total_time(plan)} min"
@@ -116,7 +116,7 @@ class CrossFitPlanGenerator:
                     day_offset += 1
                     continue
                 actual_date = start_date + timedelta(days=day_offset)
-                daily_plan = self.generate_daily_plan(day_config, week)
+                daily_plan = self.generate_daily_plan(day_config, week,skill)
                 
                 # ✅ Add focus muscles for each session
                 for session_type, session_data in daily_plan.items():
