@@ -186,7 +186,7 @@ def render(session):
     
     # NEW: Level selector used for rating
     level = st.selectbox("Select target level for rating", 
-                         options=[opt for opt in ["Beginner", "Intermediate", "Advanced"] if opt in performance_targets] 
+                         options=[opt for opt in ["Beginner", "Intermediate", "Advanced", "Elite"] if opt in performance_targets] 
                          or ["Intermediate"],
                          index=0)
     
