@@ -3,7 +3,7 @@ import streamlit as st
 import time
 import streamlit.components.v1 as components
 
-def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
+def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None,session_scope_key: str = None,  precountdown_seconds: int = 5,):
     """
     Unified rest timer for all session types.
     
@@ -15,9 +15,40 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
     """
 
     
-    # ---------- One-time pre-countdown (5s) ----------
-    if "rest_timer_first_run_shown" not in st.session_state:
-        st.session_state["rest_timer_first_run_shown"] = False
+
+    # ---------- One-time pre-countdown (scoped per workout session) ----------
+    # Derive a scope key that stays constant for the whole workout "session"
+    # Warm-up / Cool-down / Heavy etc should set st.session_state['selected_session']
+    scope_value = (
+        session_scope_key
+        if session_scope_key is not None
+        else st.session_state.get("selected_session", "global_scope")
+    )
+    precnt_flag_key = f"precnt_shown_scope_{scope_value}"
+
+    if precountdown_seconds > 0 and not st.session_state.get(precnt_flag_key, False):
+        prep_placeholder = st.empty()
+        prep_progress = st.empty()
+
+        for remaining in range(precountdown_seconds, 0, -1):
+            prep_placeholder.markdown(
+                f"### ⏱️ Get ready: {remaining}s",
+                unsafe_allow_html=True,
+            )
+            # optional cue each second (replace with real audio if you add it)
+            components.html(f"""
+            <script>
+                var audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+                audio.play();
+            </script>
+            """, height=0)
+            prep_progress.progress((precountdown_seconds - remaining) / precountdown_seconds)
+            time.sleep(1)
+
+        prep_placeholder.empty()
+        prep_progress.empty()
+        st.session_state[precnt_flag_key] = True
+
 
     status_placeholder = st.empty()
     timer_placeholder = st.empty()
@@ -29,20 +60,6 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
     status_placeholder.markdown(f"<h4>✅ {label} -> {next_text}</h4>", unsafe_allow_html=True)
 
     
-    # ---- 5-second pre-countdown shown only once per session ----
-    if not st.session_state["rest_timer_first_run_shown"]:
-        prep_placeholder = st.empty()
-        prep_progress = st.empty()
-        for prep_remaining in range(5, 0, -1):
-            prep_placeholder.markdown(f""" ### ⏱️ Get ready: {prep_remaining}s""", unsafe_allow_html=True, )
-            # optional short beep each second
-            components.html("""""", height=0)
-            prep_progress.progress((5 - prep_remaining) / 5)
-            time.sleep(1)
-        prep_placeholder.empty()
-        prep_progress.empty()
-        st.session_state["rest_timer_first_run_shown"] = True
-
 
     # Skip button
     if skip_key not in st.session_state:
