@@ -13,6 +13,12 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
         next_item (str): Optional name of next exercise or superset.
         skip_key (str): Unique key for skip button state.
     """
+
+    
+    # ---------- One-time pre-countdown (5s) ----------
+    if "rest_timer_first_run_shown" not in st.session_state:
+        st.session_state["rest_timer_first_run_shown"] = False
+
     status_placeholder = st.empty()
     timer_placeholder = st.empty()
     progress_placeholder = st.empty()
@@ -21,6 +27,22 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None):
     # Initial status
     next_text = f" → Next: {next_item}" if next_item else ""
     status_placeholder.markdown(f"<h4>✅ {label} -> {next_text}</h4>", unsafe_allow_html=True)
+
+    
+    # ---- 5-second pre-countdown shown only once per session ----
+    if not st.session_state["rest_timer_first_run_shown"]:
+        prep_placeholder = st.empty()
+        prep_progress = st.empty()
+        for prep_remaining in range(5, 0, -1):
+            prep_placeholder.markdown(f""" ### ⏱️ Get ready: {prep_remaining}s""", unsafe_allow_html=True, )
+            # optional short beep each second
+            components.html("""""", height=0)
+            prep_progress.progress((5 - prep_remaining) / 5)
+            time.sleep(1)
+        prep_placeholder.empty()
+        prep_progress.empty()
+        st.session_state["rest_timer_first_run_shown"] = True
+
 
     # Skip button
     if skip_key not in st.session_state:
