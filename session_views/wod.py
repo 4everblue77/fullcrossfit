@@ -17,7 +17,7 @@ def parse_time(text):
     nums = [int(n) for n in re.findall(r"\d+", text)]
     return sum(nums)/len(nums) if nums else 15
 
-def calculate_rating(wod_type, user_result, targets):
+def calculate_rating(wod_type, user_result, targets, level="Intermediate"):
     expected = 0
     ratio = 0
 
