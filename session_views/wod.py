@@ -35,7 +35,7 @@ def calculate_rating(wod_type, user_result, targets):
         expected = parse_time(level_target('15-20 min'))
         # Faster time ⇒ higher rating (expected / actual)
         tmin = user_result.get('time_min')
-        ratio = (expected / tmin) if tmin and tmin > 0 else        ratio = (expected / tmin) if tmin and tmin > 0 else 0
+        ratio = (expected / tmin) if tmin and tmin > 0 else  0
 
     elif wod_type == 'Interval':
         expected = parse_rounds(level_target('6 intervals'))
