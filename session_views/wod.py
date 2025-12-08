@@ -241,7 +241,7 @@ def render(session):
 
 
     if st.button("Submit Result"):
-        rating = calculate_rating(wod_type, user_result, performance_targets, level    rating = calculate_rating(wod_type, user_result, performance_targets, level=level)
+        rating = calculate_rating(wod_type, user_result, performance_targets, level=level)
     
         existing_result = (
             supabase.table('wod_results')
