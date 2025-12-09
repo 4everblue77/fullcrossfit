@@ -31,6 +31,7 @@ cooldown  = safe_import("session_views.cooldown")
 light     = safe_import("session_views.light")
 run       = safe_import("session_views.run")
 benchmark = safe_import("session_views.benchmark")
+skill     = safe_import("session_views.skill")
 
 
 # ✅ Session state
