@@ -425,7 +425,7 @@ def render(session):
                 **payload
             }).execute()
 
-        supabase.table('plan_sessions').update('completed': True).eq('id',session_id).execute()
+        supabase.table('plan_sessions').update({'completed': True}).eq('id',session_id).execute()
 
         st.success("WOD completed!")
         st.session_state.wod_running = False
