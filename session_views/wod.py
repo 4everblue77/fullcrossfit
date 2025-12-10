@@ -95,52 +95,53 @@ def render(session):
             rest_minutes = int(rest_match.group(1))
 
 
-    # --- Global Timer Logic (uses run_rest_timer) ---
-
-    
+   
+    # --- Global Timer Logic (uses run_rest_timer with proper Pause/Resume/Stop) ---
+   
     def format_mmss(seconds):
         s = int(max(0, seconds))
         return f"{s//60:02d}:{s%60:02d}"
     
-    # Robust duration parser: matches "20 min", "20 mins", "20 minutes"
+    # ---- Parse duration and (optional) work/rest from `details` ----
     duration_minutes = None
     work_minutes = None
     rest_minutes = None
     
-    match_duration = re.search(r"(\d+)\s*(?:minutes?|mins?|min)\b", details.lower())
-    if match_duration:
-        duration_minutes = int(match_duration.group(1))
+    # Matches "20 min", "20 mins", "20 minutes" (case-insensitive)
+    m_dur = re.search(r"(\d+)\s*(?:minutes?|mins?|min)\b", details, flags=re.I)
+    if m_dur:
+        duration_minutes = int(m_dur.group(1))
     
-    if "work" in details.lower() and "rest" in details.lower():
-        work_match = re.search(r"work\s*(\d+)\s*(?:minutes?|mins?|min)\b", details.lower())
-        rest_match = re.search(r"rest\s*(\d+)\s*(?:minutes?|mins?|min)\b", details.lower())
-        if work_match:
-            work_minutes = int(work_match.group(1))
-        if rest_match:
-            rest_minutes = int(rest_match.group(1))
+    # Only used for Interval / EMOM / Alternating EMOM / Tabata
+    if re.search(r"\bwork\b", details, flags=re.I) and re.search(r"\brest\b", details, flags=re.I):
+        m_work = re.search(r"work\s*(\d+)\s*(?:minutes?|mins?|min)\b", details, flags=re.I)
+        m_rest = re.search(r"rest\s*(\d+)\s*(?:minutes?|mins?|min)\b", details, flags=re.I)
+        if m_work:
+            work_minutes = int(m_work.group(1))
+        if m_rest:
+            rest_minutes = int(m_rest.group(1))
     
-    # Placeholders
-    progress_ph = st.empty()
-    elapsed_ph = st.empty()
-    remaining_ph = st.empty()
-    current_ph = st.empty()
-    next_ph = st.empty()
-    counter_ph = st.empty()
+    # ---- UI placeholders ----
+    progress_ph   = st.empty()
+    elapsed_ph    = st.empty()
+    remaining_ph  = st.empty()
+    current_ph    = st.empty()
+    next_ph       = st.empty()
+    counter_ph    = st.empty()
     
-    # Controls and session state
-    c1, c2, c3, c4, c5 = st.columns(5)
+    # ---- Styles / defaults ----
     continuous_styles = ["For Time", "AMRAP", "Chipper", "Ladder"]
-    interval_styles = ["Interval", "EMOM", "Alternating EMOM", "Tabata"]
+    interval_styles   = ["Interval", "EMOM", "Alternating EMOM", "Tabata"]
     
     DEFAULT_CAP_MIN = 20 if wod_type in ["For Time", "AMRAP"] else 15
     cap_seconds = int((duration_minutes or DEFAULT_CAP_MIN) * 60)
     if cap_seconds <= 0:
-        cap_seconds = DEFAULT_CAP_MIN * 60
+        cap_seconds = DEFAULT_CAP_MIN * 60  # safety
     
-    # Unique skip key per session to control run_rest_timer externally
+    # Unique skip key so external Pause/Stop can interrupt run_rest_timer
     skip_key = f"skip_wod_clock_{session['session_id']}"
     
-    # Initialize state
+    # ---- Session state (persistent) ----
     if "wod_clock_in_progress" not in st.session_state:
         st.session_state.wod_clock_in_progress = False
     if "wod_clock_paused" not in st.session_state:
@@ -151,14 +152,18 @@ def render(session):
         st.session_state.wod_clock_remaining = cap_seconds
     if "wod_clock_last_action" not in st.session_state:
         st.session_state.wod_clock_last_action = None  # 'start' | 'pause' | 'resume' | 'stop' | None
+    if "wod_interval_count" not in st.session_state:
+        st.session_state.wod_interval_count = 0  # display only (interval styles)
     
-    start_clicked = c1.button("▶ Start WOD Session")
-    pause_clicked = c2.button("⏸ Pause")
+    # ---- Controls ----
+    c1, c2, c3, c4, c5 = st.columns(5)
+    start_clicked  = c1.button("▶ Start WOD Session")
+    pause_clicked  = c2.button("⏸ Pause")
     resume_clicked = c3.button("⏯ Resume")
-    stop_clicked = c4.button("⏹ Stop")
-    back_clicked = c5.button("⬅ Back to Dashboard")
+    stop_clicked   = c4.button("⏹ Stop")
+    back_clicked   = c5.button("⬅ Back to Dashboard")
     
-    # Back action
+    # ---- Back: leave session view ----
     if back_clicked:
         st.session_state.wod_clock_in_progress = False
         st.session_state.wod_clock_paused = False
@@ -169,80 +174,81 @@ def render(session):
         st.session_state.selected_session = None
         st.rerun()
     
-    # START
+    # ---- Start ----
     if start_clicked and not st.session_state.wod_clock_in_progress:
         st.session_state.wod_clock_in_progress = True
         st.session_state.wod_clock_paused = False
-        st.session_state.wod_clock_remaining = cap_seconds
-        st.session_state.wod_clock_start_ts = time.time()
+        st.session_state.wod_clock_remaining = cap_seconds  # (re)start from full cap
+        st.session_state.wod_clock_start_ts = time.time()   # <-- persistent segment start
         st.session_state.wod_clock_last_action = "start"
-        # Clear skip flag before launching timer
         st.session_state[skip_key] = False
     
-    # PAUSE (implemented as stop-with-remaining)
+    # ---- Pause (interrupt current segment) ----
     if pause_clicked and st.session_state.wod_clock_in_progress and not st.session_state.wod_clock_paused:
         st.session_state.wod_clock_last_action = "pause"
-        # Signal the timer to exit at next tick
-        st.session_state[skip_key] = True
+        st.session_state[skip_key] = True  # run_rest_timer should exit on next tick
     
-    # RESUME
+    # ---- Resume (start a new segment) ----
     if resume_clicked and st.session_state.wod_clock_paused and st.session_state.wod_clock_remaining > 0:
         st.session_state.wod_clock_in_progress = True
         st.session_state.wod_clock_paused = False
-        st.session_state.wod_clock_start_ts = time.time()
+        st.session_state.wod_clock_start_ts = time.time()   # <-- new segment start
         st.session_state.wod_clock_last_action = "resume"
-        st.session_state[skip_key] = False  # clear skip before resuming
+        st.session_state[skip_key] = False
     
-    # STOP (finalize and auto-fill)
+    # ---- Stop (finalize) ----
     if stop_clicked and st.session_state.wod_clock_in_progress:
         st.session_state.wod_clock_last_action = "stop"
-        st.session_state[skip_key] = True
+        st.session_state[skip_key] = True  # interrupt utility timer
     
-    # ---- DISPLAY & TIMER ENGINE ----
-    # Common info (progress bar based on remaining)
+    # ---- Progress header (updated each rerun) ----
     elapsed_seconds = cap_seconds - st.session_state.wod_clock_remaining
     progress_ph.progress(min(elapsed_seconds / float(cap_seconds), 1.0))
     elapsed_ph.markdown(f"**Elapsed:** {format_mmss(elapsed_seconds)}")
     remaining_ph.markdown(f"**Remaining:** {format_mmss(st.session_state.wod_clock_remaining)} (cap)")
     
+    # =============================================================================
+    #                             TIMER ENGINE
+    # =============================================================================
+    
     if wod_type in continuous_styles:
-        # Show exercises but do NOT slice time by exercise list
+        # Display exercises but DO NOT slice time per exercise
         current_ph.subheader("Exercises (follow as prescribed)")
         for i, ex in enumerate(exercises):
-            nxt = exercises[i+1] if i+1 < len(exercises) else None
+            nxt = exercises[i + 1] if i + 1 < len(exercises) else None
             st.markdown(f"- {ex}")
             if nxt:
                 next_ph.info(f"Next: {nxt}")
     
-        # If the clock is in progress, run the utility timer for the current remaining chunk
+        # Run the utility timer for the *remaining* seconds in this segment
         if st.session_state.wod_clock_in_progress and not st.session_state.wod_clock_paused and st.session_state.wod_clock_remaining > 0:
-            # Capture start for accurate elapsed on return
-            start_ts = time.time()
-            # Drive the utility timer; it will auto-update the UI each second
+            # Drive the on-screen clock via your utility; it should check st.session_state[skip_key]
             run_rest_timer(
                 st.session_state.wod_clock_remaining,
                 label=f"{wod_type} Clock",
                 next_item="End",
                 skip_key=skip_key
             )
-            # When the utility returns, compute how much time actually ran
-            actual_run = int(time.time() - start_ts)
-            # Clamp to remaining
+    
+            # On return, compute TRUE elapsed in this segment using persistent start_ts
+            if st.session_state.wod_clock_start_ts is not None:
+                actual_run = int(time.time() - st.session_state.wod_clock_start_ts)
+            else:
+                actual_run = 0
+    
+            # Clamp and update remaining
             actual_run = max(0, min(actual_run, st.session_state.wod_clock_remaining))
             st.session_state.wod_clock_remaining -= actual_run
+            final_elapsed = cap_seconds - st.session_state.wod_clock_remaining
     
-            # Decide what happened based on last action & remaining
+            # Decide terminal state
             if st.session_state.wod_clock_last_action == "pause" and st.session_state.wod_clock_remaining > 0:
-                # Mark paused; user can resume
                 st.session_state.wod_clock_paused = True
                 st.session_state.wod_clock_in_progress = False
-                st.info(f"Paused at {format_mmss(cap_seconds - st.session_state.wod_clock_remaining)}")
-                # Reset skip for next resume
-                st.session_state[skip_key] = False
+                st.info(f"Paused at {format_mmss(final_elapsed)}")
+                st.session_state[skip_key] = False  # clear for next resume
     
             elif st.session_state.wod_clock_last_action == "stop" or st.session_state.wod_clock_remaining <= 0:
-                # Finalize result auto-fill
-                final_elapsed = cap_seconds - st.session_state.wod_clock_remaining
                 st.session_state.wod_autofill_min = int(final_elapsed // 60)
                 st.session_state.wod_autofill_sec = int(final_elapsed % 60)
                 st.session_state.wod_clock_in_progress = False
@@ -255,67 +261,76 @@ def render(session):
                     st.info(f"Stopped at {format_mmss(final_elapsed)}")
     
     elif wod_type in interval_styles:
-        # Structured Work/Rest using the utility timer
+        # Structured Work/Rest cycles using the same utility timer.
+        # Determine reasonable defaults if not explicitly provided in details.
         wm = work_minutes
         rm = rest_minutes
     
         if wod_type == "EMOM":
-            wm = wm or 1
-            rm = rm or 0
+            wm = wm or 1  # 1 minute work
+            rm = rm or 0  # explicit rest not modeled; rest is whatever is left in the minute
         elif wod_type == "Alternating EMOM":
             wm = wm or 1
             rm = rm or 0
         elif wod_type == "Tabata":
-            # Default Tabata: 20s work / 10s rest (seconds), unless minutes explicitly provided
-            wm = wm or 0  # minutes placeholder; we'll use seconds if not provided
+            # Default Tabata: 20s work / 10s rest unless minutes provided
+            wm = wm or 0  # minutes placeholder; we use seconds below
             rm = rm or 0
         else:  # "Interval"
             wm = wm or 2
             rm = rm or 1
     
         if st.session_state.wod_clock_in_progress and not st.session_state.wod_clock_paused and st.session_state.wod_clock_remaining > 0:
-            # Display status
-            counter_ph.markdown(
-                f"**Remaining Time:** {format_mmss(st.session_state.wod_clock_remaining)}"
-            )
+            # Mark the segment start (for accurate elapsed)
+            st.session_state.wod_clock_start_ts = time.time()
     
-            start_ts = time.time()
+            # Status line
+            counter_ph.markdown(f"**Remaining Time:** {format_mmss(st.session_state.wod_clock_remaining)}")
     
             if wod_type == "Tabata" and not (work_minutes or rest_minutes):
                 # Work 20s
                 current_ph.subheader("Tabata Work: Go!")
                 next_ph.info("Next: Rest (10s)")
                 run_rest_timer(20, label="Work (20s)", next_item="Rest (10s)", skip_key=skip_key)
-                # Rest 10s
-                current_ph.subheader("Tabata Rest")
-                next_ph.info("Next: Work (20s)")
-                run_rest_timer(10, label="Rest (10s)", next_item="Work (20s)", skip_key=skip_key)
+                # Rest 10s (if not interrupted)
+                if not st.session_state.get(skip_key):
+                    current_ph.subheader("Tabata Rest")
+                    next_ph.info("Next: Work (20s)")
+                    run_rest_timer(10, label="Rest (10s)", next_item="Work (20s)", skip_key=skip_key)
     
             else:
                 # Work phase (minutes)
                 current_ph.subheader(f"Work Interval ({wm} min)")
-                next_ph.info("Next: Rest")
+                next_ph.info("Next: Rest" if rm > 0 else "Next: Work/Continue")
                 run_rest_timer(int(wm * 60), label=f"Work ({wm} min)", next_item="Rest", skip_key=skip_key)
-                # Rest phase (minutes)
-                if rm > 0 and st.session_state.get(skip_key) is not True:
+    
+                # Rest phase (minutes) if not interrupted and rest > 0
+                if rm > 0 and not st.session_state.get(skip_key):
                     current_ph.subheader(f"Rest Interval ({rm} min)")
                     next_ph.info("Next: Work")
                     run_rest_timer(int(rm * 60), label=f"Rest ({rm} min)", next_item="Work", skip_key=skip_key)
     
-            # After work+rest (or skip), compute actual run time and update remaining
-            actual_run = int(time.time() - start_ts)
+            # Segment accounting
+            if st.session_state.wod_clock_start_ts is not None:
+                actual_run = int(time.time() - st.session_state.wod_clock_start_ts)
+            else:
+                actual_run = 0
             actual_run = max(0, min(actual_run, st.session_state.wod_clock_remaining))
             st.session_state.wod_clock_remaining -= actual_run
+            final_elapsed = cap_seconds - st.session_state.wod_clock_remaining
     
-            # Handle controls
+            # Completed one interval cycle if not interrupted early
+            if not st.session_state.get(skip_key):
+                st.session_state.wod_interval_count += 1
+    
+            # Handle controls / cap
             if st.session_state.wod_clock_last_action == "pause" and st.session_state.wod_clock_remaining > 0:
                 st.session_state.wod_clock_paused = True
                 st.session_state.wod_clock_in_progress = False
-                st.info(f"Paused at {format_mmss(cap_seconds - st.session_state.wod_clock_remaining)}")
+                st.info(f"Paused at {format_mmss(final_elapsed)}")
                 st.session_state[skip_key] = False
     
             elif st.session_state.wod_clock_last_action == "stop" or st.session_state.wod_clock_remaining <= 0:
-                final_elapsed = cap_seconds - st.session_state.wod_clock_remaining
                 st.session_state.wod_autofill_min = int(final_elapsed // 60)
                 st.session_state.wod_autofill_sec = int(final_elapsed % 60)
                 st.session_state.wod_clock_in_progress = False
@@ -328,23 +343,35 @@ def render(session):
                     st.info(f"Stopped at {format_mmss(final_elapsed)}")
     
     else:
-        # Fallback: treat as continuous
+        # Fallback: treat as continuous clock
         current_ph.subheader("Exercises (follow as prescribed)")
         for ex in exercises:
             st.markdown(f"- {ex}")
         if st.session_state.wod_clock_in_progress and not st.session_state.wod_clock_paused and st.session_state.wod_clock_remaining > 0:
-            start_ts = time.time()
-            run_rest_timer(st.session_state.wod_clock_remaining, label="WOD Clock", next_item="End", skip_key=skip_key)
-            actual_run = int(time.time() - start_ts)
+            run_rest_timer(
+                st.session_state.wod_clock_remaining,
+                label="WOD Clock",
+                next_item="End",
+                skip_key=skip_key
+            )
+            # Compute final elapsed from persistent start
+            if st.session_state.wod_clock_start_ts is not None:
+                actual_run = int(time.time() - st.session_state.wod_clock_start_ts)
+            else:
+                actual_run = 0
             actual_run = max(0, min(actual_run, st.session_state.wod_clock_remaining))
             st.session_state.wod_clock_remaining -= actual_run
             final_elapsed = cap_seconds - st.session_state.wod_clock_remaining
+    
             st.session_state.wod_autofill_min = int(final_elapsed // 60)
             st.session_state.wod_autofill_sec = int(final_elapsed % 60)
             st.session_state.wod_clock_in_progress = False
             st.session_state.wod_clock_paused = False
             st.session_state.wod_clock_last_action = None
-            st.session_state[skip_key] = False      
+            st.session_state[skip_key] = False
+            st.success(f"Time cap reached at {format_mmss(final_elapsed)}")
+
+
 
 
 
