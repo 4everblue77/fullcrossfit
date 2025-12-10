@@ -16,7 +16,7 @@ def run_rest_timer(seconds, label="Rest", next_item=None, skip_key=None,session_
 
     
     # Pick a container to render into; default to the root if not provided
-    container = parent if parent is not None else st
+    container = parent if parent is not None else st.container()
 
 
     # ---------- One-time pre-countdown (scoped per workout session) ----------
