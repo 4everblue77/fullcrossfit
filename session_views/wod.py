@@ -262,6 +262,7 @@ def render(session):
     
         if existing_result:
             supabase.table('wod_results').update(payload).eq('id', existing_result[0]['id']).execute()
+            
             st.success(f"Result updated! Your rating: {rating}/100")
         else:
             supabase.table('wod_results').insert({
@@ -270,6 +271,10 @@ def render(session):
                 **payload
             }).execute()
 
+        supabase.table('plan_sessions').update('completed': True).eq('id',session_id).execute()
+
         st.success("WOD completed!")
+        st.session_state.wod_running = False
+        st.session_state.wod_paused = False
         st.session_state.selected_session = None
         st.rerun()
