@@ -213,12 +213,12 @@ def render(session):
     
     if wod_type in continuous_styles:
         # Display exercises but DO NOT slice time per exercise
-        current_ph.subheader("Exercises (follow as prescribed)")
-        for i, ex in enumerate(exercises):
-            nxt = exercises[i + 1] if i + 1 < len(exercises) else None
-            st.markdown(f"- {ex}")
-            if nxt:
-                next_ph.info(f"Next: {nxt}")
+        #current_ph.subheader("Exercises (follow as prescribed)")
+        # for i, ex in enumerate(exercises):
+        #    nxt = exercises[i + 1] if i + 1 < len(exercises) else None
+        #    st.markdown(f"- {ex}")
+        #    if nxt:
+        #        next_ph.info(f"Next: {nxt}")
     
         # Run the utility timer for the *remaining* seconds in this segment
         if st.session_state.wod_clock_in_progress and not st.session_state.wod_clock_paused and st.session_state.wod_clock_remaining > 0:
