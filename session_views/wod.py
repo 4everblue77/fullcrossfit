@@ -99,8 +99,7 @@ def render(session):
 
 
     # --- Global Timer Logic ---
-    import time
-    import re
+
     
     # Helpers
     def parse_duration_minutes(text: str) -> int | None:
