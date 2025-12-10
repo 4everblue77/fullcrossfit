@@ -311,7 +311,7 @@ def render(session):
             st.session_state.wod_paused = False
             st.session_state.wod_autofill_min = int(elapsed // 60)
             st.session_state.wod_autofill_sec = int(elapsed % 60)
-            st.success(f"Time cap reached at {format_mmss(el
+            st.success(f"Time cap reached at {format_mmss(elapsed)}")
 
 
     # --- Result Recording Section ---
