@@ -37,12 +37,88 @@ class CrossFitPlanGenerator:
             "exercise_pool": self.supabase.table("exercise_pool").select("*").execute().data
         }
 
-    def _estimate_total_time(self, daily_plan):
+
+    def _estimate_total_time(self, plan: dict) -> int:
+        """
+        Sum known section times. Prefer structured 'time_cap_sec' in exercises,
+        then section-level 'Estimated Time', else fall back to defaults.
+        Returns minutes (int).
+        """
+        # Defaults (tweak to your preferences / program constraints)
+        DEFAULTS = {
+            "Warmup": 12,
+            "Heavy": 20,
+            "Olympic": 20,
+            "Run": 30,        # If run generator doesn't provide time, assume mixed cardio
+            "WOD": 18,        # Fallback if no cap provided
+            "Benchmark": 25,
+            "Light": 15,
+            "Skill": 20,
+            "Cooldown": 8,
+        }
+    
+        def section_minutes(section_name: str, section_obj: dict) -> int:
+            # 1) Try to read per-exercise time caps (complex WODs / interval formats)
+            if isinstance(section_obj, dict) and "exercises" in section_obj:
+                caps = []
+                for ex in section_obj.get("exercises", []):
+                    cap_sec = ex.get("time_cap_sec")
+                    if isinstance(cap_sec, (int, float)) and cap_sec > 0:
+                        caps.append(cap_sec)
+                if caps:
+                    # For most sections, the block time is the *max* cap (WOD) or the *sum* if clearly additive.
+                    # WODs are cap-based, so take max. For Warmup/Cooldown/Light, generators usually don't set caps.
+                    if section_name in ("WOD", "Benchmark"):
+                        return int(max(caps) // 60)
+                    # If ever you produce additive caps (rare), sum them:
+                    # return int(sum(caps) // 60)
+                    # Otherwise fall through to 'Estimated Time' or defaults.
+    
+            # 2) Try the section-level "Estimated Time"
+            est = None
+            if isinstance(section_obj, dict):
+                est = section_obj.get("Estimated Time")
+            elif isinstance(section_obj, str):
+                # Some generators might return just text; try a very light parse
+                est = section_obj
+    
+            if isinstance(est, str):
+                # Extract a leading integer before 'min'
+                # e.g., "18 min", "Time Cap: 30 min"
+                import re
+                m = re.search(r"(\d+)\s*min", est.lower())
+                if m:
+                    return int(m.group(1))
+    
+            # 3) Last resort: defaults
+            return DEFAULTS.get(section_name, 0)
+    
         total = 0
-        for block in daily_plan.values():
-            if isinstance(block, dict) and "time" in block:
-                total += block["time"]
-        return total
+        for section_name, section_obj in plan.items():
+            if section_name in ("Total Time", "Rest Day"):
+                continue
+            total += section_minutes(section_name, section_obj)
+    
+        # Edge case: if your Run generator returns distance only, estimate by pace
+        # Example: add heuristic if 'Run' exists and has distance but no time:
+        run = plan.get("Run")
+        if isinstance(run, dict) and "exercises" in run:
+            # If no section Minutes computed above, try to infer from distance
+            # Assume 6:00 min/km (i.e., 10 km/h) for treadmill as default
+            has_time = section_minutes("Run", run)
+            if not has_time:
+                dist_m = 0
+                for ex in run["exercises"]:
+                    if (ex.get("name", "").lower().find("treadmill run") >= 0) and ex.get("unit") == "m":
+                        try:
+                            dist_m += int(ex.get("reps", "0"))
+                                           except Exception:
+                            pass
+                if dist_m > 0:
+                    pace_min_per_km = 6.0
+                    total += int((dist_m / 1000.0) * pace_min_per_km)
+    
+
     
     def fetch_skills(self):
         return self.supabase.table("skills").select("skill_name").execute().data
@@ -83,7 +159,7 @@ class CrossFitPlanGenerator:
         if config["run"]:
             plan["Run"] = self.run_gen.generate()
         if config["wod"] and config["stimulus"]:
-            plan["WOD"] = self.wod_gen.generate(target_muscle=config["wod"][0], stimulus=config["stimulus"])
+            plan["WOD"] = self.wod_gen.generate_complex_wod(target_muscle=config["wod"][0], stimulus=config["stimulus"])
         if config["stimulus"] == "Girl/Hero":
             plan["Benchmark"] = self.benchmark_gen.generate()
         if not config["skill"] and not config["run"]:
