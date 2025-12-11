@@ -218,7 +218,7 @@ class CrossFitPlanGenerator:
                     "stimulus": day_config["stimulus"],
                     "day_type": day_config["day"],
                     "plan": daily_plan,
-                    "estimated_time": self._estimate_total_time(daily_plan)
+                    "estimated_time": int(self._estimate_total_time(daily_plan) or 0)
                 }
                 day_offset += 1
         return full_plan
