@@ -357,7 +357,7 @@ class WODGenerator:
             "WOD Name": name,
             "Type": wod_type,
             "Estimated Time": f"{duration} min",
-            "estimated_time_minutes": int(duration), # <-- always numeric
+            "estimated_time": int(duration), # <-- always numeric
             "details": "\n".join(lines),
             "Performance Targets": self.generate_targets(wod_type),
             "exercises": structured,
@@ -576,7 +576,7 @@ class WODGenerator:
             "WOD Name": name,
             "Type": wod_type,
             "Estimated Time": f"{duration} min",
-            "estimated_time_minutes": int(duration), # <-- always numeric
+            "estimated_time": int(duration), # <-- always numeric
             "details": details,
             "Performance Targets": self.generate_targets(wod_type),
             "exercises": structured,
