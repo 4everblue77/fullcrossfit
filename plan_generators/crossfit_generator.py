@@ -112,7 +112,7 @@ class CrossFitPlanGenerator:
                     if (ex.get("name", "").lower().find("treadmill run") >= 0) and ex.get("unit") == "m":
                         try:
                             dist_m += int(ex.get("reps", "0"))
-                                           except Exception:
+                        except Exception:
                             pass
                 if dist_m > 0:
                     pace_min_per_km = 6.0
