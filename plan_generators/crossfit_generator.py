@@ -128,6 +128,11 @@ class CrossFitPlanGenerator:
     
     def build_framework(self):
         framework = {}
+
+        
+        # Define your muscle groups pool for WOD targeting
+        MUSCLE_POOL = ["Back", "Chest", "Shoulders", "Quads", "Glutes/Hamstrings", "Core"]
+
         for week in range(1, 7):
             # Odd/even week switch
             is_odd = (week % 2 != 0)
@@ -195,6 +200,12 @@ class CrossFitPlanGenerator:
             wed_stim = random.choice(["VO2 Max", "Lactate Threshold"])
             fri_stim = random.choice(["VO2 Max", "Lactate Threshold"])
             sat_stim = "Girl/Hero" if is_odd else "Anaerobic"
+
+            
+            # If the day is Anaerobic and has no WOD muscle assigned, assign a random one
+            if sat_stim.lower() == "anaerobic" and not wod_map["Sat"]:
+                wod_map["Sat"] = [random.choice(MUSCLE_POOL)]
+
     
             framework[week] = [
                 {
