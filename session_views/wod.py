@@ -59,13 +59,35 @@ def calculate_rating(wod_type, user_result, targets, level="Intermediate"):
 
 
 def render(session):
-    # Fetch session details
-    session_data = supabase.table("plan_sessions").select("*").eq("id", session["session_id"]).single().execute().data
-    if not session_data:
-        st.error("Session details not found.")
+
+    # --- Validate input early
+    sid = session.get("session_id")
+    if sid is None:
+        st.error("No session_id provided to the WOD view.")
         return
 
+    # --- Safer fetch: avoid .single() so 0 rows doesn't raise
+    try:
+        resp = (
+            supabase.table("plan_sessions")
+            .select("*")
+            .eq("id", sid)
+            .limit(1)          # fetch at most 1 row
+            .execute()
+        )
+    except Exception as e:
+        st.error(f"Failed to fetch session details (session_id={sid}).")
+        st.caption(f"Debug: {e}")
+               return
+
+    rows = resp.data or []
+    if not rows:
+        st.error(f"Session details not found for session_id={sid}.")
+        return
+
+    session_data = rows[0]
     details = session_data.get('details', 'No details provided')
+
 
     # Detect WOD type from details
     wod_type = None
