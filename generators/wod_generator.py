@@ -598,7 +598,7 @@ class WODGenerator:
                 lines.append(f"- {ex.get('exercise')}")
         
             # Structured: use 1 rep as baseline, annotate protocol in notes
-            for i    for i, ex in enumerate(moves, start=1):
+            for i, ex in enumerate(moves, start=1):
                 item = self._structured_item(ex, i, 1, "Death by", duration)
                 item["notes"] = "Protocol: +1 rep each minute until failure"
         
