@@ -123,27 +123,143 @@ class CrossFitPlanGenerator:
     def fetch_skills(self):
         return self.supabase.table("skills").select("skill_name").execute().data
     
+    
 
+    
     def build_framework(self):
         framework = {}
         for week in range(1, 7):
-            glutes_or_quads = "Glutes/Hamstrings" if week % 2 != 0 else "Quads"
-            chest_or_back = "Chest" if week % 2 != 0 else "Back"
+            # Odd/even week switch
+            is_odd = (week % 2 != 0)
+    
+            # ---- Assignments per your attachment ----
+            # Odd week mapping
+            odd_heavy = {
+                "Mon": ["Shoulders"],
+                "Tue": [],
+                "Wed": ["Glutes/Hamstrings"],
+                "Thu": [],
+                "Fri": ["Chest"],
+                "Sat": [],
+            }
+            odd_wod = {
+                "Mon": ["Back"],
+                "Tue": ["Core"],
+                "Wed": ["Shoulders"],
+                "Thu": [],
+                "Fri": ["Glutes/Hamstrings"],
+                "Sat": [],
+            }
+            odd_light = {
+                "Mon": ["Quads"],
+                "Tue": [],
+                "Wed": ["Back"],
+                "Thu": [],
+                "Fri": ["Shoulders"],
+                "Sat": ["Core"],
+            }
+    
+            # Even week mapping
+            even_heavy = {
+                "Mon": ["Shoulders"],
+                "Tue": [],
+                "Wed": ["Quads"],
+                "Thu": [],
+                "Fri": ["Back"],
+                "Sat": [],
+            }
+            even_wod = {
+                "Mon": ["Chest"],
+                "Tue": ["Core"],
+                "Wed": ["Shoulders"],
+                "Thu": [],
+                "Fri": ["Quads"],
+                "Sat": [],
+            }
+            even_light = {
+                "Mon": ["Glutes/Hamstrings"],
+                "Tue": [],
+                "Wed": ["Chest"],
+                "Thu": [],
+                "Fri": ["Shoulders"],
+                "Sat": ["Core"],
+            }
+    
+            heavy_map = odd_heavy if is_odd else even_heavy
+            wod_map   = odd_wod   if is_odd else even_wod
+            light_map = odd_light if is_odd else even_light
+    
+            # Stimulus logic 
             mon_stim = random.choice(["VO2 Max", "Lactate Threshold"])
             tue_stim = random.choice(["VO2 Max", "Lactate Threshold"])
             wed_stim = random.choice(["VO2 Max", "Lactate Threshold"])
             fri_stim = random.choice(["VO2 Max", "Lactate Threshold"])
-            sat_stim = "Girl/Hero" if week % 2 != 0 else "Anaerobic"
+            sat_stim = "Girl/Hero" if is_odd else "Anaerobic"
+    
             framework[week] = [
-                {"day": "Mon", "heavy": [glutes_or_quads], "wod": [chest_or_back], "stimulus": mon_stim, "light": ["Shoulders"], "olympic": False, "skill": False, "run": False},
-                {"day": "Tue", "heavy": [], "wod": ["Core"], "stimulus": tue_stim, "light": [], "olympic": True, "skill": True, "run": False},
-                {"day": "Wed", "heavy": ["Shoulders"], "wod": [glutes_or_quads], "stimulus": wed_stim, "light": [chest_or_back], "olympic": False, "skill": False, "run": False},
-                {"day": "Thu", "heavy": [], "wod": [], "stimulus": None, "light": [], "olympic": False, "skill": False, "run": True},
-                {"day": "Fri", "heavy": [chest_or_back], "wod": ["Shoulders"], "stimulus": fri_stim, "light": [glutes_or_quads], "olympic": False, "skill": False, "run": False},
-                {"day": "Sat", "heavy": [], "wod": [], "stimulus": sat_stim, "light": [glutes_or_quads], "olympic": True, "skill": False, "run": False},
-                None  # Sunday rest
+                {
+                    "day": "Mon",
+                    "heavy": heavy_map["Mon"],
+                    "wod": wod_map["Mon"],
+                    "stimulus": mon_stim,
+                    "light": light_map["Mon"],
+                    "olympic": False,
+                    "skill": False,
+                    "run": False,
+                },
+                {
+                    "day": "Tue",
+                    "heavy": heavy_map["Tue"],
+                    "wod": wod_map["Tue"],
+                    "stimulus": tue_stim,
+                    "light": light_map["Tue"],
+                    "olympic": True,
+                    "skill": True,
+                    "run": False,
+                },
+                {
+                    "day": "Wed",
+                    "heavy": heavy_map["Wed"],
+                    "wod": wod_map["Wed"],
+                    "stimulus": wed_stim,
+                    "light": light_map["Wed"],
+                    "olympic": False,
+                    "skill": False,
+                    "run": False,
+                },
+                {
+                    "day": "Thu",
+                    "heavy": heavy_map["Thu"],
+                    "wod": wod_map["Thu"],
+                    "stimulus": None,
+                    "light": light_map["Thu"],
+                    "olympic": False,
+                    "skill": False,
+                    "run": True,  # Your Thursday run
+                },
+                {
+                    "day": "Fri",
+                    "heavy": heavy_map["Fri"],
+                    "wod": wod_map["Fri"],
+                    "stimulus": fri_stim,
+                    "light": light_map["Fri"],
+                    "olympic": False,
+                    "skill": False,
+                    "run": False,
+                },
+                {
+                    "day": "Sat",
+                    "heavy": heavy_map["Sat"],
+                    "wod": wod_map["Sat"],
+                    "stimulus": sat_stim,
+                    "light": light_map["Sat"],
+                    "olympic": True,
+                    "skill": False,
+                    "run": False,
+                           },
+                None,  # Sunday rest
             ]
-        return framework
+
 
     def generate_daily_plan(self, config, week_number, skill_name=None):
         if config is None:
