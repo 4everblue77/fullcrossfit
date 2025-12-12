@@ -133,12 +133,13 @@ def render(session):
                 "Rest": row.get("rest", 90)  # Default 90s if missing
             })
 
-        df = pd.DataFrame(data)
 
+        df_original = pd.DataFrame(data)
+        
         edited_df = st.data_editor(
-            df.drop(columns=["ID", "Rest"]),
+            df_original.drop(columns=["ID", "Rest"]),
             num_rows="fixed",
-            width= 'stretch',
+            width='stretch',
             hide_index=True,
             column_config={
                 "Set": st.column_config.NumberColumn("Set", disabled=True),
@@ -146,39 +147,109 @@ def render(session):
                 "Weight": st.column_config.NumberColumn("Weight", format="%.2f"),
                 "Reps": st.column_config.TextColumn("Reps"),
                 "Done": st.column_config.CheckboxColumn("Done")
-            }
+            },
+            key=f"editor_{session['session_id']}_{ex_name}_{block_name}"
         )
-        
-
-            
-
-
-
         return edited_df, df["ID"].tolist()
 
     # Loop through exercises
+    all_dfs = []
     for ex_name, sets in grouped_exercises.items():
         st.subheader(ex_name)
         warmup_sets = [s for s in sets if str(s.get("notes", "")).lower().startswith("warmup")]
         working_sets = [s for s in sets if s not in warmup_sets]
 
-        warmup_df, warmup_ids = render_block("🔥 Technique Warmup", warmup_sets)
 
-        # warmup timer
-        warmup_rest = max([int(s.get("rest", 60)) for s in warmup_sets], default=60)
-        warmup_rest = st.number_input("Warmup Rest (seconds)", min_value=10, max_value=600, value=warmup_rest, step=10)
-        if st.button(f"▶ Start Warmup Rest Timer ({warmup_rest}s)"):
-            run_rest_timer(warmup_rest, label="Warmup Set Rest", next_item=None,
-                           skip_key=f"warmup_rest_{session['session_id']}")
+        # Warmup block
+        warmup_df, warmup_df_original, warmup_ids = render_block("🔥 Technique Warmup", warmup_sets, ex_name, session)
+        if warmup_df is not None:
+            # Instant persistence for warmup rows
+            for i, row_id in enumerate(warmup_ids):
+                is_done_now = bool(warmup_df.loc[i, "Done"])
+                weight_now  = str(warmup_df.loc[i, "Weight"])
+                reps_now    = str(warmup_df.loc[i, "Reps"])
+
+                was_done    = bool(warmup_df_original.loc[i, "Done"])
+                weight_prev = str(warmup_df_original.loc[i, "Weight"])
+                reps_prev   = str(warmup_df_original.loc[i, "Reps"])
+
+                if (is_done_now != was_done) or (weight_now != weight_prev) or (reps_now != reps_prev):
+                    supabase.table("plan_session_exercises").update({
+                        "completed": is_done_now,
+                        "actual_weight": weight_now,
+                        "actual_reps": reps_now
+                    }).eq("id", row_id).execute()
+
+                    if is_done_now and not was_done:
+                        update_1rm_on_completion(ex_name, [{
+                            "id": row_id,
+                            "completed": True,
+                            "actual_weight": weight_now,
+                            "actual_reps": reps_now,
+                            "set_number": warmup_df.loc[i, "Set"]
+                        }])
+    
+            # Warmup (group) timer controls
+            warmup_rest = max([int(s.get("rest", 60)) for s in warmup_sets], default=60)
+            warmup_rest = st.number_input(
+                "Warmup Rest (seconds)", min_value=10, max_value=600, value=warmup_rest, step=10,
+                key=f"olympic_warmup_rest_input_{session['session_id']}_{ex_name}"
+            )
+            if st.button(
+                f"▶ Start Warmup Rest Timer ({warmup_rest}s)",
+                key=f"olympic_warmup_rest_button_{session['session_id']}_{ex_name}"
+            ):
+                run_rest_timer(
+                    warmup_rest, label="Warmup Set Rest", next_item=None,
+                    skip_key=f"olympic_warmup_rest_skip_{session['session_id']}_{ex_name}"
+                )
+
+
             
-        working_df, working_ids = render_block("💪 Main Lifts", working_sets)
+        # Working block
+        working_df, working_df_original, working_ids = render_block("💪 Main Lifts", working_sets, ex_name, session)
+        if working_df is not None:
+            # Instant persistence for working rows
+            for i, row_id in enumerate(working_ids):
+                is_done_now = bool(working_df.loc[i, "Done"])
+                weight_now  = str(working_df.loc[i, "Weight"])
+                reps_now    = str(working_df.loc[i, "Reps"])
 
-        # warmup timer
-        working_rest = max([int(s.get("rest", 60)) for s in working_sets], default=120)
-        working_rest = st.number_input("Working Rest (seconds)", min_value=10, max_value=600, value=working_rest, step=10)
-        if st.button(f"▶ Start Working Rest Timer ({working_rest}s)"):
-            run_rest_timer(warmup_rest, label="Working Set Rest", next_item=None,
-                           skip_key=f"working_rest_{session['session_id']}")
+                was_done    = bool(working_df_original.loc[i, "Done"])
+                weight_prev = str(working_df_original.loc[i, "Weight"])
+                reps_prev   = str(working_df_original.loc[i, "Reps"])
+
+                if (is_done_now != was_done) or (weight_now != weight_prev) or (reps_now != reps_prev):
+                    supabase.table("plan_session_exercises").update({
+                        "completed": is_done_now,
+                        "actual_weight": weight_now,
+                        "actual_reps": reps_now
+                    }).eq("id", row_id).execute()
+
+                    if is_done_now and not was_done:
+                        update_1rm_on_completion(ex_name, [{
+                            "id": row_id,
+                            "completed": True,
+                            "actual_weight": weight_now,
+                            "actual_reps": reps_now,
+                            "set_number": working_df.loc[i, "Set"]
+                        }])
+    
+            # Working (group) timer controls
+            working_rest = max([int(s.get("rest", 120)) for s in working_sets], default=120)
+            working_rest = st.number_input(
+                "Working Rest (seconds)", min_value=10, max_value=600, value=working_rest, step=10,
+                key=f"olympic_working_rest_input_{session['session_id']}_{ex_name}"
+            )
+            if st.button(
+                f"▶ Start Working Rest Timer ({working_rest}s)",
+                key=f"olympic_working_rest_button_{session['session_id']}_{ex_name}"
+            ):
+                run_rest_timer(
+                    working_rest, label="Working Set Rest", next_item=None,
+                    skip_key=f"olympic_working_rest_skip_{session['session_id']}_{ex_name}"
+                )
+
 
 
         if warmup_df is not None:
