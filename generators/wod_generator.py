@@ -562,6 +562,48 @@ class WODGenerator:
                 lines.append(f"- {ex.get('exercise')}")
                 structured.append(self._structured_item(ex, i, 20, "Tabata", duration))
 
+        elif wod_type == "Ladder" and template == "ladder_desc":
+            # choose 2–3 movements and a common descending ladder scheme
+            moves = pick_ex(random.choice([2, 3]))
+            ladder_schemes = [[21, 15, 9], [21, 15, 9, 6, 3], [10, 8, 6, 4, 2]]
+            scheme = random.choice(ladder_schemes)
+        
+            # time cap tuned for ladders (uses your existing helper)
+            duration = time_cap_for("Ladder")
+        
+            # details text
+            lines.append(f"Ladder – {duration} min cap")
+            lines.append(f"Increase reps each round: {'-'.join(str(s) for s in scheme)}")
+            for ex in moves:
+                lines.append(f"- {ex.get('exercise')}")
+        
+            # structured entries: store a baseline reps (first step), and include the full scheme in notes
+            for i, ex in enumerate(moves, start=1):
+                item = self._structured_item(ex, i, scheme[0], "Ladder", duration)
+                # enrich the notes so the app/log can show the actual ladder scheme later
+                item["notes"] = f"Ladder scheme: {'-'.join(str(s) for s in scheme)}"
+                structured.append(item)
+
+        
+        elif wod_type == "Death by":
+            # Pick 1–2 movements; classic is one movement
+            moves = pick_ex(random.choice([1, 2]))
+        
+            # Choose a sensible total duration (minutes to failure or cap)
+            duration = time_cap_for("Death by")
+        
+            lines.append(f"Death by – {duration} min cap")
+            lines.append("Start with 1 rep in minute 1, 2 reps in minute 2, etc. Continue until failure:")
+            for ex in moves:
+                lines.append(f"- {ex.get('exercise')}")
+        
+            # Structured: use 1 rep as baseline, annotate protocol in notes
+            for i    for i, ex in enumerate(moves, start=1):
+                item = self._structured_item(ex, i, 1, "Death by", duration)
+                item["notes"] = "Protocol: +1 rep each minute until failure"
+        
+
+
         else:
 
             # Fallback: default to RFT so rounds are always explicit
@@ -575,6 +617,7 @@ class WODGenerator:
             for i, ex in enumerate(moves, start=1):
                 lines.append(self._format_line(ex, reps))
                 structured.append(self._structured_item(ex, i, reps, "For Time", duration))
+        
 
 
         details = "\n".join(lines).strip()
