@@ -609,7 +609,7 @@ class WODGenerator:
             # Fallback: default to RFT so rounds are always explicit
             rounds = random.choice([3, 4, 5, 6])
             moves  = pick_ex(random.choice([3, 4, 5]))
-            reps   = random.choice([7, 10reps   = random.choice([7, 10, 12, 15])
+            reps   = random.choice([7, 10, 12, 15])
             duration = time_cap_for("For Time")
             
             lines.append(f"For Time – Time Cap: {duration} min")
