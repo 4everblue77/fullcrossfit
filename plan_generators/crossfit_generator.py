@@ -259,6 +259,7 @@ class CrossFitPlanGenerator:
                            },
                 None,  # Sunday rest
             ]
+        return framework
 
 
     def generate_daily_plan(self, config, week_number, skill_name=None):
