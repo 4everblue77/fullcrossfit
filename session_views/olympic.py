@@ -150,7 +150,7 @@ def render(session):
             },
             key=f"editor_{session['session_id']}_{ex_name}_{block_name}"
         )
-        return edited_df, df["ID"].tolist()
+        return edited_df, df_original, df_original["ID"].tolist()
 
     # Loop through exercises
     all_dfs = []
