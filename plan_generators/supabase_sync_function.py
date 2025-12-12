@@ -180,7 +180,7 @@ def sync_plan_to_supabase(supabase, full_plan, data):
                             "actual_weight": "",
                             "tempo": ex.get("tempo", ""),
                             "expected_weight": ex.get("expected_weight", ""),
-                            "equipment": ex.get("equipment",                            "equipment": ex.get("equipment", "")
+                            "equipment": ex.get("equipment",                         
                         }).execute()
                         summary["exercises"] += 1
 
