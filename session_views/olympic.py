@@ -83,7 +83,7 @@ def render(session):
     all_dfs = []  # To store edited data for saving later
     all_ids = []
 
-    def render_block(block_name, block_sets):
+    def render_block(block_name, block_sets, ex_name, session):
         if not block_sets:
             return None, []
         st.markdown(f"**{block_name} Sets**")
