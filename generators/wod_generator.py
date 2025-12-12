@@ -563,13 +563,19 @@ class WODGenerator:
                 structured.append(self._structured_item(ex, i, 20, "Tabata", duration))
 
         else:
-            # Fallback simple For Time triplet
-            moves = pick_ex(3)
-            lines.append(f"For Time – {duration} min cap")
+
+            # Fallback: default to RFT so rounds are always explicit
+            rounds = random.choice([3, 4, 5, 6])
+            moves  = pick_ex(random.choice([3, 4, 5]))
+            reps   = random.choice([7, 10reps   = random.choice([7, 10, 12, 15])
+            duration = time_cap_for("For Time")
+            
+            lines.append(f"For Time – Time Cap: {duration} min")
+            lines.append(f"{rounds} Rounds of:")
             for i, ex in enumerate(moves, start=1):
-                reps = self._pick_qty(ex)
                 lines.append(self._format_line(ex, reps))
                 structured.append(self._structured_item(ex, i, reps, "For Time", duration))
+
 
         details = "\n".join(lines).strip()
         return {
