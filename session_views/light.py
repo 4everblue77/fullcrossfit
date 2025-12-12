@@ -49,22 +49,24 @@ def render_superset_block(superset_name, superset_sets,session):
             "Rest": row.get("rest", 60)
         })
 
-    df = pd.DataFrame(data)
+
+    df_original = pd.DataFrame(data)
+
     edited_df = st.data_editor(
-        df.drop(columns=["ID", "Rest","Set"]),
+        df_original.drop(columns=["ID", "Rest", "Set"]),
         num_rows="fixed",
         width='stretch',
         hide_index=True,
         column_config={
             "Exercise": st.column_config.TextColumn("Exercise", disabled=True),
-            #"Set": st.column_config.NumberColumn("Set", disabled=True),
             "Weight": st.column_config.NumberColumn("Weight", format="%.2f"),
             "Reps": st.column_config.TextColumn("Reps"),
             "%RM": st.column_config.TextColumn("%RM", disabled=True),
             "Done": st.column_config.CheckboxColumn("Done")
         },
-        key=f"editor_{superset_name}"
+        key=f"editor_{session['session_id']}_{superset_name}"  # stable per session+superset
     )
+
 
     # timer
     rest_seconds = int(df["Rest"].iloc[0])  # use first row's rest value
@@ -108,9 +110,51 @@ def render(session):
     st.markdown(f"**Progress:** {completed_sets}/{total_sets} sets completed")
 
     all_dfs = []
+
     for superset_name, superset_sets in superset_groups.items():
-        edited_df, ids = render_superset_block(superset_name, superset_sets,session)
+        edited_df, df_original, ids = render_superset_block(superset_name, superset_sets, session)
+    
         if edited_df is not None:
+            # Instant persistence per row
+            for i, row_id in enumerate(ids):
+                is_done_now = bool(edited_df.loc[i, "Done"])
+                weight_now  = str(edited_df.loc[i, "Weight"])
+                reps_now    = str(edited_df.loc[i, "Reps"])
+    
+                was_done    = bool(df_original.loc[i, "Done"])
+                weight_prev = str(df_original.loc[i, "Weight"])
+                reps_prev   = str(df_original.loc[i, "Reps"])
+    
+                # Only write if something changed
+                if (is_done_now != was_done) or (weight_now != weight_prev) or (reps_now != reps_prev):
+                    supabase.table("plan_session_exercises").update({
+                        "completed": is_done_now,
+                        "actual_weight": weight_now,
+                        "actual_reps": reps_now
+                    }).eq("id", row_id).execute()
+    
+                    # If newly completed, update 1RM and start a per-row rest timer (optional)
+                    if is_done_now and not was_done:
+                        exercise_name = df_original.loc[i, "Exercise"]
+                        update_1rm_on_completion(exercise_name, [{
+                            "id": row_id,
+                            "completed": True,
+                            "actual_weight": weight_now,
+                            "actual_reps": reps_now,
+                            # "set_number": df_original.loc[i, "Set"]  # available if needed
+                        }])
+    
+                                           # Optional per-row rest timer
+                        rest_seconds = int(df_original.loc[i, "Rest"])
+                        run_rest_timer(
+                            rest_seconds,
+                            label=f"{superset_name} – {exercise_name}",
+                            next_item=None,
+                            skip_key=f"light_row_rest_{session['session_id']}_{superset_name}_{i}"
+                        )
+    
+            # Keep for final completion check (optional)
+
             all_dfs.append((superset_name, edited_df, ids))
 
     # ✅ Save progress
