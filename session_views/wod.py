@@ -78,7 +78,7 @@ def render(session):
     except Exception as e:
         st.error(f"Failed to fetch session details (session_id={sid}).")
         st.caption(f"Debug: {e}")
-               return
+        return
 
     rows = resp.data or []
     if not rows:
