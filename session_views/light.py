@@ -287,4 +287,5 @@ def render(session):
 
         st.success("Progress saved. Returning to dashboard...")
         st.session_state.selected_session = None
+        st.rerun()
 
