@@ -14,12 +14,12 @@ SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ---------------------------
-# Helpers (robust "Set <n>" parsing)
+# Helpers (parse "Set <n>" from notes only)
 # ---------------------------
-# Accepts: "Set 1 - ...", "Set 2 – ...", "Set 3 — ...", "Set 1: ...", "Set 1 ...", "Set(1)"
-SET_NUMBER_REGEX = re.compile(
-    r"^\s*set\s*(?:\(|\s+)?\s*(\d+)\s*(?:\)|\s*[:\-–—])?",
-    flags=re.IGNORECASE
+# Matches at any position, e.g.:
+# "Set 1 - Primary (Quads)", "  Set 2 – Opposing ...", "Set(3) ..." , "Set 1: ..."
+SET_FROM_NOTES = re.compile(
+    r"(?i)\bset\s*(?:\(|\s+)?\s*(\d+)\s*(?:\)|\s*[:\-–—])?"
 )
 
 def parse_reps_only(note: str) -> str:
@@ -86,33 +86,21 @@ def persist_block_changes(edited_df, original_df, row_ids):
     if any_updated:
         st.rerun()
 
-def get_set_index(row) -> int | None:
+def get_set_index_from_notes(notes: str) -> int | None:
     """
-    Return the set index for a row (1,2,3,...) using:
-      1) row['set_number'] if present and valid (preferred)
-      2) fallback: parse row['notes'] like 'Set 2 - Primary (Quads)'
+    Strictly parse 'Set <n>' from plan_session_exercises.notes.
+    Returns an integer set index or None.
     """
-    # 1) Prefer set_number from DB if available
-    sn = row.get("set_number", None)
+    if not notes:
+        return None
+    m = SET_FROM_NOTES.search(str(notes))
+    if not m:
+        return None
     try:
-        if sn is not None:
-            sn_int = int(sn)
-            if sn_int > 0:
-                return sn_int
+        val = int(m.group(1))
+        return val if val > 0 else None
     except Exception:
-        pass
-
-    # 2) Fallback: parse notes
-    notes = str(row.get("notes", "") or "")
-    m = SET_NUMBER_REGEX.search(notes)
-    if m:
-        try:
-            val = int(m.group(1))
-            if val > 0:
-                return val
-        except Exception:
-            return None
-    return None
+        return None
 
 # ---------------------------
 # Block renderer
@@ -147,7 +135,7 @@ def render_set_block(block_title: str, rows: list, session, show_prev_bests: boo
             {
                 "ID": row["id"],
                 "Exercise": row.get("exercise_name", ""),
-                "Set": row.get("set_number", ""),
+                "Set": row.get("set_number", ""),  # not used for grouping anymore; display only if needed
                 "Weight": weight_value,
                 "Reps": reps_display,
                 "%RM": row.get("intensity", ""),  # kept for context; not used to compute
@@ -231,31 +219,31 @@ def render(session):
         if ex_n and ex_n not in session_ex_names:
             session_ex_names.append(ex_n)
 
-    # --- Group rows by set index (prefer set_number; fallback to notes) ---
-    grouped_by_index = defaultdict(list)
+    # --- Group rows by "Set <n>" parsed from NOTES ONLY ---
+    grouped_by_set = defaultdict(list)
     other_rows = []
     for row in sets_data:
-        idx = get_set_index(row)
+        idx = get_set_index_from_notes(row.get("notes", ""))
         if idx is not None:
-            grouped_by_index[idx].append(row)
+            grouped_by_set[idx].append(row)
         else:
             other_rows.append(row)
 
-    ordered_indices = sorted(grouped_by_index.keys())
+    ordered_indices = sorted(grouped_by_set.keys())
 
     # Render blocks; show prev bests above the FIRST block (Set 1 or "Other")
     all_blocks = []
     first_block_rendered = False
 
     for idx in ordered_indices:
-        rows = grouped_by_index[idx]
+        rows = grouped_by_set[idx]
         block_title = f"Set ({idx})"
         show_prev_bests = not first_block_rendered  # only above first block
         edited_df, ids = render_set_block(block_title, rows, session, show_prev_bests, session_ex_names)
         all_blocks.append((edited_df, ids))
         first_block_rendered = True
 
-    # Render "Other" last (if any rows lacked a set index)
+    # Render "Other" last (if any rows lacked a set index in notes)
     if other_rows:
         show_prev_bests = not first_block_rendered  # if no set blocks, show above Other
         edited_df, ids = render_set_block("Other", other_rows, session, show_prev_bests, session_ex_names)
