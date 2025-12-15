@@ -15,27 +15,24 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 # ---------------------------
-# Utility (display only)
+# Helpers
 # ---------------------------
-def parse_reps_and_weight(note):
-    """
-    Parse a textual reps note like '(8-10)' from 'note' field.
-    This returns the reps string only (no %1RM or suggested weights).
-    """
-    normalized_note = (
-        note.replace("–", "-").replace("—", "-").replace("−", "-")
-    )
-    normalized_note = re.sub(r'\s+', ' ', normalized_note)
-    reps_match = re.search(r'\((\d+\s*-\s*\d+)\)', normalized_note)
-    reps = reps_match.group(1) if reps_match else ""
-    return reps
+SET_REGEX = re.compile(r"Set\s*\((\d+)\)", flags=re.IGNORECASE)
 
+def parse_reps_only(note: str) -> str:
+    """Extract a reps hint like '(8-10)' if present (display only)."""
+    if not note:
+        return ""
+    normalized = note.replace("–", "-").replace("—", "-").replace("−", "-")
+    normalized = re.sub(r"\s+", " ", normalized)
+    m = re.search(r"\((\d+\s*-\s*\d+)\)", normalized)
+    return m.group(1) if m else ""
 
 def fetch_prev_best_for_exercise(exercise_name: str):
     """
-    Fetch previous best for the given exercise from plan_session_exercises
-    using the highest actual_weight in completed sets (simple, equipment-agnostic).
-    Returns dict with keys: weight, reps. If none found, returns None.
+    Previous best for an exercise from completed rows in plan_session_exercises.
+    Uses highest actual_weight (simple, equipment-agnostic).
+    Returns dict(weight, reps) or None.
     """
     try:
         rows = (
@@ -59,73 +56,48 @@ def fetch_prev_best_for_exercise(exercise_name: str):
         }
     return None
 
-
-# ---------------------------
-# Single-click save helper
-# ---------------------------
 def persist_block_changes(edited_df, original_df, row_ids):
     """
-    Persist per-row changes for a block (superset), then rerun once
+    Persist per-row changes for a block and rerun once
     so UI aligns with DB immediately (prevents needing to click twice).
     """
     if edited_df is None or original_df is None or not row_ids:
         return
-
     any_updated = False
 
     for i, row_id in enumerate(row_ids):
-        # Current (edited) values
         is_done_now = bool(edited_df.loc[i, "Done"])
-        weight_now = str(edited_df.loc[i, "Weight"])
-        reps_now = str(edited_df.loc[i, "Reps"])
+        weight_now  = str(edited_df.loc[i, "Weight"])
+        reps_now    = str(edited_df.loc[i, "Reps"])
 
-        # Previous (original snapshot) values
-        was_done = bool(original_df.loc[i, "Done"])
+        was_done    = bool(original_df.loc[i, "Done"])
         weight_prev = str(original_df.loc[i, "Weight"])
-        reps_prev = str(original_df.loc[i, "Reps"])
+        reps_prev   = str(original_df.loc[i, "Reps"])
 
-        # Write only if something changed
         if (is_done_now != was_done) or (weight_now != weight_prev) or (reps_now != reps_prev):
             supabase.table("plan_session_exercises").update(
-                {
-                    "completed": is_done_now,
-                    "actual_weight": weight_now,
-                    "actual_reps": reps_now,
-                }
+                {"completed": is_done_now, "actual_weight": weight_now, "actual_reps": reps_now}
             ).eq("id", row_id).execute()
             any_updated = True
 
-            # Optional per-row rest timer on newly completed set
-            if is_done_now and not was_done:
-                # We do not update 1RMs anymore by request
-                pass
-
     if any_updated:
-        # Single rerun after all updates so table reflects DB instantly
         st.rerun()
 
 
 # ---------------------------
-# Superset block renderer
+# Block renderer
 # ---------------------------
-def render_superset_block(superset_name, superset_sets, session):
+def render_set_block(block_title: str, rows: list, session, show_prev_bests: bool, session_ex_names: list):
     """
-    Render a superset block (two+ exercises grouped by the same 'Set (n)' note).
-    Shows previous bests above the editor, then the editable table, then timers.
+    Render one 'Set (n)' block.
+    If show_prev_bests=True, show the Previous Bests expander above the editor for all session exercises.
     """
-    st.markdown(f"### {superset_name}")
+    st.markdown(f"### {block_title}")
 
-    # --- 🔎 Previous bests (before Set 1 UI) ---
-    # Each row has an exercise_name; gather unique names and show best weight & reps.
-    ex_names = []
-    for row in superset_sets:
-        ex_n = str(row.get("exercise_name", "")).strip()
-        if ex_n and ex_n not in ex_names:
-            ex_names.append(ex_n)
-
-    if ex_names:
-        with st.expander("📈 Previous Bests (per exercise)", expanded=True):
-            for ex_n in ex_names:
+    # --- 📈 Previous Bests (show once, above Set 1) ---
+    if show_prev_bests and session_ex_names:
+        with st.expander("📈 Previous Bests (this session’s exercises)", expanded=True):
+            for ex_n in session_ex_names:
                 prev_best = fetch_prev_best_for_exercise(ex_n)
                 if prev_best and prev_best.get("weight"):
                     w = prev_best.get("weight")
@@ -134,12 +106,12 @@ def render_superset_block(superset_name, superset_sets, session):
                 else:
                     st.markdown(f"- **{ex_n}**: no previous completed sets recorded")
 
-    # --- Table (editor) ---
+    # --- Build table data ---
     data = []
-    for row in superset_sets:
-        reps_value = parse_reps_and_weight(str(row.get("reps", "")))
+    for row in rows:
+        reps_hint = parse_reps_only(str(row.get("reps", "")))
         weight_value = row.get("actual_weight") if row.get("completed") else ""
-        reps_display = row.get("actual_reps") if row.get("completed") else reps_value
+        reps_display = row.get("actual_reps") if row.get("completed") else reps_hint
 
         data.append(
             {
@@ -148,7 +120,7 @@ def render_superset_block(superset_name, superset_sets, session):
                 "Set": row.get("set_number", ""),
                 "Weight": weight_value,
                 "Reps": reps_display,
-                "%RM": row.get("intensity", ""),  # retained for context; not auto-derived
+                "%RM": row.get("intensity", ""),  # kept for context; not used to compute
                 "Done": row.get("completed", False),
                 "Rest": row.get("rest", 60),
             }
@@ -168,28 +140,32 @@ def render_superset_block(superset_name, superset_sets, session):
             "%RM": st.column_config.TextColumn("%RM", disabled=True),
             "Done": st.column_config.CheckboxColumn("Done"),
         },
-        key=f"editor_{session['session_id']}_{superset_name}"  # stable per session+superset
+        key=f"editor_{session['session_id']}_{block_title}"
     )
 
-    # Group rest timer
-    rest_seconds = int(df_original["Rest"].iloc[0]) if len(df_original) else 60
+    # Save instantly + rerun (prevents double-click)
+    ids = df_original["ID"].tolist()
+    persist_block_changes(edited_df, df_original, ids)
+
+    # Group rest timer controls
+    rest_default = int(df_original["Rest"].iloc[0]) if len(df_original) else 60
     rest_seconds = st.number_input(
-        "Rest (seconds)",
-        min_value=10, max_value=600, value=rest_seconds, step=10,
-        key=f"light_rest_input_{session['session_id']}_{superset_name}"
+        "Rest (seconds)", min_value=10, max_value=600, value=rest_default, step=10,
+        key=f"rest_input_{session['session_id']}_{block_title}"
     )
     if st.button(
         f"▶ Start Rest Timer ({rest_seconds}s)",
-        key=f"light_rest_button_{session['session_id']}_{superset_name}"
+        key=f"rest_button_{session['session_id']}_{block_title}"
     ):
         run_rest_timer(
             rest_seconds,
-            label="Rest",
+            label=f"{block_title} – Rest",
             next_item=None,
-            skip_key=f"light_rest_skip_{session['session_id']}_{superset_name}"
+            skip_key=f"rest_skip_{session['session_id']}_{block_title}"
         )
 
-    return edited_df, df_original, df_original["ID"].tolist()
+    # Return edited_df for final “Back to Dashboard” pass
+    return edited_df, ids
 
 
 # ---------------------------
@@ -213,12 +189,20 @@ def render(session):
         st.warning("No sets found for this light session.")
         return
 
-    # Group rows into supersets based on notes "Set (n)"
-    superset_groups = defaultdict(list)
+    # --- Group rows by 'Set (n)' in notes ---
+    grouped = defaultdict(list)
+    other_rows = []
     for row in sets_data:
-        match = re.search(r"Set \((\d+)\)", row.get("notes", ""))
-        superset_key = f"Set {match.group(1)}" if match else "Other"
-        superset_groups[superset_key].append(row)
+        notes = str(row.get("notes", "") or "")
+        m = SET_REGEX.search(notes)
+        if m:
+            idx = int(m.group(1))
+            grouped[idx].append(row)
+        else:
+            other_rows.append(row)
+
+    # Sort set indices numerically (Set 1, Set 2, Set 3, ...)
+    ordered_keys = sorted(grouped.keys())
 
     # Progress
     total_sets = len(sets_data)
@@ -226,22 +210,33 @@ def render(session):
     st.progress(completed_sets / total_sets if total_sets else 0)
     st.markdown(f"**Progress:** {completed_sets}/{total_sets} sets completed")
 
-    # Render supersets
-    all_dfs = []
-    for superset_name, superset_sets in superset_groups.items():
-        edited_df, df_original, ids = render_superset_block(superset_name, superset_sets, session)
+    # Collect all exercise names in this session for the “Previous Bests” section
+    session_ex_names = []
+    for r in sets_data:
+        ex_n = str(r.get("exercise_name", "")).strip()
+        if ex_n and ex_n not in session_ex_names:
+            session_ex_names.append(ex_n)
 
-        if edited_df is not None:
-            # one-click persistence + rerun (removes double-tick requirement)
-            persist_block_changes(edited_df, df_original, ids)
+    # Render each Set block in order; show prev bests only above Set 1
+    all_blocks = []  # (edited_df, ids)
+    for ix, k in enumerate(ordered_keys):
+        rows = grouped[k]
+        block_title = f"Set ({k})"
+        show_prev = ix == 0  # only above Set 1
+        edited_df, ids = render_set_block(block_title, rows, session, show_prev, session_ex_names)
+        all_blocks.append((edited_df, ids))
 
-            # Collect for final session-complete check (bulk save)
-            all_dfs.append((superset_name, edited_df, ids))
+    # Render "Other" block last (if any rows lacked 'Set (n)')
+    if other_rows:
+        edited_df, ids = render_set_block("Other", other_rows, session, show_prev_bests=False, session_ex_names=[])
+        all_blocks.append((edited_df, ids))
 
     # ---- Back to Dashboard (bulk save + mark session complete) ----
-    if st.button("⬅ Back to Dashboard", key=f"back_to_dashboard_{session['session_id']}_{len(all_dfs)}"):
+    if st.button("⬅ Back to Dashboard", key=f"back_to_dashboard_{session['session_id']}_{len(all_blocks)}"):
         all_completed = True
-        for superset_name, edited_df, ids in all_dfs:
+        for edited_df, ids in all_blocks:
+            if edited_df is None:
+                continue
             for i, row_id in enumerate(ids):
                 is_done = bool(edited_df.loc[i, "Done"])
                 supabase.table("plan_session_exercises").update(
@@ -251,7 +246,6 @@ def render(session):
                         "actual_reps": str(edited_df.loc[i, "Reps"]),
                     }
                 ).eq("id", row_id).execute()
-
                 if not is_done:
                     all_completed = False
 
@@ -260,4 +254,4 @@ def render(session):
 
         st.success("Progress saved. Returning to dashboard...")
         st.session_state.selected_session = None
-       
+        st.rerun
