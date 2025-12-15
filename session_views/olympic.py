@@ -217,31 +217,8 @@ def render(session):
         # Warmup block
         warmup_df, warmup_df_original, warmup_ids = render_block("🔥 Technique Warmup", warmup_sets, ex_name, session)
         if warmup_df is not None:
-            # Instant persistence for warmup rows
-            for i, row_id in enumerate(warmup_ids):
-                is_done_now = bool(warmup_df.loc[i, "Done"])
-                weight_now  = str(warmup_df.loc[i, "Weight"])
-                reps_now    = str(warmup_df.loc[i, "Reps"])
-
-                was_done    = bool(warmup_df_original.loc[i, "Done"])
-                weight_prev = str(warmup_df_original.loc[i, "Weight"])
-                reps_prev   = str(warmup_df_original.loc[i, "Reps"])
-
-                if (is_done_now != was_done) or (weight_now != weight_prev) or (reps_now != reps_prev):
-                    supabase.table("plan_session_exercises").update({
-                        "completed": is_done_now,
-                        "actual_weight": weight_now,
-                        "actual_reps": reps_now
-                    }).eq("id", row_id).execute()
-
-                    if is_done_now and not was_done:
-                        update_1rm_on_completion(ex_name, [{
-                            "id": row_id,
-                            "completed": True,
-                            "actual_weight": weight_now,
-                            "actual_reps": reps_now,
-                            "set_number": warmup_df.loc[i, "Set"]
-                        }])
+            # one-click persistence + rerun
+            persist_block_changes(warmup_df, warmup_df_original, warmup_ids, ex_name)
     
             # Warmup (group) timer controls
             warmup_rest = max([int(s.get("rest", 60)) for s in warmup_sets], default=60)
@@ -263,31 +240,9 @@ def render(session):
         # Working block
         working_df, working_df_original, working_ids = render_block("💪 Main Lifts", working_sets, ex_name, session)
         if working_df is not None:
-            # Instant persistence for working rows
-            for i, row_id in enumerate(working_ids):
-                is_done_now = bool(working_df.loc[i, "Done"])
-                weight_now  = str(working_df.loc[i, "Weight"])
-                reps_now    = str(working_df.loc[i, "Reps"])
+            # one-click persistence + rerun
+            persist_block_changes(working_df, working_df_original, working_ids, ex_name)
 
-                was_done    = bool(working_df_original.loc[i, "Done"])
-                weight_prev = str(working_df_original.loc[i, "Weight"])
-                reps_prev   = str(working_df_original.loc[i, "Reps"])
-
-                if (is_done_now != was_done) or (weight_now != weight_prev) or (reps_now != reps_prev):
-                    supabase.table("plan_session_exercises").update({
-                        "completed": is_done_now,
-                        "actual_weight": weight_now,
-                        "actual_reps": reps_now
-                    }).eq("id", row_id).execute()
-
-                    if is_done_now and not was_done:
-                        update_1rm_on_completion(ex_name, [{
-                            "id": row_id,
-                            "completed": True,
-                            "actual_weight": weight_now,
-                            "actual_reps": reps_now,
-                            "set_number": working_df.loc[i, "Set"]
-                        }])
     
             # Working (group) timer controls
             working_rest = max([int(s.get("rest", 120)) for s in working_sets], default=120)
