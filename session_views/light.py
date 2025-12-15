@@ -13,14 +13,17 @@ SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-
 # ---------------------------
 # Helpers
 # ---------------------------
-SET_REGEX = re.compile(r"Set\s*\((\d+)\)", flags=re.IGNORECASE)
+SET_NOTES_REGEXES = [
+    re.compile(r"\bset\s*\(\s*(\d+)\s*\)", flags=re.IGNORECASE),  # Set (1)
+    re.compile(r"\bset\s*[:\-]\s*(\d+)", flags=re.IGNORECASE),     # Set:1 or Set-1
+    re.compile(r"\bset\s+(\d+)\b", flags=re.IGNORECASE),           # Set 1
+]
 
 def parse_reps_only(note: str) -> str:
-    """Extract a reps hint like '(8-10)' if present (display only)."""
+    """Extract a reps hint like '(15-20)' if present (display only)."""
     if not note:
         return ""
     normalized = note.replace("–", "-").replace("—", "-").replace("−", "-")
@@ -83,6 +86,34 @@ def persist_block_changes(edited_df, original_df, row_ids):
     if any_updated:
         st.rerun()
 
+def get_set_index(row) -> int | None:
+    """
+    Return the set index for a row (1,2,3,...) using:
+      1) row['set_number'] if present and valid
+      2) fallback: parse row['notes'] with robust regex list
+    """
+    # 1) Prefer set_number from DB
+    sn = row.get("set_number", None)
+    try:
+        if sn is not None:
+            sn_int = int(sn)
+            if sn_int > 0:
+                return sn_int
+    except Exception:
+        pass
+
+    # 2) Fallback: parse notes
+    notes = str(row.get("notes", "") or "")
+    for rx in SET_NOTES_REGEXES:
+        m = rx.search(notes)
+        if m:
+            try:
+                val = int(m.group(1))
+                if val > 0:
+                    return val
+            except Exception:
+                continue
+    return None
 
 # ---------------------------
 # Block renderer
@@ -94,7 +125,7 @@ def render_set_block(block_title: str, rows: list, session, show_prev_bests: boo
     """
     st.markdown(f"### {block_title}")
 
-    # --- 📈 Previous Bests (show once, above Set 1) ---
+    # --- 📈 Previous Bests (show once, above first block) ---
     if show_prev_bests and session_ex_names:
         with st.expander("📈 Previous Bests (this session’s exercises)", expanded=True):
             for ex_n in session_ex_names:
@@ -167,7 +198,6 @@ def render_set_block(block_title: str, rows: list, session, show_prev_bests: boo
     # Return edited_df for final “Back to Dashboard” pass
     return edited_df, ids
 
-
 # ---------------------------
 # Main render
 # ---------------------------
@@ -189,21 +219,6 @@ def render(session):
         st.warning("No sets found for this light session.")
         return
 
-    # --- Group rows by 'Set (n)' in notes ---
-    grouped = defaultdict(list)
-    other_rows = []
-    for row in sets_data:
-        notes = str(row.get("notes", "") or "")
-        m = SET_REGEX.search(notes)
-        if m:
-            idx = int(m.group(1))
-            grouped[idx].append(row)
-        else:
-            other_rows.append(row)
-
-    # Sort set indices numerically (Set 1, Set 2, Set 3, ...)
-    ordered_keys = sorted(grouped.keys())
-
     # Progress
     total_sets = len(sets_data)
     completed_sets = sum(1 for r in sets_data if r.get("completed", False))
@@ -217,19 +232,36 @@ def render(session):
         if ex_n and ex_n not in session_ex_names:
             session_ex_names.append(ex_n)
 
-    # Render each Set block in order; show prev bests only above Set 1
-    all_blocks = []  # (edited_df, ids)
-    for ix, k in enumerate(ordered_keys):
-        rows = grouped[k]
-        block_title = f"Set ({k})"
-        show_prev = ix == 0  # only above Set 1
-        edited_df, ids = render_set_block(block_title, rows, session, show_prev, session_ex_names)
-        all_blocks.append((edited_df, ids))
+    # --- Group rows by set index (prefer set_number; fallback to notes) ---
+    grouped_by_index = defaultdict(list)
+    other_rows = []
+    for row in sets_data:
+        idx = get_set_index(row)
+        if idx is not None:
+            grouped_by_index[idx].append(row)
+        else:
+            other_rows.append(row)
 
-    # Render "Other" block last (if any rows lacked 'Set (n)')
-    if other_rows:
-        edited_df, ids = render_set_block("Other", other_rows, session, show_prev_bests=False, session_ex_names=[])
+    ordered_indices = sorted(grouped_by_index.keys())
+
+    # Render blocks; show prev bests above the FIRST block (Set 1 or "Other")
+    all_blocks = []
+    first_block_rendered = False
+
+    for idx in ordered_indices:
+        rows = grouped_by_index[idx]
+        block_title = f"Set ({idx})"
+        show_prev_bests = not first_block_rendered  # show only above first rendered block
+        edited_df, ids = render_set_block(block_title, rows, session, show_prev_bests, session_ex_names)
         all_blocks.append((edited_df, ids))
+        first_block_rendered = True
+
+    # Render "Other" last (if any rows lacked a set index)
+    if other_rows:
+        show_prev_bests = not first_block_rendered  # if no set blocks, show above Other
+        edited_df, ids = render_set_block("Other", other_rows, session, show_prev_bests, session_ex_names)
+        all_blocks.append((edited_df, ids))
+        first_block_rendered = True
 
     # ---- Back to Dashboard (bulk save + mark session complete) ----
     if st.button("⬅ Back to Dashboard", key=f"back_to_dashboard_{session['session_id']}_{len(all_blocks)}"):
@@ -246,6 +278,7 @@ def render(session):
                         "actual_reps": str(edited_df.loc[i, "Reps"]),
                     }
                 ).eq("id", row_id).execute()
+
                 if not is_done:
                     all_completed = False
 
@@ -254,4 +287,4 @@ def render(session):
 
         st.success("Progress saved. Returning to dashboard...")
         st.session_state.selected_session = None
-        st.rerun
+
