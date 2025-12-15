@@ -14,13 +14,13 @@ SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ---------------------------
-# Helpers
+# Helpers (robust "Set <n>" parsing)
 # ---------------------------
-SET_NOTES_REGEXES = [
-    re.compile(r"\bset\s*\(\s*(\d+)\s*\)", flags=re.IGNORECASE),  # Set (1)
-    re.compile(r"\bset\s*[:\-]\s*(\d+)", flags=re.IGNORECASE),     # Set:1 or Set-1
-    re.compile(r"\bset\s+(\d+)\b", flags=re.IGNORECASE),           # Set 1
-]
+# Accepts: "Set 1 - ...", "Set 2 – ...", "Set 3 — ...", "Set 1: ...", "Set 1 ...", "Set(1)"
+SET_NUMBER_REGEX = re.compile(
+    r"^\s*set\s*(?:\(|\s+)?\s*(\d+)\s*(?:\)|\s*[:\-–—])?",
+    flags=re.IGNORECASE
+)
 
 def parse_reps_only(note: str) -> str:
     """Extract a reps hint like '(15-20)' if present (display only)."""
@@ -89,10 +89,10 @@ def persist_block_changes(edited_df, original_df, row_ids):
 def get_set_index(row) -> int | None:
     """
     Return the set index for a row (1,2,3,...) using:
-      1) row['set_number'] if present and valid
-      2) fallback: parse row['notes'] with robust regex list
+      1) row['set_number'] if present and valid (preferred)
+      2) fallback: parse row['notes'] like 'Set 2 - Primary (Quads)'
     """
-    # 1) Prefer set_number from DB
+    # 1) Prefer set_number from DB if available
     sn = row.get("set_number", None)
     try:
         if sn is not None:
@@ -104,15 +104,14 @@ def get_set_index(row) -> int | None:
 
     # 2) Fallback: parse notes
     notes = str(row.get("notes", "") or "")
-    for rx in SET_NOTES_REGEXES:
-        m = rx.search(notes)
-        if m:
-            try:
-                val = int(m.group(1))
-                if val > 0:
-                    return val
-            except Exception:
-                continue
+    m = SET_NUMBER_REGEX.search(notes)
+    if m:
+        try:
+            val = int(m.group(1))
+            if val > 0:
+                return val
+        except Exception:
+            return None
     return None
 
 # ---------------------------
@@ -251,7 +250,7 @@ def render(session):
     for idx in ordered_indices:
         rows = grouped_by_index[idx]
         block_title = f"Set ({idx})"
-        show_prev_bests = not first_block_rendered  # show only above first rendered block
+        show_prev_bests = not first_block_rendered  # only above first block
         edited_df, ids = render_set_block(block_title, rows, session, show_prev_bests, session_ex_names)
         all_blocks.append((edited_df, ids))
         first_block_rendered = True
@@ -288,4 +287,3 @@ def render(session):
         st.success("Progress saved. Returning to dashboard...")
         st.session_state.selected_session = None
         st.rerun()
-
