@@ -49,6 +49,60 @@ def update_1rm_on_completion(exercise_name, completed_sets):
                     "source_set_id": s["id"],
                     "date": datetime.now().isoformat()
                 }).execute()
+
+# ---------------------------
+# Single-click save helper
+# ---------------------------
+def persist_block_changes(edited_df, original_df, row_ids, ex_name):
+    """
+    Persist per-row changes for a block (Warmup or Working) and rerun once
+    so UI aligns with DB immediately (prevents needing to click twice).
+    """
+    if edited_df is None or original_df is None or not row_ids:
+        return
+
+    any_updated = False
+
+    for i, row_id in enumerate(row_ids):
+        # Current (edited) values
+        is_done_now = bool(edited_df.loc[i, "Done"])
+        weight_now = str(edited_df.loc[i, "Weight"])
+        reps_now = str(edited_df.loc[i, "Reps"])
+
+        # Previous (original snapshot) values
+        was_done = bool(original_df.loc[i, "Done"])
+        weight_prev = str(original_df.loc[i, "Weight"])
+        reps_prev = str(original_df.loc[i, "Reps"])
+
+        if (is_done_now != was_done) or (weight_now != weight_prev) or (reps_now != reps_prev):
+            supabase.table("plan_session_exercises").update(
+                {
+                    "completed": is_done_now,
+                    "actual_weight": weight_now,
+                    "actual_reps": reps_now,
+                }
+            ).eq("id", row_id).execute()
+            any_updated = True
+
+            # If newly completed, record potential new 1RM
+            if is_done_now and not was_done:
+                update_1rm_on_completion(
+                    ex_name,
+                    [
+                        {
+                            "id": row_id,
+                            "completed": True,
+                            "actual_weight": weight_now,
+                            "actual_reps": reps_now,
+                            "set_number": edited_df.loc[i, "Set"],
+                            
+                        }
+                    ],
+                )
+
+    if any_updated:
+        # Single rerun after all updates so table reflects DB instantly
+        st.rerun()
                 
 def render(session):
     st.title("🏅 Olympic Session")
