@@ -145,4 +145,5 @@ class HeavyGenerator:
             "exercises": exercises,
             "sets": all_sets,
             "debug": debug_info if self.debug else {}
+        }
        
